@@ -26,9 +26,7 @@ def qipcmd(ctx):
 
 def fetch_dependencies(package):
     cmd = "pip download {0} -d /tmp --no-binary :all: | grep Collecting | cut -d' ' -f2 | grep -v {0}".format(package)
-    ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    output = ps.communicate()[0]
-    return output.split()
+    return run_pip_command(cmd).split()
 
 
 def is_package_installed(package):
@@ -38,14 +36,19 @@ def is_package_installed(package):
     else:
         return False
 
+def run_pip_command(cmd):
+    ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    output = ps.communicate()[0]
+    return output
+
+
 def install_package(package):
     m = re.match(r"(\w*)[><=]+([\d\.]+)", package)
     print "Install: ", package
     # if package does not end with number, get version
     if m is None:
         cmd = "pip install {}==".format(package)
-        pip_cmd = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-        output = pip_cmd.communicate()[0]
+        output = run_pip_command(cmd)
         match = re.search(r"\(from versions: ((.*))\)", output)
         if match:
             latest_version = match.group(1).split(", ")[-1]
@@ -58,9 +61,9 @@ def install_package(package):
         if is_package_installed('{0}-{1}'.format(m.group(1), m.group(2))):
             return
         cmd = "pip install --install-option='--prefix=/tmp/qip-test/{0}-{1}' {0}".format(m.group(1), m.group(2))
-    ps = subprocess.Popen(cmd,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
-    output = ps.communicate()[0]
-    print output
+
+    cmd += "--no-index --no-cache-dir --find-links target"
+    print run_pip_command(cmd)
 
 
 @qipcmd.command()
@@ -80,6 +83,14 @@ def install(ctx, **kwargs):
     #    .format(kwargs['package']),
     #    traceback=True
     #)
+
+
+@qipcmd.command()
+@click.pass_obj
+@click.argument('package')
+def download(ctx, **kawrgs):
+    cmd = "pip download --exists-action a --dest /mill3d/server/apps/PYTHON/package-index/ --find-links /mill3d/server/apps/PYTHON/package-index/"
+    print run_pip_command(cmd)
 
 
 def main(arguments=None):
