@@ -39,6 +39,7 @@ def is_package_installed(ctx, package):
     else:
         return False
 
+
 def run_pip_command(cmd):
     ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output = ps.communicate()
@@ -132,7 +133,7 @@ def install(ctx, **kwargs):
 @qipcmd.command()
 @click.pass_obj
 @click.argument('package')
-def download(ctx, **kawrgs):
+def download(ctx, **kwargs):
     download_package(ctx, kwargs['package'])
 
 
