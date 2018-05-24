@@ -6,6 +6,10 @@ import mlog
 import re
 import os
 
+import config
+
+cfg = config.Config()
+cfg.from_envvar("CONFIG")
 class QipContext(object):
     logger = None
     target_conf_dict = {}
@@ -19,78 +23,117 @@ def qipcmd(ctx):
     mlog.configure()
     qctx = QipContext()
     qctx.logger = mlog.Logger(__name__ + ".main")
-    #qctx.target_conf_dict = initialise_target_configurations()
-    #qctx.config = config_reader.read_config()
     ctx.obj = qctx
 
 
 def fetch_dependencies(package):
     cmd = "pip download {0} -d /tmp --no-binary :all: | grep Collecting | cut -d' ' -f2 | grep -v {0}".format(package)
-    return run_pip_command(cmd).split()
+    output, _ = run_pip_command(cmd)
+    return output[0].split()
 
 
-def is_package_installed(package):
-    if os.path.exists("/tmp/qip-test/{}".format(package)):
-        print "{} already installed".format(package)
+def is_package_installed(ctx, package):
+    if os.path.exists("{1}/{0}".format(package, cfg["INSTALL_DIR"])):
+        ctx.logger.info("{} already installed".format(package))
         return True
     else:
         return False
 
 def run_pip_command(cmd):
-    ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    output = ps.communicate()[0]
-    return output
+    ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output = ps.communicate()
+    return output, ps.returncode
 
 
-def install_package(package):
+def check_to_download(ctx, package, output):
+    if output[1].split('\n')[-2].startswith("No matching distribution found for"):
+        ctx.logger.warning("{0} not found in package index.".format(package))
+        if click.confirm('Do you want to try and download it now?'):
+            if not download_package(ctx, package):
+                return False
+            install_package(ctx, package)
+            return True
+
+    return False
+
+
+def download_package(ctx, package):
+    cmd = "pip download --exists-action a --dest {0} --find-links {0}".format(cfg["PACKAGE_INDEX"])
+    to_download = package
+    if to_download.startswith("git@gitlab:"):
+        to_download = 'git+ssh://' + to_download.replace(':', '/')
+    cmd += " {}".format(to_download)
+    ctx.logger.info("Downloading {0}".format(to_download))
+    output, ret_code = run_pip_command(cmd)
+
+    if ret_code != 0:
+        ctx.logger.error("Unable to download requested package. Reason from pip below")
+        ctx.logger.error(output[1])
+        return False
+
+    return True
+
+
+def install_package(ctx, package):
     m = re.match(r"(\w*)[><=]+([\d\.]+)", package)
-    print "Install: ", package
+    ctx.logger.info("Installing {} ".format(package))
+
+    cmd = "pip install --no-deps --prefix"
     # if package does not end with number, get version
     if m is None:
-        cmd = "pip install {}==".format(package)
-        output = run_pip_command(cmd)
-        match = re.search(r"\(from versions: ((.*))\)", output)
+        test_cmd = "pip install {}==".format(package)
+        output, ret_code = run_pip_command(test_cmd)
+
+        # This is expected to fail to give us a list of available versions
+        match = re.search(r"\(from versions: ((.*))\)", output[1])
         if match:
             latest_version = match.group(1).split(", ")[-1]
+        else:
+            if not check_to_download(ctx, package, output):
+                return
 
-        if is_package_installed('{0}-{1}'.format(package, latest_version)):
+        if is_package_installed(ctx, '{0}-{1}'.format(package, latest_version)):
             return
 
-        cmd = "pip install --install-option='--prefix=/tmp/qip-test/{0}-{1}' {0}=={1}".format(package, latest_version)
+        cmd += " {2}/{0}-{1} '{0}=={1}'".format(package, latest_version, cfg["INSTALL_DIR"])
+
     else:
-        if is_package_installed('{0}-{1}'.format(m.group(1), m.group(2))):
+        if is_package_installed(ctx, '{0}-{1}'.format(m.group(1), m.group(2))):
             return
-        cmd = "pip install --install-option='--prefix=/tmp/qip-test/{0}-{1}' {0}".format(m.group(1), m.group(2))
+        cmd += " {2}/{0}-{1} '{0}'".format(m.group(1), m.group(2), cfg["INSTALL_DIR"])
 
-    cmd += "--no-index --no-cache-dir --find-links target"
-    print run_pip_command(cmd)
+    cmd += " --no-index --no-cache-dir --find-links {0}".format(cfg["PACKAGE_INDEX"])
+    output, ret_code = run_pip_command(cmd)
+    if ret_code != 0:
+        if not check_to_download(ctx, package, output):
+            match = re.search(r"\(from versions: ((.*))\)", output[1])
+            if not match:
+                ctx.logger.error(output[1])
 
 
 @qipcmd.command()
 @click.pass_obj
 @click.argument('package')
 def install(ctx, **kwargs):
+    ctx.logger.info("Fetching deps for {}".format(kwargs['package']))
     deps = fetch_dependencies(kwargs['package'])
-    print deps
 
-    for dep in deps:
-        install_package(dep)
+    if deps:
+        ctx.logger.info("Installing deps as needed.")
+        for dep in deps:
+            install_package(ctx, dep)
+    else:
+        ctx.logger.info("No deps required.")
 
-    install_package(kwargs['package'])
-
-    #ctx.logger.error(
-    #    "Failed to install {!r}"
-    #    .format(kwargs['package']),
-    #    traceback=True
-    #)
+    # Install the actual package now
+    install_package(ctx, kwargs['package'])
 
 
 @qipcmd.command()
 @click.pass_obj
 @click.argument('package')
 def download(ctx, **kawrgs):
-    cmd = "pip download --exists-action a --dest /mill3d/server/apps/PYTHON/package-index/ --find-links /mill3d/server/apps/PYTHON/package-index/"
-    print run_pip_command(cmd)
+    download_package(ctx, kwargs['package'])
 
 
 def main(arguments=None):
