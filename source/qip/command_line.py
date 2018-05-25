@@ -5,8 +5,10 @@ import _version as ver
 import mlog
 import re
 import os
+import sys
 
 import config
+from pkg_resources import Requirement as Req
 
 cfg = config.Config()
 cfg.from_pyfile("configs/base.py")
@@ -36,9 +38,20 @@ def set_git_ssh(package):
     return package
 
 
-def fetch_dependencies(package):
+def has_git_version(package):
+    m = re.search(r'@.+$', package)
+    return m is not None
+
+
+def fetch_dependencies(ctx, package):
     package = set_git_ssh(package)
-    cmd = "pip download --exists-action w '{0}' -d /tmp --no-binary :all: | grep Collecting | cut -d' ' -f2 | grep -v {0}".format(package)
+    if not has_git_version(package):
+        ctx.logger.error("Please specify a version with `@` when installing from git")
+        sys.exit(1)
+
+    cmd = ("pip download --exists-action w '{0}' "
+           "-d /tmp --no-binary :all: | grep Collecting | cut -d' ' "
+           "-f2 | grep -v {0}".format(package))
     output, _ = run_pip_command(cmd)
     return output[0].split()
 
@@ -49,6 +62,7 @@ def is_package_installed(ctx, package):
         return True
     else:
         return False
+
 
 def run_pip_command(cmd):
     print "RUNNING: ", cmd
@@ -85,15 +99,31 @@ def download_package(ctx, package):
     return True
 
 
-def install_package(ctx, package):
-    ctx.logger.info("Installing {} ".format(package))
+def install_cmd_gitlab(ctx, package):
     package = set_git_ssh(package)
+    if not has_git_version(package):
+        ctx.logger.error("Please specify a version with `@` when installing from git")
+        sys.exit(1)
 
-    cmd = "pip install --no-deps --prefix"
+    package_name = os.path.basename(package)
+    package_name, version = package_name.split('.git@')
+    cmd = " '{3}/{0}-{1}' '{2}'".format(package_name, version, package, cfg["INSTALL_DIR"])
+    return cmd
+
+
+def install_cmd_pypi(ctx, package):
     m = re.search(r"(.*)[><=]+([\d\.]+)", package)
+
+    pkg_req = Req.parse(package)
+    name = pkg_req.unsafe_name
+    extras = list(pkg_req.extras)
+    specs = pkg_req.specs
+    print name, specs, extras
+
+    cmd = ""
     # if package does not end with number, get version
-    if m is None:
-        test_cmd = "pip install '{}'==".format(package)
+    if not specs:
+        test_cmd = "pip install --ignore-installed '{}=='".format(package)
         output, ret_code = run_pip_command(test_cmd)
 
         # This is expected to fail to give us a list of available versions
@@ -107,12 +137,32 @@ def install_package(ctx, package):
         if is_package_installed(ctx, '{0}-{1}'.format(package, latest_version)):
             return
 
-        cmd += " '{2}/{0}-{1}' '{0}=={1}'".format(package, latest_version, cfg["INSTALL_DIR"])
+        cmd = " '{2}/{0}-{1}' '{0}=={1}'".format(package, latest_version, cfg["INSTALL_DIR"])
 
     else:
         if is_package_installed(ctx, '{0}-{1}'.format(m.group(1), m.group(2))):
             return
-        cmd += " '{2}/{0}-{1}' '{0}'".format(m.group(1), m.group(2), cfg["INSTALL_DIR"])
+        #Installing html2text<2016.5,>=2016.4.2
+        cmd = " '{2}/{0}-{1}' '{0}'".format(name, m.group(2), cfg["INSTALL_DIR"])
+
+    return cmd
+
+
+def install_package(ctx, package):
+    ctx.logger.info("Installing {} ".format(package))
+
+    cmd = "pip install --ignore-installed --no-deps --prefix"
+
+    if package.startswith("git@gitlab"):
+        tmp_cmd = install_cmd_gitlab(ctx, package)
+        if tmp_cmd is None:
+            return
+        cmd += tmp_cmd
+    else:
+        tmp_cmd = install_cmd_pypi(ctx, package)
+        if tmp_cmd is None:
+            return
+        cmd += tmp_cmd
 
     cmd += " --no-index --no-cache-dir --find-links {0}".format(cfg["PACKAGE_INDEX"])
     output, ret_code = run_pip_command(cmd)
@@ -129,7 +179,7 @@ def install_package(ctx, package):
 def install(ctx, **kwargs):
     """Install PACKAGE to its own subdirectory under the configured target directory"""
     ctx.logger.info("Fetching deps for {}".format(kwargs['package']))
-    deps = fetch_dependencies(kwargs['package'])
+    deps = fetch_dependencies(ctx,kwargs['package'])
 
     if deps:
         ctx.logger.info("Installing deps as needed.")
