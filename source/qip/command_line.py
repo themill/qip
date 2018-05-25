@@ -15,7 +15,7 @@ from distutils.dir_util import copy_tree
 
 cfg = config.Config()
 cfg.from_pyfile("configs/base.py")
-cfg.from_envvar("CONFIG", silent=True)
+cfg.from_envvar("QIP_CONFIG", silent=True)
 
 
 class QipContext(object):
@@ -50,9 +50,10 @@ def has_git_version(package):
 
 def fetch_dependencies(ctx, package):
     package = set_git_ssh(package)
-    if not has_git_version(package):
-        ctx.logger.error("Please specify a version with `@` when installing from git")
-        sys.exit(1)
+    if package.startswith("git+ssh://"):
+        if not has_git_version(package):
+            ctx.logger.error("Please specify a version with `@` when installing from git")
+            sys.exit(1)
 
     cmd = ("pip download --exists-action w '{0}' "
            "-d /tmp --no-binary :all: | grep Collecting | cut -d' ' "
