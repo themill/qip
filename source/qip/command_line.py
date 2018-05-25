@@ -9,7 +9,8 @@ import os
 import config
 
 cfg = config.Config()
-cfg.from_envvar("CONFIG")
+cfg.from_pyfile("configs/base.py")
+cfg.from_envvar("CONFIG", silent=True)
 class QipContext(object):
     logger = None
     target_conf_dict = {}
@@ -27,7 +28,9 @@ def qipcmd(ctx):
 
 
 def fetch_dependencies(package):
-    cmd = "pip download {0} -d /tmp --no-binary :all: | grep Collecting | cut -d' ' -f2 | grep -v {0}".format(package)
+    if package.startswith("git@gitlab:"):
+        package = 'git+ssh://' + package.replace(':', '/')
+    cmd = "pip download --exists-action w '{0}' -d /tmp --no-binary :all: | grep Collecting | cut -d' ' -f2 | grep -v {0}".format(package)
     output, _ = run_pip_command(cmd)
     return output[0].split()
 
@@ -40,6 +43,7 @@ def is_package_installed(ctx, package):
         return False
 
 def run_pip_command(cmd):
+    print "RUNNING: ", cmd
     ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output = ps.communicate()
     return output, ps.returncode
@@ -58,11 +62,11 @@ def check_to_download(ctx, package, output):
 
 
 def download_package(ctx, package):
-    cmd = "pip download --exists-action a --dest {0} --find-links {0}".format(cfg["PACKAGE_INDEX"])
+    cmd = "pip download --no-deps --exists-action w --dest {0} --find-links {0}".format(cfg["PACKAGE_INDEX"])
     to_download = package
     if to_download.startswith("git@gitlab:"):
         to_download = 'git+ssh://' + to_download.replace(':', '/')
-    cmd += " {}".format(to_download)
+    cmd += " '{}'".format(to_download)
     ctx.logger.info("Downloading {0}".format(to_download))
     output, ret_code = run_pip_command(cmd)
 
@@ -75,10 +79,10 @@ def download_package(ctx, package):
 
 
 def install_package(ctx, package):
-    m = re.match(r"(\w*)[><=]+([\d\.]+)", package)
     ctx.logger.info("Installing {} ".format(package))
 
     cmd = "pip install --no-deps --prefix"
+    m = re.search(r"(.*)[><=]+([\d\.]+)", package)
     # if package does not end with number, get version
     if m is None:
         test_cmd = "pip install {}==".format(package)
@@ -132,7 +136,7 @@ def install(ctx, **kwargs):
 @qipcmd.command()
 @click.pass_obj
 @click.argument('package')
-def download(ctx, **kawrgs):
+def download(ctx, **kwargs):
     download_package(ctx, kwargs['package'])
 
 
