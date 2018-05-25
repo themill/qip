@@ -11,6 +11,8 @@ import config
 cfg = config.Config()
 cfg.from_pyfile("configs/base.py")
 cfg.from_envvar("CONFIG", silent=True)
+
+
 class QipContext(object):
     logger = None
     target_conf_dict = {}
@@ -21,15 +23,21 @@ class QipContext(object):
 @click.pass_context
 @click.version_option(version=ver.__version__)
 def qipcmd(ctx):
+    """Install or download Python packages to an isolated location."""
     mlog.configure()
     qctx = QipContext()
     qctx.logger = mlog.Logger(__name__ + ".main")
     ctx.obj = qctx
 
 
-def fetch_dependencies(package):
+def set_git_ssh(package):
     if package.startswith("git@gitlab:"):
         package = 'git+ssh://' + package.replace(':', '/')
+    return package
+
+
+def fetch_dependencies(package):
+    package = set_git_ssh(package)
     cmd = "pip download --exists-action w '{0}' -d /tmp --no-binary :all: | grep Collecting | cut -d' ' -f2 | grep -v {0}".format(package)
     output, _ = run_pip_command(cmd)
     return output[0].split()
@@ -63,9 +71,8 @@ def check_to_download(ctx, package, output):
 
 def download_package(ctx, package):
     cmd = "pip download --no-deps --exists-action w --dest {0} --find-links {0}".format(cfg["PACKAGE_INDEX"])
-    to_download = package
-    if to_download.startswith("git@gitlab:"):
-        to_download = 'git+ssh://' + to_download.replace(':', '/')
+    to_download = set_git_ssh(package)
+
     cmd += " '{}'".format(to_download)
     ctx.logger.info("Downloading {0}".format(to_download))
     output, ret_code = run_pip_command(cmd)
@@ -80,12 +87,13 @@ def download_package(ctx, package):
 
 def install_package(ctx, package):
     ctx.logger.info("Installing {} ".format(package))
+    package = set_git_ssh(package)
 
     cmd = "pip install --no-deps --prefix"
     m = re.search(r"(.*)[><=]+([\d\.]+)", package)
     # if package does not end with number, get version
     if m is None:
-        test_cmd = "pip install {}==".format(package)
+        test_cmd = "pip install '{}'==".format(package)
         output, ret_code = run_pip_command(test_cmd)
 
         # This is expected to fail to give us a list of available versions
@@ -99,12 +107,12 @@ def install_package(ctx, package):
         if is_package_installed(ctx, '{0}-{1}'.format(package, latest_version)):
             return
 
-        cmd += " {2}/{0}-{1} '{0}=={1}'".format(package, latest_version, cfg["INSTALL_DIR"])
+        cmd += " '{2}/{0}-{1}' '{0}=={1}'".format(package, latest_version, cfg["INSTALL_DIR"])
 
     else:
         if is_package_installed(ctx, '{0}-{1}'.format(m.group(1), m.group(2))):
             return
-        cmd += " {2}/{0}-{1} '{0}'".format(m.group(1), m.group(2), cfg["INSTALL_DIR"])
+        cmd += " '{2}/{0}-{1}' '{0}'".format(m.group(1), m.group(2), cfg["INSTALL_DIR"])
 
     cmd += " --no-index --no-cache-dir --find-links {0}".format(cfg["PACKAGE_INDEX"])
     output, ret_code = run_pip_command(cmd)
@@ -119,6 +127,7 @@ def install_package(ctx, package):
 @click.pass_obj
 @click.argument('package')
 def install(ctx, **kwargs):
+    """Install PACKAGE to its own subdirectory under the configured target directory"""
     ctx.logger.info("Fetching deps for {}".format(kwargs['package']))
     deps = fetch_dependencies(kwargs['package'])
 
@@ -137,6 +146,7 @@ def install(ctx, **kwargs):
 @click.pass_obj
 @click.argument('package')
 def download(ctx, **kwargs):
+    """Download PACKAGE to its own subdirectory under the configured target directory"""
     download_package(ctx, kwargs['package'])
 
 

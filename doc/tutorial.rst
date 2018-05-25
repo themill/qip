@@ -4,4 +4,10 @@
 Tutorial
 ********
 
-A quick dive into using qip.
+Downloading a package
+---------------------
+
+To download a package use the download command
+
+    $> qip download flask
+

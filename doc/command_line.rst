@@ -4,5 +4,7 @@
 Command line
 ************
 
-.. autoprogram:: qip.command_line:construct_parser()
-    :prog: qip
+.. click:: qip.command_line:qipcmd
+   :prog: qip
+   :show-nested:
+
