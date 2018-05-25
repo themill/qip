@@ -6,9 +6,12 @@ import mlog
 import re
 import os
 import sys
+import tempfile
+import shutil
 
 import config
 from pkg_resources import Requirement as Req
+from distutils.dir_util import copy_tree
 
 cfg = config.Config()
 cfg.from_pyfile("configs/base.py")
@@ -40,7 +43,9 @@ def set_git_ssh(package):
 
 def has_git_version(package):
     m = re.search(r'@.+$', package)
-    return m is not None
+    if m is None:
+        return False
+    return True
 
 
 def fetch_dependencies(ctx, package):
@@ -65,7 +70,7 @@ def is_package_installed(ctx, package):
 
 
 def run_pip_command(cmd):
-    print "RUNNING: ", cmd
+    #print "RUNNING: ", cmd
     ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output = ps.communicate()
     return output, ps.returncode
@@ -99,7 +104,7 @@ def download_package(ctx, package):
     return True
 
 
-def install_cmd_gitlab(ctx, package):
+def install_cmd_gitlab(ctx, package, target_dir):
     package = set_git_ssh(package)
     if not has_git_version(package):
         ctx.logger.error("Please specify a version with `@` when installing from git")
@@ -107,18 +112,16 @@ def install_cmd_gitlab(ctx, package):
 
     package_name = os.path.basename(package)
     package_name, version = package_name.split('.git@')
-    cmd = " '{3}/{0}-{1}' '{2}'".format(package_name, version, package, cfg["INSTALL_DIR"])
+    cmd = " '{1}' '{0}'".format(package, target_dir)
     return cmd
 
 
-def install_cmd_pypi(ctx, package):
+def install_cmd_pypi(ctx, package, target_dir):
     m = re.search(r"(.*)[><=]+([\d\.]+)", package)
 
     pkg_req = Req.parse(package)
     name = pkg_req.unsafe_name
-    extras = list(pkg_req.extras)
     specs = pkg_req.specs
-    print name, specs, extras
 
     cmd = ""
     # if package does not end with number, get version
@@ -137,13 +140,14 @@ def install_cmd_pypi(ctx, package):
         if is_package_installed(ctx, '{0}-{1}'.format(package, latest_version)):
             return
 
-        cmd = " '{2}/{0}-{1}' '{0}=={1}'".format(package, latest_version, cfg["INSTALL_DIR"])
+
+        cmd = " '{2}' '{0}=={1}'".format(package, latest_version, target_dir)
 
     else:
         if is_package_installed(ctx, '{0}-{1}'.format(m.group(1), m.group(2))):
             return
         #Installing html2text<2016.5,>=2016.4.2
-        cmd = " '{2}/{0}-{1}' '{0}'".format(name, m.group(2), cfg["INSTALL_DIR"])
+        cmd = " '{1}' '{0}'".format(name, target_dir)
 
     return cmd
 
@@ -152,14 +156,14 @@ def install_package(ctx, package):
     ctx.logger.info("Installing {} ".format(package))
 
     cmd = "pip install --ignore-installed --no-deps --prefix"
-
+    temp_dir = tempfile.mkdtemp(dir=cfg["INSTALL_DIR"])
     if package.startswith("git@gitlab"):
-        tmp_cmd = install_cmd_gitlab(ctx, package)
+        tmp_cmd = install_cmd_gitlab(ctx, package, temp_dir)
         if tmp_cmd is None:
             return
         cmd += tmp_cmd
     else:
-        tmp_cmd = install_cmd_pypi(ctx, package)
+        tmp_cmd = install_cmd_pypi(ctx, package, temp_dir)
         if tmp_cmd is None:
             return
         cmd += tmp_cmd
@@ -171,6 +175,13 @@ def install_package(ctx, package):
             match = re.search(r"\(from versions: ((.*))\)", output[1])
             if not match:
                 ctx.logger.error(output[1])
+    else:
+        lastline = output[0].split('\n')[-2].strip()
+        m = re.search(r'(\S+-[\d\.]+)$', lastline)
+        if m:
+            # move directory
+            os.rename(temp_dir, "{0}/{1}".format(cfg["INSTALL_DIR"], m.group(1)))
+            #shutil.rmtree(temp_dir)
 
 
 @qipcmd.command()
