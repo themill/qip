@@ -49,14 +49,9 @@ def has_git_version(package):
 
 
 def fetch_dependencies(ctx, package, deps_install):
-    package = set_git_ssh(package)
-    if package.startswith("git+ssh://"):
-        if not has_git_version(package):
-            ctx.logger.error("Please specify a version with `@` when installing from git")
-            sys.exit(1)
     ctx.logger.info("Resolving deps for {}".format(package))
     cmd = ("pip download --exists-action w '{0}' "
-           "-d /tmp --no-binary :all: --find-links {1}"
+           "-d /tmp --no-binary :all: --find-links {1} --no-cache"
            "| grep Collecting | cut -d' ' "
            "-f2 | grep -v '{0}'".format(package, cfg["PACKAGE_INDEX"]))
     output, _ = run_pip_command(cmd)
@@ -84,7 +79,7 @@ def is_package_installed(ctx, package):
 
 
 def run_pip_command(cmd):
-    #print "RUNNING: ", cmd
+    print "RUNNING: ", cmd
     ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output = ps.communicate()
     return output, ps.returncode
@@ -207,10 +202,27 @@ def install(ctx, **kwargs):
     ctx.logger.info("Fetching deps for {} and all its deps. This may take some time.".format(kwargs['package']))
 
     deps = {}
-    fetch_dependencies(ctx,kwargs['package'], deps)
+
+    package = set_git_ssh(kwargs['package'])
+    if package.startswith("git+ssh://"):
+        if not has_git_version(package):
+            ctx.logger.error("Please specify a version with `@` when installing from git")
+            sys.exit(1)
+        package_name = os.path.basename(package)
+        name, specs = package_name.split('.git@')
+        specs = [('==', specs)]
+    else:
+        pkg_req = Req.parse(package)
+        name = pkg_req.unsafe_name
+        specs = pkg_req.specs
+
+    deps[name] = specs
+
+    fetch_dependencies(ctx, package, deps)
     print deps
     for package, version in deps.iteritems():
         ctx.logger.info("Installing {} : {}".format(package, version))
+        #install_package(package, version)
     # if deps:
     #     ctx.logger.info("Installing deps as needed.")
     #     for dep in deps:
