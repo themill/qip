@@ -162,7 +162,7 @@ def install_package(ctx, package, version, download=False):
 @qipcmd.command()
 @click.pass_obj
 @click.argument('package')
-@click.option('--nodeps', is_flag=True, help='Just install the specified package without deps')
+@click.option('--nodeps', is_flag=True, help='Install the specified package without deps')
 @click.option('--download', is_flag=True, help='Download packages without prompting')
 def install(ctx, **kwargs):
     """Install PACKAGE to its own subdirectory under the configured target directory"""
@@ -219,17 +219,7 @@ def install(ctx, **kwargs):
         write_deps_to_file(name, specs, deps, filename)
 
     for package, version in deps.iteritems():
-        #ctx.logger.info("Installing {} : {}".format(package, version))
         install_package(ctx, package, version, kwargs['download'])
-    # if deps:
-    #     ctx.logger.info("Installing deps as needed.")
-    #     for dep in deps:
-    #         install_package(ctx, dep)
-    # else:
-    #     ctx.logger.info("No deps required.")
-
-    # # Install the actual package now
-    # install_package(ctx, kwargs['package'])
 
 
 @qipcmd.command()
