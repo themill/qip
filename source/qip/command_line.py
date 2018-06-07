@@ -48,18 +48,31 @@ def has_git_version(package):
     return True
 
 
-def fetch_dependencies(ctx, package):
+def fetch_dependencies(ctx, package, deps_install):
     package = set_git_ssh(package)
     if package.startswith("git+ssh://"):
         if not has_git_version(package):
             ctx.logger.error("Please specify a version with `@` when installing from git")
             sys.exit(1)
-
+    ctx.logger.info("Resolving deps for {}".format(package))
     cmd = ("pip download --exists-action w '{0}' "
-           "-d /tmp --no-binary :all: | grep Collecting | cut -d' ' "
-           "-f2 | grep -v {0}".format(package))
+           "-d /tmp --no-binary :all: --find-links {1}"
+           "| grep Collecting | cut -d' ' "
+           "-f2 | grep -v '{0}'".format(package, cfg["PACKAGE_INDEX"]))
     output, _ = run_pip_command(cmd)
-    return output[0].split()
+    deps = output[0].split()
+
+    ctx.logger.info("\tDeps resolved: {}".format(deps))
+
+    for dep in deps:
+        pkg_req = Req.parse(dep)
+        name = pkg_req.unsafe_name
+        specs = pkg_req.specs
+        if name in deps_install.keys():
+            ctx.logger.info("\t{} already processed. Skipping.".format(name))
+            continue
+        deps_install[name] = specs
+        fetch_dependencies(ctx, dep, deps_install)
 
 
 def is_package_installed(ctx, package):
@@ -190,18 +203,23 @@ def install_package(ctx, package):
 @click.argument('package')
 def install(ctx, **kwargs):
     """Install PACKAGE to its own subdirectory under the configured target directory"""
-    ctx.logger.info("Fetching deps for {}".format(kwargs['package']))
-    deps = fetch_dependencies(ctx,kwargs['package'])
 
-    if deps:
-        ctx.logger.info("Installing deps as needed.")
-        for dep in deps:
-            install_package(ctx, dep)
-    else:
-        ctx.logger.info("No deps required.")
+    ctx.logger.info("Fetching deps for {} and all its deps. This may take some time.".format(kwargs['package']))
 
-    # Install the actual package now
-    install_package(ctx, kwargs['package'])
+    deps = {}
+    fetch_dependencies(ctx,kwargs['package'], deps)
+    print deps
+    for package, version in deps.iteritems():
+        ctx.logger.info("Installing {} : {}".format(package, version))
+    # if deps:
+    #     ctx.logger.info("Installing deps as needed.")
+    #     for dep in deps:
+    #         install_package(ctx, dep)
+    # else:
+    #     ctx.logger.info("No deps required.")
+
+    # # Install the actual package now
+    # install_package(ctx, kwargs['package'])
 
 
 @qipcmd.command()
