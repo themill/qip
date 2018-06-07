@@ -180,6 +180,15 @@ def install(ctx, **kwargs):
         name = pkg_req.unsafe_name
         specs = pkg_req.specs
 
+        if not specs:
+            # If the package has no version specified grab the latest one
+            test_cmd = "pip install --ignore-installed '{}=='".format(name)
+            output, ret_code = run_pip_command(test_cmd)
+            match = re.search(r"\(from versions: ((.*))\)", output[1])
+            if match:
+                version = match.group(1).split(", ")[-1]
+                specs = [('==', version)]
+
     version = '_'.join( (ver[0] + ver[1] for ver in specs) )
     filename = os.path.join(cfg["DEP_STORE"], "{}-{}".format(name, version))
     has_dep_file = False
