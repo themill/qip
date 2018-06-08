@@ -37,12 +37,18 @@ def qipcmd(ctx):
 
 
 def set_git_ssh(package):
+    """
+    Replace the gitlab copied prefix with the one for pip
+    """
     if package.startswith("git@gitlab:"):
         package = 'git+ssh://' + package.replace(':', '/')
     return package
 
 
 def has_git_version(package):
+    """
+    Regex to test if a gitlab URL has a version specified
+    """
     m = re.search(r'\.git@.+$', package)
     if m is None:
         return False
@@ -50,6 +56,11 @@ def has_git_version(package):
 
 
 def fetch_dependencies(ctx, package, deps_install):
+    """
+    Recursively fetch dependencies for *package*. Populates the
+    *deps_install* dictionary passed to it with the package name
+    and version specs [name: specs]
+    """
     ctx.logger.info("Resolving deps for {}".format(package))
     cmd = ("pip download --exists-action w '{0}' "
            "-d /tmp --no-binary :all: --find-links {1} --no-cache"
@@ -57,8 +68,6 @@ def fetch_dependencies(ctx, package, deps_install):
            "-f2 | grep -v '{0}'".format(package, cfg["PACKAGE_INDEX"]))
     output, _ = run_pip_command(cmd)
     deps = output[0].split()
-
-    #ctx.logger.info("\tDeps resolved: {}".format(deps))
 
     for dep in deps:
         pkg_req = Req.parse(dep)
@@ -70,16 +79,10 @@ def fetch_dependencies(ctx, package, deps_install):
         deps_install[name] = specs
         fetch_dependencies(ctx, dep, deps_install)
 
-
-def is_installed(package, version):
-    if os.path.exists("{1}/{0}".format(package, cfg["INSTALL_DIR"])):
-        ctx.logger.info("{} already installed".format(package))
-        return True
-    else:
-        return False
-
-
 def run_pip_command(cmd):
+    """
+    Execute the *cmd* using Popen and return (output, returncode) tuple
+    """
     #print "RUNNING: ", cmd
     ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output = ps.communicate()
@@ -87,17 +90,30 @@ def run_pip_command(cmd):
 
 
 def write_deps_to_file(name, specs, deps, filename):
+    """
+    Dump a json representation of the *deps* and *specs* to *filename*
+    Should be used during testing only
+    """
     with open(filename, 'w') as fh:
         json.dump(deps, fh)
 
 
 def read_deps_from_file(name, specs, filename):
+    """
+    Read the deps from *filename* for the given package *name* and *specs*
+    Should be using during testing only
+    """
     with open(filename, 'r') as fh:
         deps = json.load(fh)
     return deps
 
 
 def check_to_download(ctx, package, spec, output):
+    """
+    Confirmation prompt if the requested *package* is not found. Parses
+    *output* to see if packge is missing. Returns *True* if user wishes
+    to download the package, *False* otherwise
+    """
     if output[1].split('\n')[-2].startswith("No matching distribution found for"):
         ctx.logger.warning("{0} not found in package index.".format(package))
         return click.confirm('Do you want to try and download it now?')
@@ -105,6 +121,10 @@ def check_to_download(ctx, package, spec, output):
 
 
 def download_package(ctx, package, spec):
+    """
+    Download *package* with *spec* from Pypi or gitlab. Returns
+    *False* if unable to do so, and *True* if successful.
+    """
     cmd = ("pip download --no-deps --exists-action w "
            "--dest {0} --no-cache --find-links {0}".format(cfg["PACKAGE_INDEX"])
           )
@@ -125,6 +145,11 @@ def download_package(ctx, package, spec):
 
 
 def install_package(ctx, package, version, download=False):
+    """
+    Install a *package* of *version*. If download is *True* will
+    automatically download the package first, otherwise will prompt
+    to download
+    """
     spec = ','.join( (ver[0] + ver[1] for ver in version) )
     ctx.logger.info("Installing {} : {}".format(package, spec))
 
@@ -164,9 +189,9 @@ def install_package(ctx, package, version, download=False):
 @click.argument('package')
 @click.option('--nodeps', is_flag=True, help='Install the specified package without deps')
 @click.option('--download', is_flag=True, help='Download packages without prompting')
+@click.option('--depfile', default=None, help='Use json file to get deps')
 def install(ctx, **kwargs):
     """Install PACKAGE to its own subdirectory under the configured target directory"""
-
     package = set_git_ssh(kwargs['package'])
     if package.startswith("git+ssh://"):
         if not has_git_version(package):
@@ -194,6 +219,9 @@ def install(ctx, **kwargs):
     has_dep_file = False
 
     if not kwargs['nodeps']:
+        if kwargs['depfile']:
+            filename = kwargs['depfile']
+
         if os.path.isfile(filename):
             ctx.logger.info("Found a deps file for this package.")
             if click.confirm('Read deps from it?'):
@@ -232,7 +260,7 @@ def download(ctx, **kwargs):
         sys.exit(1)
 
     package_name = set_git_ssh(kwargs['package'])
-    # Specs are already part of the package_name
+    # Specs are already part of the package_name in this case
     download_package(ctx, package_name, None)
 
 

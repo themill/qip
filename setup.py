@@ -31,6 +31,7 @@ DOC_REQUIRES = [
     "sphinx >= 1.2.2, < 2",
     "sphinx_rtd_theme >= 0.1.6, < 1",
     "lowdown >= 0.1.0, < 2",
+    "sphinx-click>=1.2.0",
 
     # Restricted as 0.1.3 causes failed builds.
     # https://bitbucket.org/birkenfeld/sphinx-contrib/issues/168
@@ -56,7 +57,7 @@ setup(
     author="The Mill",
     packages=find_packages(SOURCE_PATH),
     package_dir={
-        "": "source"
+        "": "source",
     },
     include_package_data=True,
     install_requires=INSTALL_REQUIRES,
