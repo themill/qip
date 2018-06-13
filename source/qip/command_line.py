@@ -28,11 +28,20 @@ class QipContext(object):
 @click.group()
 @click.pass_context
 @click.version_option(version=ver.__version__)
-def qipcmd(ctx):
+@click.option('-v', '--verbose', count=True)
+def qipcmd(ctx, verbose):
     """Install or download Python packages to an isolated location."""
     mlog.configure()
     qctx = QipContext()
     qctx.logger = mlog.Logger(__name__ + ".main")
+    mlog.root.handlers["stderr"].filterer.filterers[0].levels = mlog.levels
+    try:
+        verbosity = mlog.levels[::-1][verbose]
+    except IndexError:
+        verbosity = 'debug'
+
+    mlog.root.handlers["stderr"].filterer.filterers[0].min = verbosity
+
     ctx.obj = qctx
 
 
@@ -66,7 +75,7 @@ def fetch_dependencies(ctx, package, deps_install):
            "-d /tmp --no-binary :all: --find-links {1} --no-cache"
            "| grep Collecting | cut -d' ' "
            "-f2 | grep -v '{0}'".format(package, cfg["PACKAGE_INDEX"]))
-    output, _ = run_pip_command(cmd)
+    output, _ = run_pip_command(cmd, ctx)
     deps = output[0].split()
 
     for dep in deps:
@@ -79,13 +88,14 @@ def fetch_dependencies(ctx, package, deps_install):
         deps_install[name] = specs
         fetch_dependencies(ctx, dep, deps_install)
 
-def run_pip_command(cmd):
+def run_pip_command(cmd, ctx):
     """
     Execute the *cmd* using Popen and return (output, returncode) tuple
     """
-    #print "RUNNING: ", cmd
+    ctx.logger.debug("RUNNING: {}".format(cmd))
     ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output = ps.communicate()
+    ctx.logger.debug("\t\tOUTPUT: {}".format(output))
     return output, ps.returncode
 
 
@@ -133,7 +143,7 @@ def download_package(ctx, package, spec):
         spec = ''
     cmd += " '{}{}'".format(package, spec)
     ctx.logger.info("Downloading {0} {1}".format(package, spec))
-    output, ret_code = run_pip_command(cmd)
+    output, ret_code = run_pip_command(cmd, ctx)
 
     if ret_code != 0:
         ctx.logger.error("Unable to download requested package. Reason from pip below")
@@ -164,7 +174,7 @@ def install_package(ctx, package, version, download=False):
            " '{2}{3}'".format(temp_dir, cfg["PACKAGE_INDEX"], package, spec)
           )
 
-    output, ret_code = run_pip_command(cmd)
+    output, ret_code = run_pip_command(cmd, ctx)
     if ret_code == 1:
         if not download and not check_to_download(ctx, package, spec, output):
             ctx.logger.warning("Not downloading {}. Skipping installation.".format(package))
@@ -182,6 +192,7 @@ def install_package(ctx, package, version, download=False):
                 os.rename(temp_dir, "{0}/{1}".format(cfg["INSTALL_DIR"], m.group(1)))
             except OSError:
                 shutil.rmtree(temp_dir)
+    return output, ret_code
 
 
 @qipcmd.command()
@@ -207,8 +218,9 @@ def install(ctx, **kwargs):
 
         if not specs:
             # If the package has no version specified grab the latest one
-            test_cmd = "pip install --ignore-installed '{}=='".format(name)
-            output, ret_code = run_pip_command(test_cmd)
+            test_cmd = ("pip install --ignore-installed --find-links"
+                        " {0} '{1}=='".format(cfg["PACKAGE_INDEX"], name))
+            output, ret_code = run_pip_command(test_cmd, ctx)
             match = re.search(r"\(from versions: ((.*))\)", output[1])
             if match:
                 version = match.group(1).split(", ")[-1]
@@ -247,7 +259,9 @@ def install(ctx, **kwargs):
         write_deps_to_file(name, specs, deps, filename)
 
     for package, version in deps.iteritems():
-        install_package(ctx, package, version, kwargs['download'])
+        output, ret_code = install_package(ctx, package, version, kwargs['download'])
+        if ret_code == 0:
+            ctx.logger.info(output[0].split('\n')[-2])
 
 
 @qipcmd.command()
