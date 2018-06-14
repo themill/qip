@@ -35,6 +35,7 @@ def qipcmd(ctx, verbose):
     qctx = QipContext()
     qctx.logger = mlog.Logger(__name__ + ".main")
     mlog.root.handlers["stderr"].filterer.filterers[0].levels = mlog.levels
+    verbose += 2
     try:
         verbosity = mlog.levels[::-1][verbose]
     except IndexError:
@@ -104,6 +105,11 @@ def write_deps_to_file(name, specs, deps, filename):
     Dump a json representation of the *deps* and *specs* to *filename*
     Should be used during testing only
     """
+    try:
+        os.path.mkdirs(os.path.basename(filename))
+    except:
+        pass
+
     with open(filename, 'w') as fh:
         json.dump(deps, fh)
 
