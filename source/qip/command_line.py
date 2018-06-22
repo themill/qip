@@ -277,7 +277,7 @@ def install(ctx, **kwargs):
 @click.argument('package')
 def download(ctx, **kwargs):
     """Download PACKAGE to its own subdirectory under the configured target directory"""
-    if not has_git_version(kwargs['package']):
+    if kwargs['package'].startswith("git@gitlab:") and not has_git_version(kwargs['package']):
         ctx.printer.error("Please specify a version with `@` when installing from git")
         sys.exit(1)
 
