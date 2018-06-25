@@ -38,13 +38,14 @@ def qipcmd(ctx, verbose):
     qctx.printer = Printer(verbose)
     qctx.logger = mlog.Logger(__name__ + ".main")
     mlog.root.handlers["stderr"].filterer.filterers[0].levels = mlog.levels
-    verbose += 2
+    verbose += 1
     try:
         verbosity = mlog.levels[::-1][verbose]
     except IndexError:
         verbosity = 'debug'
 
     mlog.root.handlers["stderr"].filterer.filterers[0].min = verbosity
+    qctx.target = None
 
     ctx.obj = qctx
 
@@ -78,7 +79,7 @@ def fetch_dependencies(ctx, package, deps_install):
     cmd = ("pip download --exists-action w '{0}' "
            "-d /tmp --no-binary :all: --find-links {1} --no-cache"
            "| grep Collecting | cut -d' ' "
-           "-f2 | grep -v '{0}'".format(package, cfg["PACKAGE_INDEX"]))
+           "-f2 | grep -v '{0}'".format(package, ctx.target["package_idx"]))
     output, _ = run_pip_command(cmd, ctx)
     deps = output[0].split()
 
@@ -146,8 +147,9 @@ def download_package(ctx, pip_run, package, spec):
     Download *package* with *spec* from Pypi or gitlab. Returns
     *False* if unable to do so, and *True* if successful.
     """
-    cmd = ("pip download --no-deps --exists-action w "
-           "--dest {0} --no-cache --find-links {0}".format(cfg["PACKAGE_INDEX"])
+
+    cmd = ("pip download --no-deps --exists-action a "
+           "--dest {0} --no-cache --find-links {0}".format(ctx.target["package_idx"])
           )
 
     if not spec:
@@ -156,11 +158,18 @@ def download_package(ctx, pip_run, package, spec):
     ctx.printer.status("Downloading {0} {1}".format(package, spec))
     output, stderr, ret_code = pip_run.run_remote_pip(cmd)
 
+    if output.split('\r')[2].strip().startswith('File was already downloaded'):
+        ctx.printer.info("Package already downloaded: {0}".
+                         format(output[0].split('\n')[2].strip()))
+        ctx.printer.status("Download skipped.")
+        return True
+
     if ret_code != 0:
         ctx.printer.error("Unable to download requested package. Reason from pip below")
         ctx.printer.error(stderr)
         ctx.printer.warning("If this is a package from Gitlab you should download it first.")
         return False
+
     ctx.printer.status("Package {0} {1} downloaded.".format(package, spec))
     return True
 
@@ -174,18 +183,18 @@ def install_package(ctx, pip_run, package, version, download=False):
     spec = ','.join( (ver[0] + ver[1] for ver in version) )
     ctx.printer.status("Installing {} : {}".format(package, spec))
 
-    try:
-        temp_dir = pip_run.mkdtemp(dir=cfg["INSTALL_DIR"])
-    except OSError:
+    temp_dir, exit_status = pip_run.mkdtemp()
+    if exit_status != 0:
         ctx.printer.error("Unable to create temp directory")
         sys.exit(1)
 
     cmd = ("pip install --ignore-installed --no-deps --prefix {0}"
            " --no-index --no-cache-dir --find-links {1}"
-           " '{2}{3}'".format(temp_dir, cfg["PACKAGE_INDEX"], package, spec)
+           " '{2}{3}'".format(temp_dir, ctx.target['package_idx'], package, spec)
           )
 
     output, stderr, ret_code = pip_run.run_remote_pip(cmd)
+
     if ret_code == 1:
         if not download and not check_to_download(ctx, package, spec, output):
             ctx.printer.warning("Not downloading {}. Skipping installation.".format(package))
@@ -196,13 +205,17 @@ def install_package(ctx, pip_run, package, version, download=False):
                 return
             install_package(ctx, pip_run, package, version)
     else:
-        print "==================== ", output
         lastline = output.split('\r')[-2].strip()
         m = re.search(r'(\S+-[\d\.]+)$', lastline)
         if m:
+            if os.path.isdir("{0}/{1}".format(ctx.target['install_dir'], m.group(1))):
+                ctx.printer.warning("Package {} already exists in index.".format(m.group(1)))
+                if not click.confirm("Overwrite it?"):
+                    pip_run.rmtree(temp_dir)
+                    return
             try:
                 pip_run.rename_dir(temp_dir,
-                                   "{0}/{1}".format(cfg["INSTALL_DIR"], m.group(1)))
+                                   "{0}/{1}".format(ctx.target['install_dir'], m.group(1)))
             except OSError:
                 pip_run.rmtree(temp_dir)
     return output, ret_code
@@ -220,6 +233,8 @@ def install_package(ctx, pip_run, package, version, download=False):
 def install(ctx, **kwargs):
     """Install PACKAGE to its own subdirectory under the configured target directory"""
 
+    ctx.target = cfg["TARGETS"][kwargs["target"]]
+
     package = set_git_ssh(kwargs['package'])
     if package.startswith("git+ssh://"):
         if not has_git_version(package):
@@ -236,7 +251,7 @@ def install(ctx, **kwargs):
         if not specs:
             # If the package has no version specified grab the latest one
             test_cmd = ("pip install --ignore-installed --find-links"
-                        " {0} '{1}=='".format(cfg["PACKAGE_INDEX"], name))
+                        " {0} '{1}=='".format(ctx.target["package_idx"], name))
             output, ret_code = run_pip_command(test_cmd, ctx)
             match = re.search(r"\(from versions: ((.*))\)", output[1])
             if match:
@@ -247,6 +262,7 @@ def install(ctx, **kwargs):
     filename = os.path.join(cfg["DEP_STORE"], "{}-{}".format(name, version))
     has_dep_file = False
 
+    deps = {}
     if not kwargs['nodeps']:
         if kwargs['depfile']:
             filename = kwargs['depfile']
@@ -258,12 +274,12 @@ def install(ctx, **kwargs):
                 deps = read_deps_from_file(name, specs, filename)
                 has_dep_file = True
             else:
-                deps = {}
-                ctx.printer.status("Fetching deps for {} and all its deps. This may take some time.".format(kwargs['package']))
+                ctx.printer.status("Fetching deps for {} and all its deps. "
+                                   "This may take some time.".format(kwargs['package']))
                 fetch_dependencies(ctx, package, deps)
         else:
-            deps = {}
-            ctx.printer.status("Fetching deps for {} and all its deps. This may take some time.".format(kwargs['package']))
+            ctx.printer.status("Fetching deps for {} and all its deps. "
+                               "This may take some time.".format(kwargs['package']))
             fetch_dependencies(ctx, package, deps)
 
     deps[name] = specs
@@ -275,11 +291,11 @@ def install(ctx, **kwargs):
     if not has_dep_file:
         write_deps_to_file(name, specs, deps, filename)
 
-    pip_run = RemoteCmd(ctx, cfg, kwargs['target'], kwargs['password'])
+    pip_run = RemoteCmd(ctx, cfg[kwargs["target"].upper()], kwargs['password'])
     for package, version in deps.iteritems():
         output, ret_code = install_package(ctx, pip_run, package, version, kwargs['download'])
         if ret_code == 0:
-            ctx.printer.info(output[0].split('\n')[-2])
+            ctx.printer.info(output.split('\r')[-2])
 
 
 @qipcmd.command()
@@ -288,12 +304,14 @@ def install(ctx, **kwargs):
 @click.option('--password', prompt="Your password", hide_input=True)
 def download(ctx, **kwargs):
     """Download PACKAGE to its own subdirectory under the configured target directory"""
-    if kwargs['package'].startswith("git@gitlab:") and not has_git_version(kwargs['package']):
+    if (kwargs['package'].startswith("git@gitlab:") and
+            not has_git_version(kwargs['package'])):
         ctx.printer.error("Please specify a version with `@` when installing from git")
         sys.exit(1)
 
     package_name = set_git_ssh(kwargs['package'])
-    pip_run = RemoteCmd(ctx, cfg, "centos65", kwargs['password'])
+    ctx.target = cfg["CENTOS65"]
+    pip_run = RemoteCmd(ctx, ctx.target, kwargs['password'])
 
     # Specs are already part of the package_name in this case
     download_package(ctx, pip_run, package_name, None)
