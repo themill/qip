@@ -9,6 +9,7 @@ import sys
 import tempfile
 import shutil
 import json
+import signal
 
 import config
 from printer import Printer
@@ -135,7 +136,6 @@ def check_to_download(ctx, package, spec, output):
     *output* to see if packge is missing. Returns *True* if user wishes
     to download the package, *False* otherwise
     """
-    print output.split('\n')
     if output.split('\n')[-2].startswith("No matching distribution found for"):
         ctx.printer.warning("{0} not found in package index.".format(package))
         return click.confirm('Do you want to try and download it now?')
@@ -183,42 +183,46 @@ def install_package(ctx, pip_run, package, version, download=False):
     spec = ','.join( (ver[0] + ver[1] for ver in version) )
     ctx.printer.status("Installing {} : {}".format(package, spec))
 
-    temp_dir, exit_status = pip_run.mkdtemp()
-    if exit_status != 0:
-        ctx.printer.error("Unable to create temp directory")
-        sys.exit(1)
+    # Need this to catch hard exists and clean up temp dir
+    try:
+        temp_dir, exit_status = pip_run.mkdtemp()
+        if exit_status != 0:
+            ctx.printer.error("Unable to create temp directory")
+            sys.exit(1)
 
-    cmd = ("pip install --ignore-installed --no-deps --prefix {0}"
-           " --no-index --no-cache-dir --find-links {1}"
-           " '{2}{3}'".format(temp_dir, ctx.target['package_idx'], package, spec)
-          )
+        cmd = ("pip install --ignore-installed --no-deps --prefix {0}"
+            " --no-index --no-cache-dir --find-links {1}"
+            " '{2}{3}'".format(temp_dir, ctx.target['package_idx'], package, spec)
+            )
 
-    output, stderr, ret_code = pip_run.run_remote_pip(cmd)
+        output, stderr, ret_code = pip_run.run_remote_pip(cmd)
 
-    if ret_code == 1:
-        if not download and not check_to_download(ctx, package, spec, output):
-            ctx.printer.warning("Not downloading {}. Skipping installation.".format(package))
-            pip_run.rmtree(temp_dir)
-        else:
-            pip_run.rmtree(temp_dir)
-            if not download_package(ctx, pip_run, package, spec):
-                return
-            install_package(ctx, pip_run, package, version)
-    else:
-        lastline = output.split('\r')[-2].strip()
-        m = re.search(r'(\S+-[\d\.]+)$', lastline)
-        if m:
-            if os.path.isdir("{0}/{1}".format(ctx.target['install_dir'], m.group(1))):
-                ctx.printer.warning("Package {} already exists in index.".format(m.group(1)))
-                if not click.confirm("Overwrite it?"):
+        if ret_code == 1:
+            if not download and not check_to_download(ctx, package, spec, output):
+                ctx.printer.warning("Not downloading {}. Skipping installation.".format(package))
+            else:
+                if not download_package(ctx, pip_run, package, spec):
                     pip_run.rmtree(temp_dir)
-                    return
-            try:
-                pip_run.rename_dir(temp_dir,
-                                   "{0}/{1}".format(ctx.target['install_dir'], m.group(1)))
-            except OSError:
-                pip_run.rmtree(temp_dir)
-    return output, ret_code
+                    return "", 1
+                install_package(ctx, pip_run, package, version)
+        else:
+            lastline = output.split('\r')[-2].strip()
+            m = re.search(r'(\S+-[\d\.]+)$', lastline)
+            if m:
+                if os.path.isdir("{0}/{1}".format(ctx.target['install_dir'], m.group(1))):
+                    ctx.printer.warning("Package {} already exists in index."
+                                        .format(m.group(1)))
+                    if not click.confirm("Overwrite it?"):
+                        pip_run.rmtree(temp_dir)
+                        return "", 1
+                try:
+                    pip_run.rename_dir(temp_dir,
+                                    "{0}/{1}".format(ctx.target['install_dir'], m.group(1)))
+                except OSError:
+                    pip_run.rmtree(temp_dir)
+        return output, ret_code
+    finally:
+        pip_run.rmtree(temp_dir)
 
 
 @qipcmd.command()
@@ -229,7 +233,8 @@ def install_package(ctx, pip_run, package, version, download=False):
 @click.option('--depfile', default=None, help='Use json file to get deps')
 @click.option('--target', '-t', prompt="Target to install to", default='centos65',
               type=click.Choice(cfg['TARGETS'].keys()))
-@click.option('--password', prompt="Your password", hide_input=True)
+@click.option('--password', prompt="Your password [leave blank if using ssh keys]",
+              default="", hide_input=True)
 def install(ctx, **kwargs):
     """Install PACKAGE to its own subdirectory under the configured target directory"""
 
