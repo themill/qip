@@ -2,7 +2,6 @@
 import click
 import subprocess
 import _version as ver
-import mlog
 import re
 import os
 import sys
@@ -21,6 +20,7 @@ cfg = config.Config()
 cfg.from_pyfile("configs/base.py")
 cfg.from_envvar("QIP_CONFIG", silent=True)
 
+print cfg
 
 class QipContext(object):
     logger = None
@@ -34,18 +34,9 @@ class QipContext(object):
 @click.option('-v', '--verbose', count=True)
 def qipcmd(ctx, verbose):
     """Install or download Python packages to an isolated location."""
-    mlog.configure()
     qctx = QipContext()
     qctx.printer = Printer(verbose)
-    qctx.logger = mlog.Logger(__name__ + ".main")
-    mlog.root.handlers["stderr"].filterer.filterers[0].levels = mlog.levels
     verbose += 1
-    try:
-        verbosity = mlog.levels[::-1][verbose]
-    except IndexError:
-        verbosity = 'debug'
-
-    mlog.root.handlers["stderr"].filterer.filterers[0].min = verbosity
     qctx.target = None
 
     ctx.obj = qctx
@@ -307,7 +298,10 @@ def install(ctx, **kwargs):
 @qipcmd.command()
 @click.pass_obj
 @click.argument('package')
-@click.option('--password', prompt="Your password", hide_input=True)
+@click.option('--password', prompt="Your password [leave blank if using ssh keys]",
+              default="", hide_input=True)
+@click.option('--target', '-t', prompt="Target to download for", default='centos72',
+              type=click.Choice(cfg['TARGETS'].keys()))
 def download(ctx, **kwargs):
     """Download PACKAGE to its own subdirectory under the configured target directory"""
     if (kwargs['package'].startswith("git@gitlab:") and
@@ -316,7 +310,7 @@ def download(ctx, **kwargs):
         sys.exit(1)
 
     package_name = set_git_ssh(kwargs['package'])
-    ctx.target = cfg["CENTOS65"]
+    ctx.target = cfg["TARGETS"][kwargs["target"]]
     pip_run = RemoteCmd(ctx, ctx.target, kwargs['password'])
 
     # Specs are already part of the package_name in this case
