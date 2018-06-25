@@ -91,6 +91,7 @@ def fetch_dependencies(ctx, package, deps_install):
         deps_install[name] = specs
         fetch_dependencies(ctx, dep, deps_install)
 
+
 def run_pip_command(cmd, ctx):
     """
     Execute the *cmd* using Popen and return (output, returncode) tuple
@@ -143,7 +144,7 @@ def download_package(ctx, package, spec):
     Download *package* with *spec* from Pypi or gitlab. Returns
     *False* if unable to do so, and *True* if successful.
     """
-    cmd = ("pip download --no-deps --exists-action w "
+    cmd = ("pip download --no-deps --exists-action a "
            "--dest {0} --no-cache --find-links {0}".format(cfg["PACKAGE_INDEX"])
           )
 
@@ -152,12 +153,18 @@ def download_package(ctx, package, spec):
     cmd += " '{}{}'".format(package, spec)
     ctx.printer.status("Downloading {0} {1}".format(package, spec))
     output, ret_code = run_pip_command(cmd, ctx)
+    if output[0].split('\n')[2].strip().startswith('File was already downloaded'):
+        ctx.printer.info("Package already downloaded: {0}".
+                         format(output[0].split('\n')[2].strip()))
+        ctx.printer.status("Download skipped.")
+        return True
 
     if ret_code != 0:
         ctx.printer.error("Unable to download requested package. Reason from pip below")
         ctx.printer.error(output[1])
         ctx.printer.warning("If this is a package from Gitlab you should download it first.")
         return False
+
     ctx.printer.status("Package {0} {1} downloaded.".format(package, spec))
     return True
 
@@ -196,6 +203,11 @@ def install_package(ctx, package, version, download=False):
         lastline = output[0].split('\n')[-2].strip()
         m = re.search(r'(\S+-[\d\.]+)$', lastline)
         if m:
+            if os.path.isdir("{0}/{1}".format(cfg["INSTALL_DIR"], m.group(1))):
+                ctx.printer.warning("Pacakge {} already exists in index.".format(m.group(1)))
+                if not click.confirm("Overwrite it?"):
+                    shutil.rmtree(temp_dir)
+                    return
             try:
                 os.rename(temp_dir, "{0}/{1}".format(cfg["INSTALL_DIR"], m.group(1)))
             except OSError:
@@ -250,11 +262,13 @@ def install(ctx, **kwargs):
                 has_dep_file = True
             else:
                 deps = {}
-                ctx.printer.status("Fetching deps for {} and all its deps. This may take some time.".format(kwargs['package']))
+                ctx.printer.status("Fetching deps for {} and all its deps. "
+                                   "This may take some time.".format(kwargs['package']))
                 fetch_dependencies(ctx, package, deps)
         else:
             deps = {}
-            ctx.printer.status("Fetching deps for {} and all its deps. This may take some time.".format(kwargs['package']))
+            ctx.printer.status("Fetching deps for {} and all its deps. "
+                               "This may take some time.".format(kwargs['package']))
             fetch_dependencies(ctx, package, deps)
 
     deps[name] = specs
@@ -277,7 +291,8 @@ def install(ctx, **kwargs):
 @click.argument('package')
 def download(ctx, **kwargs):
     """Download PACKAGE to its own subdirectory under the configured target directory"""
-    if kwargs['package'].startswith("git@gitlab:") and not has_git_version(kwargs['package']):
+    if (kwargs['package'].startswith("git@gitlab:") and
+            not has_git_version(kwargs['package'])):
         ctx.printer.error("Please specify a version with `@` when installing from git")
         sys.exit(1)
 
