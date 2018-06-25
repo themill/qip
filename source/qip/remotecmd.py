@@ -56,17 +56,17 @@ class RemoteCmd(object):
         ansi_escape = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]',
                                  re.IGNORECASE | re.MULTILINE)
         outlines = ssh_stdout.readlines()
-        stdout = ''.join(outlines)
+        stdout = u''.join(outlines)
         stdout = ansi_escape.sub('', stdout)
 
         stderr = ssh_stderr.readlines()
-        stderr = ''.join(outlines)
+        stderr = u''.join(outlines)
         stderr = ansi_escape.sub('', stderr)
 
         exit_status = ssh_stdout.channel.recv_exit_status()
         ssh.close()
 
-        self.ctx.printer.debug("Command returned: \n"
+        self.ctx.printer.debug(u"Command returned: \n"
                                "STDOUT: {0}\n"
                                "STDERR: {1}\n"
                                "Exit Code: {2}".format(

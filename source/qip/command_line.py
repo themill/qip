@@ -182,7 +182,7 @@ def install_package(ctx, pip_run, package, version, download=False):
     """
     spec = ','.join( (ver[0] + ver[1] for ver in version) )
     ctx.printer.status("Installing {} : {}".format(package, spec))
-
+    temp_dir = None
     # Need this to catch hard exists and clean up temp dir
     try:
         temp_dir, exit_status = pip_run.mkdtemp()
@@ -222,7 +222,8 @@ def install_package(ctx, pip_run, package, version, download=False):
                     pip_run.rmtree(temp_dir)
         return output, ret_code
     finally:
-        pip_run.rmtree(temp_dir)
+        if temp_dir:
+            pip_run.rmtree(temp_dir)
 
 
 @qipcmd.command()
@@ -231,7 +232,7 @@ def install_package(ctx, pip_run, package, version, download=False):
 @click.option('--nodeps', '-n', is_flag=True, help='Install the specified package without deps')
 @click.option('--download', '-d', is_flag=True, help='Download packages without prompting')
 @click.option('--depfile', default=None, help='Use json file to get deps')
-@click.option('--target', '-t', prompt="Target to install to", default='centos65',
+@click.option('--target', '-t', prompt="Target to install to", default='centos72',
               type=click.Choice(cfg['TARGETS'].keys()))
 @click.option('--password', prompt="Your password [leave blank if using ssh keys]",
               default="", hide_input=True)
