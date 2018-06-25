@@ -141,7 +141,7 @@ def check_to_download(ctx, package, spec, output):
     return False
 
 
-def download_package(ctx, package, spec):
+def download_package(ctx, pip_run, package, spec):
     """
     Download *package* with *spec* from Pypi or gitlab. Returns
     *False* if unable to do so, and *True* if successful.
@@ -154,11 +154,11 @@ def download_package(ctx, package, spec):
         spec = ''
     cmd += " '{}{}'".format(package, spec)
     ctx.printer.status("Downloading {0} {1}".format(package, spec))
-    output, ret_code = run_pip_command(cmd, ctx)
+    output, stderr, ret_code = pip_run.run_remote_pip(cmd)
 
     if ret_code != 0:
         ctx.printer.error("Unable to download requested package. Reason from pip below")
-        ctx.printer.error(output[1])
+        ctx.printer.error(stderr)
         ctx.printer.warning("If this is a package from Gitlab you should download it first.")
         return False
     ctx.printer.status("Package {0} {1} downloaded.".format(package, spec))
@@ -185,26 +185,26 @@ def install_package(ctx, pip_run, package, version, download=False):
            " '{2}{3}'".format(temp_dir, cfg["PACKAGE_INDEX"], package, spec)
           )
 
-    output, ret_code = pip_run.run_remote_pip(cmd)
+    output, stderr, ret_code = pip_run.run_remote_pip(cmd)
     if ret_code == 1:
         if not download and not check_to_download(ctx, package, spec, output):
             ctx.printer.warning("Not downloading {}. Skipping installation.".format(package))
-            shutil.rmtree(temp_dir)
+            pip_run.rmtree(temp_dir)
         else:
-            shutil.rmtree(temp_dir)
-            if not download_package(ctx, package, spec):
+            pip_run.rmtree(temp_dir)
+            if not download_package(ctx, pip_run, package, spec):
                 return
-            install_package(ctx, package, version)
+            install_package(ctx, pip_run, package, version)
     else:
         print "==================== ", output
-        lastline = output[0].split('\n')[-2].strip()
+        lastline = output.split('\r')[-2].strip()
         m = re.search(r'(\S+-[\d\.]+)$', lastline)
         if m:
             try:
                 pip_run.rename_dir(temp_dir,
                                    "{0}/{1}".format(cfg["INSTALL_DIR"], m.group(1)))
             except OSError:
-                shutil.rmtree(temp_dir)
+                pip_run.rmtree(temp_dir)
     return output, ret_code
 
 
@@ -214,7 +214,7 @@ def install_package(ctx, pip_run, package, version, download=False):
 @click.option('--nodeps', '-n', is_flag=True, help='Install the specified package without deps')
 @click.option('--download', '-d', is_flag=True, help='Download packages without prompting')
 @click.option('--depfile', default=None, help='Use json file to get deps')
-@click.option('--target', '-t', prompt="Target to install to",
+@click.option('--target', '-t', prompt="Target to install to", default='centos65',
               type=click.Choice(cfg['TARGETS'].keys()))
 @click.option('--password', prompt="Your password", hide_input=True)
 def install(ctx, **kwargs):
@@ -285,6 +285,7 @@ def install(ctx, **kwargs):
 @qipcmd.command()
 @click.pass_obj
 @click.argument('package')
+@click.option('--password', prompt="Your password", hide_input=True)
 def download(ctx, **kwargs):
     """Download PACKAGE to its own subdirectory under the configured target directory"""
     if kwargs['package'].startswith("git@gitlab:") and not has_git_version(kwargs['package']):
@@ -292,8 +293,10 @@ def download(ctx, **kwargs):
         sys.exit(1)
 
     package_name = set_git_ssh(kwargs['package'])
+    pip_run = RemoteCmd(ctx, cfg, "centos65", kwargs['password'])
+
     # Specs are already part of the package_name in this case
-    download_package(ctx, package_name, None)
+    download_package(ctx, pip_run, package_name, None)
 
 
 def main(arguments=None):
