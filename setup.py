@@ -25,7 +25,8 @@ with open(
 # Compute dependencies.
 INSTALL_REQUIRES = [
     "mlog >= 0.0.6, < 1",
-    "click >= 6.7"
+    "click >= 6.7",
+    "paramiko >= 1.16, < 3"
 ]
 DOC_REQUIRES = [
     "sphinx >= 1.2.2, < 2",

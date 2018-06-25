@@ -14,6 +14,7 @@ import config
 from printer import Printer
 from pkg_resources import Requirement as Req
 from distutils.dir_util import copy_tree
+from remotecmd import RemoteCmd
 
 cfg = config.Config()
 cfg.from_pyfile("configs/base.py")
@@ -91,6 +92,7 @@ def fetch_dependencies(ctx, package, deps_install):
         deps_install[name] = specs
         fetch_dependencies(ctx, dep, deps_install)
 
+
 def run_pip_command(cmd, ctx):
     """
     Execute the *cmd* using Popen and return (output, returncode) tuple
@@ -132,7 +134,8 @@ def check_to_download(ctx, package, spec, output):
     *output* to see if packge is missing. Returns *True* if user wishes
     to download the package, *False* otherwise
     """
-    if output[1].split('\n')[-2].startswith("No matching distribution found for"):
+    print output.split('\n')
+    if output.split('\n')[-2].startswith("No matching distribution found for"):
         ctx.printer.warning("{0} not found in package index.".format(package))
         return click.confirm('Do you want to try and download it now?')
     return False
@@ -162,7 +165,7 @@ def download_package(ctx, package, spec):
     return True
 
 
-def install_package(ctx, package, version, download=False):
+def install_package(ctx, pip_run, package, version, download=False):
     """
     Install a *package* of *version*. If download is *True* will
     automatically download the package first, otherwise will prompt
@@ -172,7 +175,7 @@ def install_package(ctx, package, version, download=False):
     ctx.printer.status("Installing {} : {}".format(package, spec))
 
     try:
-        temp_dir = tempfile.mkdtemp(dir=cfg["INSTALL_DIR"])
+        temp_dir = pip_run.mkdtemp(dir=cfg["INSTALL_DIR"])
     except OSError:
         ctx.printer.error("Unable to create temp directory")
         sys.exit(1)
@@ -182,7 +185,7 @@ def install_package(ctx, package, version, download=False):
            " '{2}{3}'".format(temp_dir, cfg["PACKAGE_INDEX"], package, spec)
           )
 
-    output, ret_code = run_pip_command(cmd, ctx)
+    output, ret_code = pip_run.run_remote_pip(cmd)
     if ret_code == 1:
         if not download and not check_to_download(ctx, package, spec, output):
             ctx.printer.warning("Not downloading {}. Skipping installation.".format(package))
@@ -193,11 +196,13 @@ def install_package(ctx, package, version, download=False):
                 return
             install_package(ctx, package, version)
     else:
+        print "==================== ", output
         lastline = output[0].split('\n')[-2].strip()
         m = re.search(r'(\S+-[\d\.]+)$', lastline)
         if m:
             try:
-                os.rename(temp_dir, "{0}/{1}".format(cfg["INSTALL_DIR"], m.group(1)))
+                pip_run.rename_dir(temp_dir,
+                                   "{0}/{1}".format(cfg["INSTALL_DIR"], m.group(1)))
             except OSError:
                 shutil.rmtree(temp_dir)
     return output, ret_code
@@ -206,11 +211,15 @@ def install_package(ctx, package, version, download=False):
 @qipcmd.command()
 @click.pass_obj
 @click.argument('package')
-@click.option('--nodeps', is_flag=True, help='Install the specified package without deps')
-@click.option('--download', is_flag=True, help='Download packages without prompting')
+@click.option('--nodeps', '-n', is_flag=True, help='Install the specified package without deps')
+@click.option('--download', '-d', is_flag=True, help='Download packages without prompting')
 @click.option('--depfile', default=None, help='Use json file to get deps')
+@click.option('--target', '-t', prompt="Target to install to",
+              type=click.Choice(cfg['TARGETS'].keys()))
+@click.option('--password', prompt="Your password", hide_input=True)
 def install(ctx, **kwargs):
     """Install PACKAGE to its own subdirectory under the configured target directory"""
+
     package = set_git_ssh(kwargs['package'])
     if package.startswith("git+ssh://"):
         if not has_git_version(package):
@@ -266,8 +275,9 @@ def install(ctx, **kwargs):
     if not has_dep_file:
         write_deps_to_file(name, specs, deps, filename)
 
+    pip_run = RemoteCmd(ctx, cfg, kwargs['target'], kwargs['password'])
     for package, version in deps.iteritems():
-        output, ret_code = install_package(ctx, package, version, kwargs['download'])
+        output, ret_code = install_package(ctx, pip_run, package, version, kwargs['download'])
         if ret_code == 0:
             ctx.printer.info(output[0].split('\n')[-2])
 
