@@ -267,7 +267,7 @@ def install(ctx, **kwargs):
     version = '_'.join( (ver[0] + ver[1] for ver in specs) )
     filename = os.path.join(cfg["DEP_STORE"], "{}-{}".format(name, version))
     has_dep_file = False
-
+    # TODO: Remove depfile when out of alpha. It's not a reliable mechanism
     deps = {}
     if not kwargs['nodeps']:
         if kwargs['depfile']:

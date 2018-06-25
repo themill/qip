@@ -53,6 +53,7 @@ class RemoteCmd(object):
         self.ctx.printer.debug("Running {0} on {1}".format(cmd, self.target["server"]))
         ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(cmd, get_pty=True)
 
+        # Strip shell colour code characters
         ansi_escape = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]',
                                  re.IGNORECASE | re.MULTILINE)
         outlines = ssh_stdout.readlines()
