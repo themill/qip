@@ -57,7 +57,7 @@ def has_git_version(package):
     return True
 
 
-def fetch_dependencies(ctx, package, deps_install):
+def fetch_dependencies(ctx, package, deps_install, pip_run):
     """
     Recursively fetch dependencies for *package*. Populates the
     *deps_install* dictionary passed to it with the package name
@@ -68,8 +68,8 @@ def fetch_dependencies(ctx, package, deps_install):
            "-d /tmp --no-binary :all: --find-links {1} --no-cache"
            "| grep Collecting | cut -d' ' "
            "-f2 | grep -v '{0}'".format(package, ctx.target["package_idx"]))
-    output, _ = run_pip_command(cmd, ctx)
-    deps = output[0].split()
+    output, stderr, _ = pip_run.run_pip(cmd)
+    deps = output.split()
 
     for dep in deps:
         pkg_req = Req.parse(dep)
@@ -79,18 +79,7 @@ def fetch_dependencies(ctx, package, deps_install):
             ctx.printer.info("\tSkipping {}. Already processed. ".format(name))
             continue
         deps_install[name] = specs
-        fetch_dependencies(ctx, dep, deps_install)
-
-
-def run_pip_command(cmd, ctx):
-    """
-    Execute the *cmd* using Popen and return (output, returncode) tuple
-    """
-    ctx.printer.debug("RUNNING: {}".format(cmd))
-    ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    output = ps.communicate()
-    ctx.printer.debug("\t\tOUTPUT: {}".format(output))
-    return output, ps.returncode
+        fetch_dependencies(ctx, dep, deps_install, pip_run)
 
 
 def write_deps_to_file(name, specs, deps, filename):
@@ -196,6 +185,8 @@ def install(ctx, **kwargs):
 
     ctx.target = cfg["TARGETS"][kwargs["target"]]
 
+    pip_run = CmdRunner(ctx, cfg["TARGETS"][kwargs["target"]], kwargs['password'])
+
     package = set_git_ssh(kwargs['package'])
     if package.startswith("git+ssh://"):
         if not has_git_version(package):
@@ -213,7 +204,7 @@ def install(ctx, **kwargs):
             # If the package has no version specified grab the latest one
             test_cmd = ("pip install --ignore-installed --find-links"
                         " {0} '{1}=='".format(ctx.target["package_idx"], name))
-            output, ret_code = run_pip_command(test_cmd, ctx)
+            output, stderr, ret_code = pip_run.run_pip(test_cmd)
             match = re.search(r"\(from versions: ((.*))\)", output[1])
             if match:
                 version = match.group(1).split(", ")[-1]
@@ -237,11 +228,11 @@ def install(ctx, **kwargs):
             else:
                 ctx.printer.status("Fetching deps for {} and all its deps. "
                                    "This may take some time.".format(kwargs['package']))
-                fetch_dependencies(ctx, package, deps)
+                fetch_dependencies(ctx, package, deps, pip_run)
         else:
             ctx.printer.status("Fetching deps for {} and all its deps. "
                                "This may take some time.".format(kwargs['package']))
-            fetch_dependencies(ctx, package, deps)
+            fetch_dependencies(ctx, package, deps, pip_run)
 
     deps[name] = specs
 
@@ -252,7 +243,7 @@ def install(ctx, **kwargs):
     if not has_dep_file:
         write_deps_to_file(name, specs, deps, filename)
 
-    pip_run = CmdRunner(ctx, cfg["TARGETS"][kwargs["target"]], kwargs['password'])
+
     for package, version in deps.iteritems():
         output, ret_code = install_package(ctx, pip_run, package, version, kwargs['download'])
         if ret_code == 0:
