@@ -114,7 +114,7 @@ class Qip(object):
             output, stderr, ret_code = self.runner.run_pip(cmd)
 
             if ret_code == 1:
-                if not download and not self.check_to_download(package, stderr):
+                if not self.check_to_download(package, stderr, download):
                     self.ctx.printer.warning("Not downloading {}. "
                                              "Skipping installation.".format(package))
                 else:
@@ -130,7 +130,7 @@ class Qip(object):
                                                       m.group(1))):
                         self.ctx.printer.warning("Package {} already exists in index."
                                                  .format(m.group(1)))
-                        if not click.confirm("Overwrite it?"):
+                        if not self.ctx.yestoall and not click.confirm("Overwrite it?"):
                             self.runner.rmtree(temp_dir)
                             return "", 1
                     try:
@@ -143,7 +143,7 @@ class Qip(object):
             if temp_dir:
                 self.runner.rmtree(temp_dir)
 
-    def check_to_download(self, package, output):
+    def check_to_download(self, package, output, download):
         """
         Confirmation prompt if the requested *package* is not found. Parses
         *output* to see if packge is missing. Returns *True* if user wishes
@@ -151,5 +151,7 @@ class Qip(object):
         """
         if output.split('\n')[-2].startswith("No matching distribution found for"):
             self.ctx.printer.warning("{0} not found in package index.".format(package))
+            if self.ctx.yestoall or download:
+                return True
             return click.confirm('Do you want to try and download it now?')
         return False

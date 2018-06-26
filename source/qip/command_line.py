@@ -27,14 +27,15 @@ class QipContext(object):
 @click.group()
 @click.pass_context
 @click.version_option(version=ver.__version__)
-@click.option('-v', '--verbose', count=True)
-def qipcmd(ctx, verbose):
+@click.option("-v", '--verbose', count=True)
+@click.option("-y", is_flag=True, help="Yes to all prompts")
+def qipcmd(ctx, verbose, y):
     """Install or download Python packages to an isolated location."""
     qctx = QipContext()
     qctx.printer = Printer(verbose)
     verbose += 1
     qctx.target = None
-
+    qctx.yestoall = y
     ctx.obj = qctx
 
 
@@ -128,7 +129,7 @@ def install(ctx, **kwargs):
 
     ctx.printer.status("Dependencies resolved. Required packages:")
     ctx.printer.info("\t{}".format(', '.join(deps.keys())))
-    if not click.confirm('Do you want to continue?'):
+    if not ctx.yestoall and not click.confirm('Do you want to continue?'):
         sys.exit(0)
     if kwargs['depfile'] and not has_dep_file:
         write_deps_to_file(name, specs, deps, filename)
