@@ -5,10 +5,7 @@ import _version as ver
 import re
 import os
 import sys
-import tempfile
-import shutil
 import json
-import signal
 
 import config
 from printer import Printer
@@ -255,7 +252,7 @@ def install(ctx, **kwargs):
     if not has_dep_file:
         write_deps_to_file(name, specs, deps, filename)
 
-    pip_run = CmdRunner(ctx, cfg[kwargs["target"].upper()], kwargs['password'])
+    pip_run = CmdRunner(ctx, cfg["TARGETS"][kwargs["target"]], kwargs['password'])
     for package, version in deps.iteritems():
         output, ret_code = install_package(ctx, pip_run, package, version, kwargs['download'])
         if ret_code == 0:
