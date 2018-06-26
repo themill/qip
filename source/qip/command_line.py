@@ -14,13 +14,12 @@ import config
 from printer import Printer
 from pkg_resources import Requirement as Req
 from distutils.dir_util import copy_tree
-from remotecmd import RemoteCmd
+from remotecmd import CmdRunner
 
 cfg = config.Config()
 cfg.from_pyfile("configs/base.py")
 cfg.from_envvar("QIP_CONFIG", silent=True)
 
-print cfg
 
 class QipContext(object):
     logger = None
@@ -133,38 +132,6 @@ def check_to_download(ctx, package, spec, output):
     return False
 
 
-def download_package(ctx, pip_run, package, spec):
-    """
-    Download *package* with *spec* from Pypi or gitlab. Returns
-    *False* if unable to do so, and *True* if successful.
-    """
-
-    cmd = ("pip download --no-deps --exists-action a "
-           "--dest {0} --no-cache --find-links {0}".format(ctx.target["package_idx"])
-          )
-
-    if not spec:
-        spec = ''
-    cmd += " '{}{}'".format(package, spec)
-    ctx.printer.status("Downloading {0} {1}".format(package, spec))
-    output, stderr, ret_code = pip_run.run_remote_pip(cmd)
-
-    if output.split('\r')[2].strip().startswith('File was already downloaded'):
-        ctx.printer.info("Package already downloaded: {0}".
-                         format(output[0].split('\n')[2].strip()))
-        ctx.printer.status("Download skipped.")
-        return True
-
-    if ret_code != 0:
-        ctx.printer.error("Unable to download requested package. Reason from pip below")
-        ctx.printer.error(stderr)
-        ctx.printer.warning("If this is a package from Gitlab you should download it first.")
-        return False
-
-    ctx.printer.status("Package {0} {1} downloaded.".format(package, spec))
-    return True
-
-
 def install_package(ctx, pip_run, package, version, download=False):
     """
     Install a *package* of *version*. If download is *True* will
@@ -186,10 +153,10 @@ def install_package(ctx, pip_run, package, version, download=False):
             " '{2}{3}'".format(temp_dir, ctx.target['package_idx'], package, spec)
             )
 
-        output, stderr, ret_code = pip_run.run_remote_pip(cmd)
+        output, stderr, ret_code = pip_run.run_pip(cmd)
 
         if ret_code == 1:
-            if not download and not check_to_download(ctx, package, spec, output):
+            if not download and not check_to_download(ctx, package, spec, stderr):
                 ctx.printer.warning("Not downloading {}. Skipping installation.".format(package))
             else:
                 if not download_package(ctx, pip_run, package, spec):
@@ -197,7 +164,7 @@ def install_package(ctx, pip_run, package, version, download=False):
                     return "", 1
                 install_package(ctx, pip_run, package, version)
         else:
-            lastline = output.split('\r')[-2].strip()
+            lastline = output.split('\n')[-2].strip()
             m = re.search(r'(\S+-[\d\.]+)$', lastline)
             if m:
                 if os.path.isdir("{0}/{1}".format(ctx.target['install_dir'], m.group(1))):
@@ -288,20 +255,52 @@ def install(ctx, **kwargs):
     if not has_dep_file:
         write_deps_to_file(name, specs, deps, filename)
 
-    pip_run = RemoteCmd(ctx, cfg[kwargs["target"].upper()], kwargs['password'])
+    pip_run = CmdRunner(ctx, cfg[kwargs["target"].upper()], kwargs['password'])
     for package, version in deps.iteritems():
         output, ret_code = install_package(ctx, pip_run, package, version, kwargs['download'])
         if ret_code == 0:
-            ctx.printer.info(output.split('\r')[-2])
+            ctx.printer.info(output.split('\n')[-2])
+
+
+def download_package(ctx, pip_run, package, spec):
+    """
+    Download *package* with *spec* from Pypi or gitlab. Returns
+    *False* if unable to do so, and *True* if successful.
+    """
+
+    cmd = ("pip download --no-deps --exists-action a "
+           "--dest {0} --no-cache --find-links {0}".format(ctx.target["package_idx"])
+          )
+
+    if not spec:
+        spec = ''
+    cmd += " '{}{}'".format(package, spec)
+    ctx.printer.status("Downloading {0} {1}".format(package, spec))
+    output, stderr, ret_code = pip_run.run_pip(cmd)
+
+    if output.split('\n')[1].strip().startswith('File was already downloaded'):
+        ctx.printer.info("{0}".
+                         format(output.split('\n')[1].strip()))
+        ctx.printer.status("Download skipped.")
+        return True
+
+    if ret_code != 0:
+        ctx.printer.error("Unable to download requested package. Reason from pip below")
+        ctx.printer.error(stderr)
+        ctx.printer.warning("If this is a package from Gitlab you should download it first.")
+        return False
+
+    ctx.printer.status("Package {0} {1} downloaded.".format(package, spec))
+    return True
 
 
 @qipcmd.command()
 @click.pass_obj
 @click.argument('package')
-@click.option('--password', prompt="Your password [leave blank if using ssh keys]",
-              default="", hide_input=True)
 @click.option('--target', '-t', prompt="Target to download for", default='centos72',
               type=click.Choice(cfg['TARGETS'].keys()))
+@click.option('--password', prompt="Your password [leave blank if using ssh keys]",
+              default="", hide_input=True)
 def download(ctx, **kwargs):
     """Download PACKAGE to its own subdirectory under the configured target directory"""
     if (kwargs['package'].startswith("git@gitlab:") and
@@ -311,7 +310,7 @@ def download(ctx, **kwargs):
 
     package_name = set_git_ssh(kwargs['package'])
     ctx.target = cfg["TARGETS"][kwargs["target"]]
-    pip_run = RemoteCmd(ctx, ctx.target, kwargs['password'])
+    pip_run = CmdRunner(ctx, ctx.target, kwargs['password'])
 
     # Specs are already part of the package_name in this case
     download_package(ctx, pip_run, package_name, None)

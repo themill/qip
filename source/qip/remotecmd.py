@@ -3,13 +3,98 @@ import getpass
 import subprocess
 import re
 import tempfile
+import platform
 import os
 
-class RemoteCmd(object):
+class CmdRunner(object):
     def __init__(self, ctx, target, password):
         self.target = target
         self.ctx = ctx
         self.password = password
+        self.cmd = RemoteCmd(ctx, target, password)
+        if target['server'] is 'localhost':
+            self.cmd = LocalCmd(ctx, target, password)
+
+    def __getattr__(self, attr):
+        try:
+            return getattr(self.cmd, attr)
+        except AttributeError:
+            #If attribute was not found in self.df, then try in self
+            return object.__getattr__(self, attr)
+
+
+class Command(object):
+    def __init__(self, ctx, target, password=None):
+        self.target = target
+        self.ctx = ctx
+        self.password = password
+
+    def strip_output(self, stdout, stderr):
+        # Strip shell colour code characters
+        ansi_escape = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]',
+                                 re.IGNORECASE | re.MULTILINE)
+        stdout = u''.join(stdout)
+        stdout = ansi_escape.sub('', stdout)
+
+        stderr = u''.join(stderr)
+        stderr = ansi_escape.sub('', stderr)
+
+        return stdout, stderr
+
+class LocalCmd(Command):
+    def __init__(self, ctx, target, password):
+        super(LocalCmd, self).__init__(ctx, target, password)
+
+        distro = platform.release()
+        distro = ('-').join(distro.split('.')[-2:]).replace('_', '-')
+        for k, v in self.target.iteritems():
+            self.target[k] = v.replace('{{platform}}', distro)
+
+    def mkdtemp(self, dir=None):
+        try:
+            file = tempfile.mkdtemp(dir=dir)
+        except OSError:
+            return "", 1
+
+        return file, 0
+
+    def rename_dir(self, from_dir, to_dir):
+        try:
+            os.rename(from_dir, from_dir)
+        except OSError:
+            return "", "", 1
+        return "", "" , 0
+
+    def rmtree(self, dir):
+        shutil.rmtree(dir)
+        return "", "", 0
+
+    def run_pip(self, cmd):
+        cmd = re.sub(r'^pip\b', self.target["pipcmd"], cmd)
+        cmd = "sudo -u admin3d {}".format(cmd)
+        stdout, stderr, exit_status = self.run_cmd(cmd)
+
+        return stdout, stderr, exit_status
+
+    def run_cmd(self, cmd):
+        self.ctx.printer.debug("Running {0} on {1}".format(cmd, self.target["server"]))
+        ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = ps.communicate()
+
+        stdout, stderr = self.strip_output(stdout, stderr)
+
+        self.ctx.printer.debug(u"Command returned: \n"
+                               "STDOUT: {0}\n"
+                               "STDERR: {1}\n"
+                               "Exit Code: {2}".format(
+                                stdout, stderr, ps.returncode))
+
+        return stdout, stderr, ps.returncode
+
+
+class RemoteCmd(Command):
+    def __init__(self, ctx, target, password):
+        super(RemoteCmd, self).__init__(ctx, target, password)
 
     def mkdtemp(self, dir=None):
         names = tempfile._get_candidate_names()
@@ -22,28 +107,28 @@ class RemoteCmd(object):
         file = os.path.join(dir, "tmp" + name)
 
         cmd = "sudo -u admin3d mkdir -m"
-        stdout, stderr, exit_status = self.run_remote_cmd("{} {} {}".format(cmd, "755", file))
+        stdout, stderr, exit_status = self.run_cmd("{} {} {}".format(cmd, "755", file))
 
         return file, exit_status
 
     def rename_dir(self, from_dir, to_dir):
         cmd = "sudo -u admin3d mv {} {}".format(from_dir, to_dir)
-        stdout, stderr, exit_status = self.run_remote_cmd(cmd)
+        stdout, stderr, exit_status = self.run_cmd(cmd)
         return stdout, stderr, exit_status
 
     def rmtree(self, dir):
         cmd = "sudo -u admin3d rm -rf {}".format(dir)
-        stdout, stderr, exit_status = self.run_remote_cmd(cmd)
+        stdout, stderr, exit_status = self.run_cmd(cmd)
         return stdout, stderr, exit_status
 
-    def run_remote_pip(self, cmd):
+    def run_pip(self, cmd):
         cmd = re.sub(r'^pip\b', self.target["pipcmd"], cmd)
         cmd = "sudo -u admin3d {}".format(cmd)
-        stdout, stderr, exit_status = self.run_remote_cmd(cmd)
+        stdout, stderr, exit_status = self.run_cmd(cmd)
 
         return stdout, stderr, exit_status
 
-    def run_remote_cmd(self, cmd):
+    def run_cmd(self, cmd):
         username = getpass.getuser()
 
         ssh = paramiko.SSHClient()
@@ -51,18 +136,9 @@ class RemoteCmd(object):
         ssh.connect(self.target["server"], username=username, password=self.password)
 
         self.ctx.printer.debug("Running {0} on {1}".format(cmd, self.target["server"]))
-        ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(cmd, get_pty=True)
+        ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(cmd)#, get_pty=True)
 
-        # Strip shell colour code characters
-        ansi_escape = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]',
-                                 re.IGNORECASE | re.MULTILINE)
-        outlines = ssh_stdout.readlines()
-        stdout = u''.join(outlines)
-        stdout = ansi_escape.sub('', stdout)
-
-        stderr = ssh_stderr.readlines()
-        stderr = u''.join(outlines)
-        stderr = ansi_escape.sub('', stderr)
+        stdout, stderr = self.strip_output(ssh_stdout.readlines(), ssh_stderr.readlines())
 
         exit_status = ssh_stdout.channel.recv_exit_status()
         ssh.close()
