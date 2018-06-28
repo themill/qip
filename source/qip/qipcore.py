@@ -140,7 +140,7 @@ class Qip(object):
                 if m:
                     if os.path.isdir("{0}/{1}".format(self.ctx.target['install_dir'],
                                                       m.group(1))):
-                        self.ctx.printer.warning("Package {} already exists in index."
+                        self.ctx.printer.warning("Package {} already installed to index."
                                                  .format(m.group(1)))
                         if not self.ctx.yestoall and not click.confirm("Overwrite it?"):
                             self.runner.rmtree(temp_dir)

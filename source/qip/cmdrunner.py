@@ -17,7 +17,7 @@ class CmdRunner(object):
         try:
             return getattr(self.cmd, attr)
         except AttributeError:
-            #If attribute was not found in self.df, then try in self
+            #If attribute was not found in self.cmd, then try in self
             return object.__getattr__(self, attr)
 
 

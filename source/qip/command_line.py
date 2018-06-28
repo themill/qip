@@ -31,8 +31,6 @@ class QipContext(object):
 @click.option("-y", is_flag=True, help="Yes to all prompts")
 @click.option('--target', '-t', prompt="Target to install to", default='centos72',
               type=click.Choice(cfg['TARGETS'].keys()))
-#@click.option('--password', prompt="Your password [leave blank if using ssh keys]",
-#              default="", hide_input=True)
 def qipcmd(ctx, verbose, y, target):
     """Install or download Python packages to an isolated location."""
     qctx = QipContext()
