@@ -8,10 +8,10 @@ import platform
 import os
 
 class CmdRunner(object):
-    def __init__(self, ctx, target, password):
-        self.cmd = RemoteCmd(ctx, target, password)
-        if target['server'] is 'localhost':
-            self.cmd = LocalCmd(ctx, target, password)
+    def __init__(self, ctx):
+        self.cmd = RemoteCmd(ctx)
+        if ctx.target['server'] is 'localhost':
+            self.cmd = LocalCmd(ctx)
 
     def __getattr__(self, attr):
         try:
@@ -21,11 +21,11 @@ class CmdRunner(object):
             return object.__getattr__(self, attr)
 
 
-class RemoteCmd(object):
-    def __init__(self, ctx, target, password):
-        self.target = target
+class Command(object):
+    def __init__(self, ctx):
+        self.target = ctx.target
         self.ctx = ctx
-        self.password = password
+        self.password = ctx.password
 
     def strip_output(self, stdout, stderr):
         # Strip shell colour code characters
@@ -50,7 +50,7 @@ class RemoteCmd(object):
         file = os.path.join(dir, "tmp" + name)
 
         cmd = "sudo -u admin3d mkdir -m"
-        stdout, stderr, exit_status = self.run_cmd("{} {} {}".format(cmd, "755", file))
+        _, _, exit_status = self.run_cmd("{} {} {}".format(cmd, "755", file))
 
         return file, exit_status
 
@@ -72,6 +72,14 @@ class RemoteCmd(object):
         return stdout, stderr, exit_status
 
     def run_cmd(self, cmd):
+        raise NotImplementedError
+
+
+class RemoteCmd(Command):
+    def __init__(self, ctx):
+        super(RemoteCmd, self).__init__(ctx)
+
+    def run_cmd(self, cmd):
         username = getpass.getuser()
 
         ssh = paramiko.SSHClient()
@@ -79,7 +87,7 @@ class RemoteCmd(object):
         ssh.connect(self.target["server"], username=username, password=self.password)
 
         self.ctx.printer.debug("Running {0} on {1}".format(cmd, self.target["server"]))
-        ssh_stdin, ssh_stdout, ssh_stderr = ssh.exec_command(cmd)#, get_pty=True)
+        _, ssh_stdout, ssh_stderr = ssh.exec_command(cmd)#, get_pty=True)
 
         stdout, stderr = self.strip_output(ssh_stdout.readlines(), ssh_stderr.readlines())
 
@@ -95,11 +103,27 @@ class RemoteCmd(object):
         return stdout, stderr, exit_status
 
 
-class LocalCmd(RemoteCmd):
-    def __init__(self, ctx, target, password):
-        super(LocalCmd, self).__init__(ctx, target, password)
+class LocalCmd(Command):
+    def __init__(self, ctx):
+        super(LocalCmd, self).__init__(ctx)
 
         distro = platform.release()
         distro = ('-').join(distro.split('.')[-2:]).replace('_', '-')
         for k, v in self.target.iteritems():
             self.target[k] = v.replace('{{platform}}', distro)
+
+    def run_cmd(self, cmd):
+        self.ctx.printer.debug("Running {0} on {1}".format(cmd, self.target["server"]))
+
+        ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = ps.communicate()
+
+        stdout, stderr = self.strip_output(stdout, stderr)
+
+        self.ctx.printer.debug(u"Command returned: \n"
+                               "STDOUT: {0}\n"
+                               "STDERR: {1}\n"
+                               "Exit Code: {2}".format(
+                                stdout, stderr, ps.returncode))
+
+        return stdout, stderr, ps.returncode

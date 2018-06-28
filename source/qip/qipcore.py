@@ -2,6 +2,18 @@ from pkg_resources import Requirement as Req
 import click
 import os
 import re
+import sys
+
+
+def has_git_version(package):
+    """
+    Regex to test if a gitlab URL has a version specified
+    """
+    m = re.search(r'\.git@.+$', package)
+    if m is None:
+        return False
+    return True
+
 
 class Qip(object):
     def __init__(self, ctx, runner):
@@ -43,7 +55,7 @@ class Qip(object):
         specs = []
         if package.startswith("git+ssh://"):
             if not has_git_version(package):
-                ctx.printer.error("Please specify a version with `@` when installing from git")
+                self.ctx.printer.error("Please specify a version with `@` when installing from git")
                 sys.exit(1)
             package_name = os.path.basename(package)
             name, specs = package_name.split('.git@')
@@ -58,7 +70,7 @@ class Qip(object):
                 test_cmd = ("pip install --ignore-installed --find-links"
                                 " {0} '{1}=='".format(self.ctx.target["package_idx"], name))
                 output, stderr, ret_code = self.runner.run_pip(test_cmd)
-                match = re.search(r"\(from versions: ((.*))\)", output[1])
+                match = re.search(r"\(from versions: ((.*))\)", output)
                 if match:
                     version = match.group(1).split(", ")[-1]
                     specs = [('==', version)]

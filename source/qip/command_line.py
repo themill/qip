@@ -10,8 +10,8 @@ import json
 import config
 from printer import Printer
 from distutils.dir_util import copy_tree
-from remotecmd import CmdRunner
-from qipcore import Qip
+from cmdrunner import CmdRunner
+from qipcore import Qip, has_git_version
 
 cfg = config.Config()
 cfg.from_pyfile("configs/base.py")
@@ -29,13 +29,20 @@ class QipContext(object):
 @click.version_option(version=ver.__version__)
 @click.option("-v", '--verbose', count=True)
 @click.option("-y", is_flag=True, help="Yes to all prompts")
-def qipcmd(ctx, verbose, y):
+@click.option('--target', '-t', prompt="Target to install to", default='centos72',
+              type=click.Choice(cfg['TARGETS'].keys()))
+#@click.option('--password', prompt="Your password [leave blank if using ssh keys]",
+#              default="", hide_input=True)
+def qipcmd(ctx, verbose, y, target):
     """Install or download Python packages to an isolated location."""
     qctx = QipContext()
     qctx.printer = Printer(verbose)
-    verbose += 1
-    qctx.target = None
+    qctx.target = target
     qctx.yestoall = y
+    qctx.password = ""
+    if target != "localhost":
+        qctx.password = click.prompt("User password (blank for keys)", hide_input=True, default="", show_default=False)
+
     ctx.obj = qctx
 
 
@@ -46,16 +53,6 @@ def set_git_ssh(package):
     if package.startswith("git@gitlab:"):
         package = 'git+ssh://' + package.replace(':', '/')
     return package
-
-
-def has_git_version(package):
-    """
-    Regex to test if a gitlab URL has a version specified
-    """
-    m = re.search(r'\.git@.+$', package)
-    if m is None:
-        return False
-    return True
 
 
 def write_deps_to_file(name, specs, deps, filename):
@@ -88,16 +85,12 @@ def read_deps_from_file(name, specs, filename):
 @click.option('--nodeps', '-n', is_flag=True, help='Install the specified package without deps')
 @click.option('--download', '-d', is_flag=True, help='Download packages without prompting')
 @click.option('--depfile', default="", help='Use json file to get deps')
-@click.option('--target', '-t', prompt="Target to install to", default='centos72',
-              type=click.Choice(cfg['TARGETS'].keys()))
-@click.option('--password', prompt="Your password [leave blank if using ssh keys]",
-              default="", hide_input=True)
 def install(ctx, **kwargs):
     """Install PACKAGE to its own subdirectory under the configured target directory"""
 
-    ctx.target = cfg["TARGETS"][kwargs["target"]]
+    ctx.target = cfg["TARGETS"][ctx.target]
 
-    pip_run = CmdRunner(ctx, cfg["TARGETS"][kwargs["target"]], kwargs['password'])
+    pip_run = CmdRunner(ctx)
     qip = Qip(ctx, pip_run)
 
     package = set_git_ssh(kwargs['package'])
@@ -144,10 +137,6 @@ def install(ctx, **kwargs):
 @qipcmd.command()
 @click.pass_obj
 @click.argument('package')
-@click.option('--target', '-t', prompt="Target to download for", default='centos72',
-              type=click.Choice(cfg['TARGETS'].keys()))
-@click.option('--password', prompt="Your password [leave blank if using ssh keys]",
-              default="", hide_input=True)
 def download(ctx, **kwargs):
     """Download PACKAGE to its own subdirectory under the configured target directory"""
     if (kwargs['package'].startswith("git@gitlab:") and
@@ -156,7 +145,7 @@ def download(ctx, **kwargs):
         sys.exit(1)
 
     package_name = set_git_ssh(kwargs['package'])
-    ctx.target = cfg["TARGETS"][kwargs["target"]]
+    ctx.target = cfg["TARGETS"][ctx.target]
     pip_run = CmdRunner(ctx, ctx.target, kwargs['password'])
 
     qip = Qip(ctx, pip_run)
