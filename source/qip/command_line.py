@@ -39,7 +39,8 @@ def qipcmd(ctx, verbose, y, target):
     qctx.yestoall = y
     qctx.password = ""
     if target != "localhost":
-        qctx.password = click.prompt("User password (blank for keys)", hide_input=True, default="", show_default=False)
+        qctx.password = click.prompt("User password (blank for keys)",
+                                     hide_input=True, default="", show_default=False)
 
     ctx.obj = qctx
 
@@ -129,7 +130,6 @@ def install(ctx, **kwargs):
         output, ret_code = qip.install_package(package, version, kwargs['download'])
         if ret_code == 0:
             ctx.printer.info(output.split('\n')[-2])
-
 
 
 @qipcmd.command()
