@@ -144,7 +144,7 @@ def download(ctx, **kwargs):
 
     package_name = set_git_ssh(kwargs['package'])
     ctx.target = cfg["TARGETS"][ctx.target]
-    pip_run = CmdRunner(ctx, ctx.target, ctx.password)
+    pip_run = CmdRunner(ctx)
 
     qip = Qip(ctx, pip_run)
     # Specs are already part of the package_name in this case
