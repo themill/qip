@@ -84,7 +84,11 @@ class RemoteCmd(Command):
 
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy)
-        ssh.connect(self.target["server"], username=username, password=self.password)
+        try:
+            ssh.connect(self.target["server"], username=username, password=self.password)
+        except paramiko.ssh_exception.AuthenticationException:
+            self.cts.printer.error("Unable to connect to {} as {}."
+                                   .format(self.target["server"], username))
 
         self.ctx.printer.debug("Running {0} on {1}".format(cmd, self.target["server"]))
         _, ssh_stdout, ssh_stderr = ssh.exec_command(cmd)#, get_pty=True)

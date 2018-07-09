@@ -6,6 +6,7 @@ import re
 import os
 import sys
 import json
+import mlog
 
 import config
 from printer import Printer
@@ -33,6 +34,7 @@ class QipContext(object):
               type=click.Choice(cfg['TARGETS'].keys()))
 def qipcmd(ctx, verbose, y, target):
     """Install or download Python packages to an isolated location."""
+    mlog.configure()
     qctx = QipContext()
     qctx.printer = Printer(verbose)
     qctx.target = target
@@ -41,6 +43,14 @@ def qipcmd(ctx, verbose, y, target):
     if target != "localhost":
         qctx.password = click.prompt("User password (blank for keys)",
                                      hide_input=True, default="", show_default=False)
+
+    qctx.mlogger = mlog.Logger(__name__ + ".main")
+    mlog.root.handlers["stderr"].filterer.filterers[0].levels = mlog.levels
+    try:
+        verbosity = mlog.levels[::-1][verbose]
+    except IndexError:
+        verbosity = 'debug'
+    mlog.root.handlers["stderr"].filterer.filterers[0].min = verbosity
 
     ctx.obj = qctx
 
