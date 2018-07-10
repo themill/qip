@@ -3,6 +3,7 @@ import click
 import os
 import re
 import sys
+from cmdrunner import CmdRunner
 
 
 def has_git_version(package):
@@ -16,16 +17,16 @@ def has_git_version(package):
 
 
 class Qip(object):
-    def __init__(self, ctx, runner):
+    def __init__(self, ctx):
         self.ctx = ctx
-        self.runner = runner
+        self.runner = CmdRunner(ctx)
 
-    def download_package(self, package, spec):
+    def download_package(self, package, version):
         """
         Download *package* with *spec* from Pypi or gitlab. Returns
         *False* if unable to do so, and *True* if successful.
         """
-
+        spec = ','.join( (ver[0] + ver[1] for ver in version) )
         cmd = ("pip download --no-deps --exists-action a "
             "--dest {0} --no-cache --find-links {0}".format(self.ctx.target["package_idx"])
             )
@@ -33,13 +34,13 @@ class Qip(object):
         if not spec:
             spec = ''
         cmd += " '{}{}'".format(package, spec)
-        self.ctx.printer.status("Downloading {0} {1}".format(package, spec))
+        self.ctx.printer.status("Downloading {0}{1}".format(package, spec))
         output, stderr, ret_code = self.runner.run_pip(cmd)
 
         if output.split('\n')[1].strip().startswith('File was already downloaded'):
             self.ctx.printer.info("{0}".
                             format(output.split('\n')[1].strip()))
-            self.ctx.printer.status("Download skipped.")
+            self.ctx.printer.status("Package exists. Download skipped.")
             return True
 
         if ret_code != 0:
@@ -125,31 +126,21 @@ class Qip(object):
 
             output, stderr, ret_code = self.runner.run_pip(cmd)
 
-            if ret_code == 1:
-                if not self.check_to_download(package, stderr, download):
-                    self.ctx.printer.warning("Not downloading {}. "
-                                             "Skipping installation.".format(package))
-                else:
-                    if not self.download_package(package, spec):
+            lastline = output.split('\n')[-2].strip()
+            m = re.search(r'(\S+-[\d\.]+)$', lastline)
+            if m:
+                if os.path.isdir("{0}/{1}".format(self.ctx.target['install_dir'],
+                                                    m.group(1))):
+                    self.ctx.printer.warning("Package {} already installed to index."
+                                                .format(m.group(1)))
+                    if not self.ctx.yestoall and not click.confirm("Overwrite it?"):
                         self.runner.rmtree(temp_dir)
                         return "", 1
-                    self.install_package(package, version)
-            else:
-                lastline = output.split('\n')[-2].strip()
-                m = re.search(r'(\S+-[\d\.]+)$', lastline)
-                if m:
-                    if os.path.isdir("{0}/{1}".format(self.ctx.target['install_dir'],
-                                                      m.group(1))):
-                        self.ctx.printer.warning("Package {} already installed to index."
-                                                 .format(m.group(1)))
-                        if not self.ctx.yestoall and not click.confirm("Overwrite it?"):
-                            self.runner.rmtree(temp_dir)
-                            return "", 1
-                    try:
-                        self.runner.rename_dir(temp_dir,
-                                        "{0}/{1}".format(self.ctx.target['install_dir'], m.group(1)))
-                    except OSError:
-                        self.runner.rmtree(temp_dir)
+                try:
+                    self.runner.rename_dir(temp_dir,
+                                    "{0}/{1}".format(self.ctx.target['install_dir'], m.group(1)))
+                except OSError:
+                    self.runner.rmtree(temp_dir)
             return output, ret_code
         finally:
             if temp_dir:
@@ -163,7 +154,6 @@ class Qip(object):
         """
         if output.split('\n')[-2].startswith("No matching distribution found for"):
             self.ctx.printer.warning("{0} not found in package index.".format(package))
-            if self.ctx.yestoall or download:
-                return True
-            return click.confirm('Do you want to try and download it now?')
+            self.ctx.printer.status("Downloading it....")
+            return True
         return False

@@ -11,8 +11,9 @@ import mlog
 import config
 from printer import Printer
 from distutils.dir_util import copy_tree
-from cmdrunner import CmdRunner
 from qipcore import Qip, has_git_version
+from cmdrunner import CmdRunner
+
 
 cfg = config.Config()
 cfg.from_pyfile("configs/base.py")
@@ -92,15 +93,13 @@ def read_deps_from_file(name, specs, filename):
 @click.pass_obj
 @click.argument('package')
 @click.option('--nodeps', '-n', is_flag=True, help='Install the specified package without deps')
-@click.option('--download', '-d', is_flag=True, help='Download packages without prompting')
 @click.option('--depfile', default="", help='Use json file to get deps')
 def install(ctx, **kwargs):
     """Install PACKAGE to its own subdirectory under the configured target directory"""
 
     ctx.target = cfg["TARGETS"][ctx.target]
 
-    pip_run = CmdRunner(ctx)
-    qip = Qip(ctx, pip_run)
+    qip = Qip(ctx)
 
     package = set_git_ssh(kwargs['package'])
     name, specs = qip.get_name_and_specs(package)
@@ -137,7 +136,10 @@ def install(ctx, **kwargs):
         write_deps_to_file(name, specs, deps, filename)
 
     for package, version in deps.iteritems():
-        output, ret_code = qip.install_package(package, version, kwargs['download'])
+        qip.download_package(package, version)
+
+    for package, version in deps.iteritems():
+        output, ret_code = qip.install_package(package, version)
         if ret_code == 0:
             ctx.printer.info(output.split('\n')[-2])
 
@@ -154,9 +156,8 @@ def download(ctx, **kwargs):
 
     package_name = set_git_ssh(kwargs['package'])
     ctx.target = cfg["TARGETS"][ctx.target]
-    pip_run = CmdRunner(ctx)
 
-    qip = Qip(ctx, pip_run)
+    qip = Qip(ctx)
     # Specs are already part of the package_name in this case
     qip.download_package(package_name, None)
 
