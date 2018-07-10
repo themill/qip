@@ -6,6 +6,7 @@ import shutil
 import tempfile
 import platform
 import os
+import sys
 
 class CmdRunner(object):
     def __init__(self, ctx):
@@ -87,8 +88,9 @@ class RemoteCmd(Command):
         try:
             ssh.connect(self.target["server"], username=username, password=self.password)
         except paramiko.ssh_exception.AuthenticationException:
-            self.cts.printer.error("Unable to connect to {} as {}."
+            self.ctx.printer.error("Unable to connect to {} as {}."
                                    .format(self.target["server"], username))
+            sys.exit(1)
 
         self.ctx.printer.debug("Running {0} on {1}".format(cmd, self.target["server"]))
         _, ssh_stdout, ssh_stderr = ssh.exec_command(cmd)#, get_pty=True)
