@@ -26,7 +26,10 @@ class Qip(object):
         Download *package* with *spec* from Pypi or gitlab. Returns
         *False* if unable to do so, and *True* if successful.
         """
-        spec = ','.join( (ver[0] + ver[1] for ver in version) )
+        if version:
+            spec = ','.join( (ver[0] + ver[1] for ver in version) )
+        else:
+            spec = ''
         cmd = ("pip download --no-deps --exists-action a "
             "--dest {0} --no-cache --find-links {0}".format(self.ctx.target["package_idx"])
             )
