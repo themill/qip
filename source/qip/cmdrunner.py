@@ -84,7 +84,7 @@ class RemoteCmd(Command):
         username = getpass.getuser()
 
         ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy)
+        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
             ssh.connect(self.target["server"], username=username, password=self.password)
         except paramiko.ssh_exception.AuthenticationException:
