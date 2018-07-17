@@ -117,7 +117,7 @@ class Qip(object):
 
         # Need this to catch hard exists and clean up temp dir
         try:
-            temp_dir, exit_status = self.runner.mkdtemp()
+            temp_dir, exit_status = self.runner.mkdtemp("/tmp")
             if exit_status != 0:
                 self.ctx.printer.error("Unable to create temp directory")
                 sys.exit(1)
