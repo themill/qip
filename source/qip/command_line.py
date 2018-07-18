@@ -31,9 +31,7 @@ class QipContext(object):
 @click.version_option(version=ver.__version__)
 @click.option("-v", '--verbose', count=True)
 @click.option("-y", is_flag=True, help="Yes to all prompts")
-@click.option('--target', '-t', prompt="Target to install to",
-              default=cfg['TARGETS'].keys()[0],
-              type=click.Choice(cfg['TARGETS'].keys()))
+@click.option('--target', '-t')
 def qipcmd(ctx, verbose, y, target):
     """Install or download Python packages to an isolated location."""
     mlog.configure()
@@ -42,6 +40,19 @@ def qipcmd(ctx, verbose, y, target):
     qctx.target = target
     qctx.yestoall = y
     qctx.password = ""
+
+    if not target:
+        targets = sorted(cfg['TARGETS'].keys())
+        print "\nTargets:"
+        for i, t in enumerate(targets):
+            print "[{}]  {}".format(i, t)
+        print
+        target = click.prompt("Select a target",
+                              default=0,
+                              type=click.IntRange(0, len(targets) - 1, clamp=True),
+                              show_default=True)
+        qctx.target = targets[target]
+
     if target != "localhost":
         qctx.password = click.prompt("User password (blank for keys)",
                                      hide_input=True, default="", show_default=False)
@@ -53,7 +64,6 @@ def qipcmd(ctx, verbose, y, target):
     except IndexError:
         verbosity = 'debug'
     mlog.root.handlers["stderr"].filterer.filterers[0].min = verbosity
-
     ctx.obj = qctx
 
 
@@ -157,6 +167,8 @@ def download(ctx, **kwargs):
 
     package_name = set_git_ssh(kwargs['package'])
     ctx.target = cfg["TARGETS"][ctx.target]
+    print ctx.target
+    return
 
     qip = Qip(ctx)
     # Specs are already part of the package_name in this case
