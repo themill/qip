@@ -33,17 +33,14 @@ class QipContext(object):
 @click.version_option(version=ver.__version__)
 @click.option("-v", '--verbose', count=True)
 @click.option("-y", is_flag=True, help="Yes to all prompts")
-@click.option('--target', '-t')
+@click.option('--target', '-t', default=None)
 def qipcmd(ctx, verbose, y, target):
     """Install or download Python packages to an isolated location."""
     mlog.configure()
     qctx = QipContext()
     qctx.printer = Printer(verbose)
     qctx.yestoall = y
-    try:
-        qctx.target = cfg['TARGETS'][target]
-    except KeyError:
-        pass
+    qctx.target = target
 
     qctx.mlogger = mlog.Logger(__name__ + ".main")
     mlog.root.handlers["stderr"].filterer.filterers[0].levels = mlog.levels
@@ -57,7 +54,7 @@ def qipcmd(ctx, verbose, y, target):
 
 def get_target():
     targets = sorted(cfg['TARGETS'].keys())
-    print "\nTargets:"
+    print "Targets:"
     for i, t in enumerate(targets):
         print "[{}]  {}".format(i, t)
     print
