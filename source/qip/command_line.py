@@ -24,6 +24,8 @@ class QipContext(object):
     logger = None
     target_conf_dict = {}
     qip_config = {}
+    target = None
+    password = ""
 
 
 @click.group()
@@ -37,25 +39,11 @@ def qipcmd(ctx, verbose, y, target):
     mlog.configure()
     qctx = QipContext()
     qctx.printer = Printer(verbose)
-    qctx.target = target
     qctx.yestoall = y
-    qctx.password = ""
-
-    if not target:
-        targets = sorted(cfg['TARGETS'].keys())
-        print "\nTargets:"
-        for i, t in enumerate(targets):
-            print "[{}]  {}".format(i, t)
-        print
-        target = click.prompt("Select a target",
-                              default=0,
-                              type=click.IntRange(0, len(targets) - 1, clamp=True),
-                              show_default=True)
-        qctx.target = targets[target]
-
-    if target != "localhost":
-        qctx.password = click.prompt("User password (blank for keys)",
-                                     hide_input=True, default="", show_default=False)
+    try:
+        qctx.target = cfg['TARGETS'][target]
+    except KeyError:
+        pass
 
     qctx.mlogger = mlog.Logger(__name__ + ".main")
     mlog.root.handlers["stderr"].filterer.filterers[0].levels = mlog.levels
@@ -65,6 +53,29 @@ def qipcmd(ctx, verbose, y, target):
         verbosity = 'debug'
     mlog.root.handlers["stderr"].filterer.filterers[0].min = verbosity
     ctx.obj = qctx
+
+
+def get_target():
+    targets = sorted(cfg['TARGETS'].keys())
+    print "\nTargets:"
+    for i, t in enumerate(targets):
+        print "[{}]  {}".format(i, t)
+    print
+    target = click.prompt("Select a target",
+                            default=0,
+                            type=click.IntRange(0, len(targets) - 1, clamp=True),
+                            show_default=True)
+    target = cfg['TARGETS'][targets[target]]
+
+    return target
+
+
+def get_password(target):
+    password = ""
+    if target != "localhost":
+        password = click.prompt("User password (blank for keys)",
+                                     hide_input=True, default="", show_default=False)
+    return password
 
 
 def set_git_ssh(package):
@@ -108,7 +119,11 @@ def read_deps_from_file(name, specs, filename):
 def install(ctx, **kwargs):
     """Install PACKAGE to its own subdirectory under the configured target directory"""
 
-    ctx.target = cfg["TARGETS"][ctx.target]
+    if ctx.target is None:
+        ctx.target = get_target()
+    else:
+        ctx.target = cfg["TARGETS"][ctx.target]
+    ctx.password = get_password(ctx.target)
 
     qip = Qip(ctx)
 
@@ -166,9 +181,12 @@ def download(ctx, **kwargs):
         sys.exit(1)
 
     package_name = set_git_ssh(kwargs['package'])
-    ctx.target = cfg["TARGETS"][ctx.target]
-    print ctx.target
-    return
+
+    if ctx.target is None:
+        ctx.target = get_target()
+    else:
+        ctx.target = cfg["TARGETS"][ctx.target]
+    ctx.password = get_password(ctx.target)
 
     qip = Qip(ctx)
     # Specs are already part of the package_name in this case
