@@ -50,24 +50,23 @@ class Command(object):
 
         file = os.path.join(dir, "tmp" + name)
 
-        cmd = "sudo -u admin3d mkdir -m"
+        cmd = "mkdir -m"
         _, _, exit_status = self.run_cmd("{} {} {}".format(cmd, "755", file))
 
         return file, exit_status
 
     def rename_dir(self, from_dir, to_dir):
-        cmd = "sudo -u admin3d mv {} {}".format(from_dir, to_dir)
+        cmd = "mv {} {}".format(from_dir, to_dir)
         stdout, stderr, exit_status = self.run_cmd(cmd)
         return stdout, stderr, exit_status
 
     def rmtree(self, dir):
-        cmd = "sudo -u admin3d rm -rf {}".format(dir)
+        cmd = "rm -rf {}".format(dir)
         stdout, stderr, exit_status = self.run_cmd(cmd)
         return stdout, stderr, exit_status
 
     def run_pip(self, cmd):
         cmd = re.sub(r'^pip\b', self.target["pipcmd"], cmd)
-        cmd = "sudo -u admin3d {}".format(cmd)
         stdout, stderr, exit_status = self.run_cmd(cmd)
 
         return stdout, stderr, exit_status
@@ -91,6 +90,8 @@ class RemoteCmd(Command):
             self.ctx.printer.error("Unable to connect to {} as {}."
                                    .format(self.target["server"], username))
             sys.exit(1)
+
+        cmd = "sudo -u admin3d {}".format(cmd)
 
         self.ctx.printer.debug("Running {0} on {1}".format(cmd, self.target["server"]))
         _, ssh_stdout, ssh_stderr = ssh.exec_command(cmd)#, get_pty=True)
