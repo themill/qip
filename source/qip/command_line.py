@@ -31,7 +31,8 @@ class QipContext(object):
 @click.version_option(version=ver.__version__)
 @click.option("-v", '--verbose', count=True)
 @click.option("-y", is_flag=True, help="Yes to all prompts")
-@click.option('--target', '-t', prompt="Target to install to", default='centos72',
+@click.option('--target', '-t', prompt="Target to install to",
+              default=cfg['TARGETS'].keys()[0],
               type=click.Choice(cfg['TARGETS'].keys()))
 def qipcmd(ctx, verbose, y, target):
     """Install or download Python packages to an isolated location."""
