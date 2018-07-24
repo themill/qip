@@ -4,7 +4,6 @@ import paramiko
 import getpass
 import subprocess
 import re
-import shutil
 import tempfile
 import platform
 import os

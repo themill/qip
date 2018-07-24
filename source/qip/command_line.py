@@ -1,9 +1,7 @@
 # :coding: utf-8
 
 import click
-import subprocess
 import _version as ver
-import re
 import os
 import sys
 import json
@@ -11,9 +9,7 @@ import mlog
 
 import config
 from printer import Printer
-from distutils.dir_util import copy_tree
 from qipcore import Qip, has_git_version
-from cmdrunner import CmdRunner
 
 
 cfg = config.Config()
