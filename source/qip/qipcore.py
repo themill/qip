@@ -59,7 +59,6 @@ class Qip(object):
         return True
 
     def get_name_and_specs(self, package):
-        specs = []
         if package.startswith("git+ssh://"):
             if not has_git_version(package):
                 self.ctx.printer.error("Please specify a version with `@` when installing from git")
