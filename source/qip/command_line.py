@@ -1,4 +1,5 @@
 # :coding: utf-8
+
 import click
 import subprocess
 import _version as ver
@@ -58,10 +59,12 @@ def get_target():
     for i, t in enumerate(targets):
         print "[{}]  {}".format(i, t)
     print
-    target = click.prompt("Select a target",
-                            default=0,
-                            type=click.IntRange(0, len(targets) - 1, clamp=True),
-                            show_default=True)
+    target = click.prompt(
+        "Select a target",
+        default=0,
+        type=click.IntRange(0, len(targets) - 1, clamp=True),
+        show_default=True
+    )
     target = cfg['TARGETS'][targets[target]]
 
     return target
@@ -70,8 +73,10 @@ def get_target():
 def get_password(target):
     password = ""
     if target != "localhost":
-        password = click.prompt("User password (blank for keys)",
-                                     hide_input=True, default="", show_default=False)
+        password = click.prompt(
+            "User password (blank for keys)",
+            hide_input=True, default="", show_default=False
+        )
     return password
 
 
@@ -127,7 +132,7 @@ def install(ctx, **kwargs):
     package = set_git_ssh(kwargs['package'])
     name, specs = qip.get_name_and_specs(package)
 
-    version = '_'.join( (ver[0] + ver[1] for ver in specs) )
+    version = '_'.join((ver[0] + ver[1] for ver in specs))
     has_dep_file = False
     # TODO: Remove depfile when out of alpha. It's not a reliable mechanism
     deps = {}

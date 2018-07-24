@@ -8,6 +8,7 @@ import platform
 import os
 import sys
 
+
 class CmdRunner(object):
     def __init__(self, ctx):
         self.cmd = RemoteCmd(ctx)
@@ -18,7 +19,7 @@ class CmdRunner(object):
         try:
             return getattr(self.cmd, attr)
         except AttributeError:
-            #If attribute was not found in self.cmd, then try in self
+            # If attribute was not found in self.cmd, then try in self
             return object.__getattr__(self, attr)
 
 
@@ -43,7 +44,7 @@ class Command(object):
     def mkdtemp(self, dir=None):
         names = tempfile._get_candidate_names()
 
-        #for seq in range(tempfile.TMP_MAX):
+        # for seq in range(tempfile.TMP_MAX):
         name = next(names)
         if dir is None:
             dir = self.target["install_dir"]
@@ -115,14 +116,16 @@ class LocalCmd(Command):
         super(LocalCmd, self).__init__(ctx)
 
         distro = platform.release()
-        distro = ('-').join(distro.split('.')[-2:]).replace('_', '-')
+        distro = "-".join(distro.split('.')[-2:]).replace('_', '-')
         for k, v in self.target.iteritems():
             self.target[k] = v.replace('{{platform}}', distro)
 
     def run_cmd(self, cmd):
         self.ctx.printer.debug("Running {0} on {1}".format(cmd, self.target["server"]))
 
-        ps = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        ps = subprocess.Popen(
+            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
         stdout, stderr = ps.communicate()
 
         stdout, stderr = self.strip_output(stdout, stderr)

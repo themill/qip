@@ -7,7 +7,6 @@ class Printer():
     def __init__(self, level=0):
         self.level = level
 
-
     def error(self, text):
         print('' + colorama.Fore.RED + 'Error: ' + text + colorama.Fore.RESET + '\n')
 

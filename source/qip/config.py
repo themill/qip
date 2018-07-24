@@ -2,6 +2,7 @@ import os
 import types
 import errno
 
+
 class Config(dict):
     def __init__(self, defaults=None):
         dict.__init__(self, defaults or {})
