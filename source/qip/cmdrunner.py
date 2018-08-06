@@ -7,7 +7,6 @@ import re
 import tempfile
 import platform
 import os
-import sys
 
 
 class CmdRunner(object):

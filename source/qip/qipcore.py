@@ -8,9 +8,15 @@ import sys
 from cmdrunner import CmdRunner
 
 
+class QipError(Exception):
+    pass
+
+
 def has_git_version(package):
-    """
-    Regex to test if a gitlab URL has a version specified
+    """ Regex to test if a gitlab URL has a version specified
+
+    :param package: Gitlab url of the package
+    :returns: True if tag/version present in URL. False otherwise
     """
     m = re.search(r'\.git@.+$', package)
     if m is None:
@@ -27,18 +33,21 @@ class Qip(object):
         """
         Download *package* with *spec* from Pypi or gitlab. Returns
         *False* if unable to do so, and *True* if successful.
+
+        :param package: Name of pacakge to download
+        :param version: The version spec of the package
+        :returns: True if download successful, False otherwise.
         """
         if version:
             spec = ','.join((ver[0] + ver[1] for ver in version))
         else:
             spec = ''
+
         cmd = (
             "pip download --no-deps --exists-action a --dest {0} --no-cache "
             "--find-links {0}".format(self.ctx.target["package_idx"])
             )
 
-        if not spec:
-            spec = ''
         cmd += " '{}{}'".format(package, spec)
         self.ctx.mlogger.info("Downloading {0}{1}".format(package, spec),
                               user=True)
@@ -55,8 +64,8 @@ class Qip(object):
             self.ctx.mlogger.error("Unable to download requested package. "
                                    "Reason from pip below")
             self.ctx.mlogger.error(stderr)
-            self.ctx.mlogger.warning("If this is a package from Gitlab you "
-                                     "should download it first.")
+            self.ctx.mlogger.error("If this is a package from Gitlab you "
+                                   "should download it first.")
             return False
 
         self.ctx.mlogger.info("Package {0} {1} downloaded.".
@@ -66,9 +75,8 @@ class Qip(object):
     def get_name_and_specs(self, package):
         if package.startswith("git+ssh://"):
             if not has_git_version(package):
-                self.ctx.mlogger.error("Please specify a version with `@` "
-                                       "when installing from git")
-                sys.exit(1)
+                raise QipError()
+
             package_name = os.path.basename(package)
             name, specs = package_name.split('.git@')
             specs = [('==', specs)]
@@ -95,7 +103,11 @@ class Qip(object):
         """
         Recursively fetch dependencies for *package*. Populates the
         *deps_install* dictionary passed to it with the package name
-        and version specs [name: specs]
+        and version specs [name: specs]. *deps_install* is a list that
+        will be populated with the package details to install later.
+
+        :param package: The package name for which to get dependecies
+        :param deps_install: List of the dependencies to install later
         """
         self.ctx.mlogger.info("Resolving deps for {}".format(package),
                               user=True)
@@ -123,6 +135,10 @@ class Qip(object):
     def install_package(self, package, version):
         """
         Install a *package* of *version*.
+
+        :param package: Name of package to install
+        :param version: the version spec for the package
+        :returns: a tuple of the command output and return code
         """
         spec = ','.join((ver[0] + ver[1] for ver in version))
         self.ctx.mlogger.info("Installing {} : {}".format(package, spec),
@@ -133,8 +149,7 @@ class Qip(object):
         try:
             temp_dir, exit_status = self.runner.mkdtemp("/tmp")
             if exit_status != 0:
-                self.ctx.mlogger.error("Unable to create temp directory")
-                sys.exit(1)
+                raise QipError("Unable to create temp directory")
 
             cmd = (
                 "pip install --ignore-installed --no-deps --prefix {0}"
@@ -167,6 +182,7 @@ class Qip(object):
                     )
                 except OSError:
                     self.runner.rmtree(temp_dir)
+
             return output, ret_code
         finally:
             if temp_dir:
@@ -175,7 +191,7 @@ class Qip(object):
     def check_to_download(self, package, output):
         """
         Confirmation prompt if the requested *package* is not found. Parses
-        *output* to see if packge is missing. Returns *True* if user wishes
+        *output* to see if package is missing. Returns *True* if user wishes
         to download the package, *False* otherwise
         """
         output = output.split('\n')[-2]

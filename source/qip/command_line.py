@@ -2,13 +2,11 @@
 
 import click
 import _version as ver
-import os
 import sys
-import json
 import mlog
 
 import config
-from qipcore import Qip, has_git_version
+from qipcore import QipError, Qip, has_git_version
 
 
 cfg = config.Config()
@@ -52,11 +50,17 @@ def qipcmd(ctx, verbose, y, target):
 
 
 def get_target(ctx, param, value):
+    """ Prompt the user to select a target from the known
+    targets. If one is specified in the commandline, this
+    simply returns the target dictionary.
+
+    :returns: dictionary containing target config
+    """
     targets = sorted(cfg['TARGETS'].keys())
     if value in targets:
         return cfg['TARGETS'][value]
 
-    print "Targets:"
+    print("Targets:")
     for i, t in enumerate(targets):
         print("[{}]  {}".format(i, t))
     print
@@ -72,6 +76,10 @@ def get_target(ctx, param, value):
 
 
 def get_password(ctx, param, value):
+    """ Prompt user for password if remote is not localhost
+
+    :returns: string containing password
+    """
     password = ""
     if ctx.params["target"]["server"] != "localhost":
         password = click.prompt(
@@ -99,7 +107,8 @@ def set_git_ssh(package):
               help='Install the specified package without deps')
 def install(ctx, **kwargs):
     """Install PACKAGE to its own subdirectory under the configured
-    target directory"""
+    target directory
+    """
 
     ctx.target = kwargs["target"]
     ctx.password = kwargs["password"]
@@ -107,14 +116,19 @@ def install(ctx, **kwargs):
     qip = Qip(ctx)
 
     package = set_git_ssh(kwargs['package'])
-    name, specs = qip.get_name_and_specs(package)
+    try:
+        name, specs = qip.get_name_and_specs(package)
+    except QipError:
+        ctx.mlogger.error("Please specify a version with `@` "
+                          "when installing from git")
+        sys.exit(1)
 
     version = '_'.join((ver[0] + ver[1] for ver in specs))
     deps = {}
     if not kwargs['nodeps']:
-        ctx.printer.status("Fetching deps for {} and all its deps. "
-                           "This may take some time."
-                           .format(kwargs['package']), user=True)
+        ctx.mlogger.info("Fetching deps for {} and all its deps. "
+                         "This may take some time."
+                         .format(kwargs['package']), user=True)
         qip.fetch_dependencies(package, deps)
 
     deps[name] = specs
@@ -128,7 +142,12 @@ def install(ctx, **kwargs):
         qip.download_package(package, version)
 
     for package, version in deps.iteritems():
-        output, ret_code = qip.install_package(package, version)
+        try:
+            output, ret_code = qip.install_package(package, version)
+        except QipError as e:
+            print e.message
+            sys.exit(1)
+
         if ret_code == 0:
             ctx.mlogger.info(output.split('\n')[-2])
 
