@@ -58,7 +58,7 @@ class Command(object):
         return file, exit_status
 
     def rename_dir(self, from_dir, to_dir):
-        cmd = "mv {} {}".format(from_dir, to_dir)
+        cmd = "rsync -azvl {}/ master:{}".format(from_dir, to_dir)
         stdout, stderr, exit_status = self.run_cmd(cmd)
         return stdout, stderr, exit_status
 
