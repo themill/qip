@@ -8,7 +8,6 @@ import json
 import mlog
 
 import config
-from printer import Printer
 from qipcore import Qip, has_git_version
 
 
@@ -32,34 +31,31 @@ class QipContext(object):
 @click.option('--target', '-t', default=None)
 def qipcmd(ctx, verbose, y, target):
     """Install or download Python packages to an isolated location."""
-    mlog.configure()
-
-    # Retrieve config from environment.
     cfg.from_envvar("QIP_CONFIG", silent=True)
 
     qctx = QipContext()
-    qctx.printer = Printer(verbose)
     qctx.yestoall = y
     qctx.target = target
 
+    mlog.configure()
     qctx.mlogger = mlog.Logger(__name__ + ".main")
+
     mlog.root.handlers["stderr"].filterer.filterers[0].levels = mlog.levels
+
     try:
         verbosity = mlog.levels[::-1][verbose]
     except IndexError:
-        verbosity = 'debug'
+        verbosity = 'warning'
     mlog.root.handlers["stderr"].filterer.filterers[0].min = verbosity
+
     ctx.obj = qctx
 
 
 def get_target(ctx, param, value):
     targets = sorted(cfg['TARGETS'].keys())
-    if value in targets:
-        return cfg['TARGETS'][value]
-
-    print "Targets:"
+    print("Targets: ")
     for i, t in enumerate(targets):
-        print "[{}]  {}".format(i, t)
+        print("[{}]  {}".format(i, t))
     print
     target = click.prompt(
         "Select a target",
@@ -74,11 +70,7 @@ def get_target(ctx, param, value):
 
 def get_password(ctx, param, value):
     password = ""
-<<<<<<< HEAD
-    if target != "localhost":
-=======
     if ctx.params["target"]["server"] != "localhost":
->>>>>>> d298bbad013b8e0d7d929cdfb63691019430e0c1
         password = click.prompt(
             "User password (blank for keys)",
             hide_input=True, default="", show_default=False
@@ -102,7 +94,8 @@ def set_git_ssh(package):
 @click.option('--password', callback=get_password, hide_input=True)
 @click.option('--nodeps', '-n', is_flag=True, help='Install the specified package without deps')
 def install(ctx, **kwargs):
-    """Install PACKAGE to its own subdirectory under the configured target directory"""
+    """Install PACKAGE to its own subdirectory under the configured
+    target directory"""
 
     ctx.target = kwargs["target"]
     ctx.password = kwargs["password"]
@@ -113,11 +106,6 @@ def install(ctx, **kwargs):
     name, specs = qip.get_name_and_specs(package)
 
     version = '_'.join((ver[0] + ver[1] for ver in specs))
-<<<<<<< HEAD
-    has_dep_file = False
-    # TODO: Remove depfile when out of alpha. It's not a reliable mechanism
-=======
->>>>>>> d298bbad013b8e0d7d929cdfb63691019430e0c1
     deps = {}
     if not kwargs['nodeps']:
         ctx.printer.status("Fetching deps for {} and all its deps. "
@@ -126,8 +114,8 @@ def install(ctx, **kwargs):
 
     deps[name] = specs
 
-    ctx.printer.status("Dependencies resolved. Required packages:")
-    ctx.printer.info("\t{}".format(', '.join(deps.keys())))
+    ctx.mlogger.info("Dependencies resolved. Required packages:")
+    ctx.mlogger.info("\t{}".format(', '.join(deps.keys())))
     if not ctx.yestoall and not click.confirm('Do you want to continue?'):
         sys.exit(0)
 
@@ -137,7 +125,7 @@ def install(ctx, **kwargs):
     for package, version in deps.iteritems():
         output, ret_code = qip.install_package(package, version)
         if ret_code == 0:
-            ctx.printer.info(output.split('\n')[-2])
+            ctx.mlogger.info(output.split('\n')[-2])
 
 
 @qipcmd.command()
@@ -146,10 +134,12 @@ def install(ctx, **kwargs):
 @click.option('--target', callback=get_target)
 @click.option('--password', callback=get_password, hide_input=True)
 def download(ctx, **kwargs):
-    """Download PACKAGE to its own subdirectory under the configured target directory"""
+    """Download PACKAGE to its own subdirectory under the configured
+    target directory"""
     if (kwargs['package'].startswith("git@gitlab:") and
             not has_git_version(kwargs['package'])):
-        ctx.printer.error("Please specify a version with `@` when installing from git")
+        ctx.mlogger.error("Please specify a version with `@` "
+                          "when installing from git")
         sys.exit(1)
 
     package_name = set_git_ssh(kwargs['package'])

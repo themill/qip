@@ -40,28 +40,34 @@ class Qip(object):
         if not spec:
             spec = ''
         cmd += " '{}{}'".format(package, spec)
-        self.ctx.printer.status("Downloading {0}{1}".format(package, spec))
+        self.ctx.mlogger.info("Downloading {0}{1}".format(package, spec),
+                              user=True)
         output, stderr, ret_code = self.runner.run_pip(cmd)
 
-        if output.split('\n')[1].strip().startswith('File was already downloaded'):
-            self.ctx.printer.info("{0}".
-                            format(output.split('\n')[1].strip()))
-            self.ctx.printer.status("Package exists. Download skipped.")
+        output = output.split('\n')[1].strip()
+        if output.startswith('File was already downloaded'):
+            self.ctx.mlogger.info("{0}".format(output), user=True)
+            self.ctx.mlogger.info("Package exists. Download skipped.",
+                                  user=True)
             return True
 
         if ret_code != 0:
-            self.ctx.printer.error("Unable to download requested package. Reason from pip below")
-            self.ctx.printer.error(stderr)
-            self.ctx.printer.warning("If this is a package from Gitlab you should download it first.")
+            self.ctx.mlogger.error("Unable to download requested package. "
+                                   "Reason from pip below")
+            self.ctx.mlogger.error(stderr)
+            self.ctx.mlogger.warning("If this is a package from Gitlab you "
+                                     "should download it first.")
             return False
 
-        self.ctx.printer.status("Package {0} {1} downloaded.".format(package, spec))
+        self.ctx.mlogger.info("Package {0} {1} downloaded.".
+                              format(package, spec), user=True)
         return True
 
     def get_name_and_specs(self, package):
         if package.startswith("git+ssh://"):
             if not has_git_version(package):
-                self.ctx.printer.error("Please specify a version with `@` when installing from git")
+                self.ctx.mlogger.error("Please specify a version with `@` "
+                                       "when installing from git")
                 sys.exit(1)
             package_name = os.path.basename(package)
             name, specs = package_name.split('.git@')
@@ -91,12 +97,14 @@ class Qip(object):
         *deps_install* dictionary passed to it with the package name
         and version specs [name: specs]
         """
-        self.ctx.printer.status("Resolving deps for {}".format(package))
+        self.ctx.mlogger.info("Resolving deps for {}".format(package),
+                              user=True)
         cmd = (
             "pip download --exists-action w '{0}' "
             "-d /tmp --no-binary :all: --find-links {1} --no-cache"
             "| grep Collecting | cut -d' ' "
-            "-f2 | grep -v '{0}'".format(package, self.ctx.target["package_idx"])
+            "-f2 | grep -v '{0}'".
+            format(package, self.ctx.target["package_idx"])
         )
         output, stderr, _ = self.runner.run_pip(cmd)
         deps = output.split()
@@ -106,7 +114,8 @@ class Qip(object):
             name = pkg_req.unsafe_name
             specs = pkg_req.specs
             if name in deps_install.keys():
-                self.ctx.printer.info("\tSkipping {}. Already processed. ".format(name))
+                self.ctx.mlogger.info("\tSkipping {}. Already processed. ".
+                                      format(name), user=True)
                 continue
             deps_install[name] = specs
             self.fetch_dependencies(dep, deps_install)
@@ -116,20 +125,22 @@ class Qip(object):
         Install a *package* of *version*.
         """
         spec = ','.join((ver[0] + ver[1] for ver in version))
-        self.ctx.printer.status("Installing {} : {}".format(package, spec))
+        self.ctx.mlogger.info("Installing {} : {}".format(package, spec),
+                              user=True)
         temp_dir = None
 
         # Need this to catch hard exists and clean up temp dir
         try:
             temp_dir, exit_status = self.runner.mkdtemp("/tmp")
             if exit_status != 0:
-                self.ctx.printer.error("Unable to create temp directory")
+                self.ctx.mlogger.error("Unable to create temp directory")
                 sys.exit(1)
 
             cmd = (
                 "pip install --ignore-installed --no-deps --prefix {0}"
                 " --no-index --no-cache-dir --find-links {1}"
-                " '{2}{3}'".format(temp_dir, self.ctx.target['package_idx'], package, spec)
+                " '{2}{3}'".format(temp_dir, self.ctx.target['package_idx'],
+                                   package, spec)
             )
 
             output, stderr, ret_code = self.runner.run_pip(cmd)
@@ -138,17 +149,21 @@ class Qip(object):
             m = re.search(r'(\S+-[\d\.]+)$', lastline)
             if m:
                 if os.path.isdir(
-                    "{0}/{1}".format(self.ctx.target['install_dir'], m.group(1))
+                    "{0}/{1}".format(self.ctx.target['install_dir'],
+                                     m.group(1))
                 ):
-                    self.ctx.printer.warning(
-                        "Package {} already installed to index.".format(m.group(1))
+                    self.ctx.mlogger.warning(
+                        "Package {} already installed to index.".
+                        format(m.group(1))
                     )
-                    if not self.ctx.yestoall and not click.confirm("Overwrite it?"):
+                    if (not self.ctx.yestoall and not
+                       click.confirm("Overwrite it?")):
                         self.runner.rmtree(temp_dir)
                         return "", 1
                 try:
                     self.runner.rename_dir(
-                        temp_dir, "{0}/{1}".format(self.ctx.target['install_dir'], m.group(1))
+                        temp_dir, "{0}/{1}".
+                        format(self.ctx.target['install_dir'], m.group(1))
                     )
                 except OSError:
                     self.runner.rmtree(temp_dir)
@@ -163,8 +178,10 @@ class Qip(object):
         *output* to see if packge is missing. Returns *True* if user wishes
         to download the package, *False* otherwise
         """
-        if output.split('\n')[-2].startswith("No matching distribution found for"):
-            self.ctx.printer.warning("{0} not found in package index.".format(package))
-            self.ctx.printer.status("Downloading it....")
+        output = output.split('\n')[-2]
+        if output.startswith("No matching distribution found for"):
+            self.ctx.mlogger.info("{0} not found in package index.".
+                                  format(package), user=True)
+            self.ctx.mlogger.info("Downloading it....", user=True)
             return True
         return False
