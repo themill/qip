@@ -14,7 +14,6 @@ from qipcore import Qip, has_git_version
 
 cfg = config.Config()
 cfg.from_pyfile("configs/base.py")
-cfg.from_envvar("QIP_CONFIG", silent=True)
 
 
 class QipContext(object):
@@ -34,6 +33,10 @@ class QipContext(object):
 def qipcmd(ctx, verbose, y, target):
     """Install or download Python packages to an isolated location."""
     mlog.configure()
+
+    # Retrieve config from environment.
+    cfg.from_envvar("QIP_CONFIG", silent=True)
+
     qctx = QipContext()
     qctx.printer = Printer(verbose)
     qctx.yestoall = y

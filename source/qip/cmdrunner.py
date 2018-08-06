@@ -129,7 +129,9 @@ class LocalCmd(Command):
         )
         stdout, stderr = ps.communicate()
 
-        stdout, stderr = self.strip_output(stdout, stderr)
+        stdout, stderr = self.strip_output(
+            stdout.decode('utf-8'), stderr.decode('utf-8')
+        )
 
         self.ctx.printer.debug(u"Command returned: \n"
                                "STDOUT: {0}\n"
