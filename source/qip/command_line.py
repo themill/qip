@@ -88,35 +88,10 @@ def set_git_ssh(package):
     return package
 
 
-def write_deps_to_file(name, specs, deps, filename):
-    """
-    Dump a json representation of the *deps* and *specs* to *filename*
-    Should be used during testing only
-    """
-    try:
-        os.path.mkdirs(os.path.basename(filename))
-    except:
-        pass
-
-    with open(filename, 'w') as fh:
-        json.dump(deps, fh)
-
-
-def read_deps_from_file(name, specs, filename):
-    """
-    Read the deps from *filename* for the given package *name* and *specs*
-    Should be using during testing only
-    """
-    with open(filename, 'r') as fh:
-        deps = json.load(fh)
-    return deps
-
-
 @qipcmd.command()
 @click.pass_obj
 @click.argument('package')
 @click.option('--nodeps', '-n', is_flag=True, help='Install the specified package without deps')
-@click.option('--depfile', default="", help='Use json file to get deps')
 def install(ctx, **kwargs):
     """Install PACKAGE to its own subdirectory under the configured target directory"""
 
@@ -132,26 +107,11 @@ def install(ctx, **kwargs):
     name, specs = qip.get_name_and_specs(package)
 
     version = '_'.join((ver[0] + ver[1] for ver in specs))
-    has_dep_file = False
-    # TODO: Remove depfile when out of alpha. It's not a reliable mechanism
     deps = {}
     if not kwargs['nodeps']:
-        filename = kwargs['depfile']
-
-        if os.path.isfile(filename):
-            ctx.printer.status("Found a deps file for this package.")
-            if click.confirm('Read deps from it?'):
-                ctx.printer.status("Reading deps from file {}.".format(filename))
-                deps = read_deps_from_file(name, specs, filename)
-                has_dep_file = True
-            else:
-                ctx.printer.status("Fetching deps for {} and all its deps. "
-                                   "This may take some time.".format(kwargs['package']))
-                qip.fetch_dependencies(package, deps,)
-        else:
-            ctx.printer.status("Fetching deps for {} and all its deps. "
-                               "This may take some time.".format(kwargs['package']))
-            qip.fetch_dependencies(package, deps)
+        ctx.printer.status("Fetching deps for {} and all its deps. "
+                           "This may take some time.".format(kwargs['package']))
+        qip.fetch_dependencies(package, deps)
 
     deps[name] = specs
 
@@ -159,8 +119,6 @@ def install(ctx, **kwargs):
     ctx.printer.info("\t{}".format(', '.join(deps.keys())))
     if not ctx.yestoall and not click.confirm('Do you want to continue?'):
         sys.exit(0)
-    if kwargs['depfile'] and not has_dep_file:
-        write_deps_to_file(name, specs, deps, filename)
 
     for package, version in deps.iteritems():
         qip.download_package(package, version)
@@ -194,5 +152,5 @@ def download(ctx, **kwargs):
     qip.download_package(package_name, None)
 
 
-def main():
+def main(arguments=None):
     qipcmd()
