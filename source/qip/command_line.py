@@ -145,7 +145,7 @@ def install(ctx, **kwargs):
         try:
             output, ret_code = qip.install_package(package, version)
         except QipError as e:
-            print e.message
+            print(e.message)
             sys.exit(1)
 
         if ret_code == 0:
