@@ -53,7 +53,10 @@ def qipcmd(ctx, verbose, y, target):
 
 def get_target(ctx, param, value):
     targets = sorted(cfg['TARGETS'].keys())
-    print("Targets: ")
+    if value in targets:
+        return cfg['TARGETS'][value]
+
+    print "Targets:"
     for i, t in enumerate(targets):
         print("[{}]  {}".format(i, t))
     print
