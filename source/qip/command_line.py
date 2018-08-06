@@ -52,8 +52,11 @@ def qipcmd(ctx, verbose, y, target):
     ctx.obj = qctx
 
 
-def get_target():
+def get_target(ctx, param, value):
     targets = sorted(cfg['TARGETS'].keys())
+    if value in targets:
+        return cfg['TARGETS'][value]
+
     print "Targets:"
     for i, t in enumerate(targets):
         print "[{}]  {}".format(i, t)
@@ -69,9 +72,9 @@ def get_target():
     return target
 
 
-def get_password(target):
+def get_password(ctx, param, value):
     password = ""
-    if target != "localhost":
+    if ctx.params["target"]["server"] != "localhost":
         password = click.prompt(
             "User password (blank for keys)",
             hide_input=True, default="", show_default=False
@@ -91,15 +94,14 @@ def set_git_ssh(package):
 @qipcmd.command()
 @click.pass_obj
 @click.argument('package')
+@click.option('--target', callback=get_target)
+@click.option('--password', callback=get_password, hide_input=True)
 @click.option('--nodeps', '-n', is_flag=True, help='Install the specified package without deps')
 def install(ctx, **kwargs):
     """Install PACKAGE to its own subdirectory under the configured target directory"""
 
-    if ctx.target is None:
-        ctx.target = get_target()
-    else:
-        ctx.target = cfg["TARGETS"][ctx.target]
-    ctx.password = get_password(ctx.target)
+    ctx.target = kwargs["target"]
+    ctx.password = kwargs["password"]
 
     qip = Qip(ctx)
 
@@ -132,6 +134,8 @@ def install(ctx, **kwargs):
 @qipcmd.command()
 @click.pass_obj
 @click.argument('package')
+@click.option('--target', callback=get_target)
+@click.option('--password', callback=get_password, hide_input=True)
 def download(ctx, **kwargs):
     """Download PACKAGE to its own subdirectory under the configured target directory"""
     if (kwargs['package'].startswith("git@gitlab:") and
@@ -140,12 +144,8 @@ def download(ctx, **kwargs):
         sys.exit(1)
 
     package_name = set_git_ssh(kwargs['package'])
-
-    if ctx.target is None:
-        ctx.target = get_target()
-    else:
-        ctx.target = cfg["TARGETS"][ctx.target]
-    ctx.password = get_password(ctx.target)
+    ctx.target = kwargs["target"]
+    ctx.password = kwargs["password"]
 
     qip = Qip(ctx)
     # Specs are already part of the package_name in this case
