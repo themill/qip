@@ -92,7 +92,7 @@ class RemoteCmd(Command):
         except paramiko.ssh_exception.AuthenticationException:
             self.ctx.mlogger.error("Unable to connect to {} as {}."
                                    .format(self.target["server"], username))
-            sys.exit(1)
+            raise
 
         cmd = "sudo -u admin3d {}".format(cmd)
 

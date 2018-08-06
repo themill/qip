@@ -95,7 +95,8 @@ def set_git_ssh(package):
 @click.argument('package')
 @click.option('--target', callback=get_target)
 @click.option('--password', callback=get_password, hide_input=True)
-@click.option('--nodeps', '-n', is_flag=True, help='Install the specified package without deps')
+@click.option('--nodeps', '-n', is_flag=True,
+              help='Install the specified package without deps')
 def install(ctx, **kwargs):
     """Install PACKAGE to its own subdirectory under the configured
     target directory"""
@@ -112,13 +113,14 @@ def install(ctx, **kwargs):
     deps = {}
     if not kwargs['nodeps']:
         ctx.printer.status("Fetching deps for {} and all its deps. "
-                           "This may take some time.".format(kwargs['package']))
+                           "This may take some time."
+                           .format(kwargs['package']), user=True)
         qip.fetch_dependencies(package, deps)
 
     deps[name] = specs
 
-    ctx.mlogger.info("Dependencies resolved. Required packages:")
-    ctx.mlogger.info("\t{}".format(', '.join(deps.keys())))
+    ctx.mlogger.info("Dependencies resolved. Required packages:", user=True)
+    ctx.mlogger.info("\t{}".format(', '.join(deps.keys())), user=True)
     if not ctx.yestoall and not click.confirm('Do you want to continue?'):
         sys.exit(0)
 
