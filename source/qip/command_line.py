@@ -194,5 +194,5 @@ def download(ctx, **kwargs):
     qip.download_package(package_name, None)
 
 
-def main(arguments=None):
+def main():
     qipcmd()
