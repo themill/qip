@@ -1,3 +1,5 @@
+# :coding: utf-8
+
 from pkg_resources import Requirement as Req
 import click
 import os
@@ -27,11 +29,12 @@ class Qip(object):
         *False* if unable to do so, and *True* if successful.
         """
         if version:
-            spec = ','.join( (ver[0] + ver[1] for ver in version) )
+            spec = ','.join((ver[0] + ver[1] for ver in version))
         else:
             spec = ''
-        cmd = ("pip download --no-deps --exists-action a "
-            "--dest {0} --no-cache --find-links {0}".format(self.ctx.target["package_idx"])
+        cmd = (
+            "pip download --no-deps --exists-action a --dest {0} --no-cache "
+            "--find-links {0}".format(self.ctx.target["package_idx"])
             )
 
         if not spec:
@@ -56,7 +59,6 @@ class Qip(object):
         return True
 
     def get_name_and_specs(self, package):
-        specs = []
         if package.startswith("git+ssh://"):
             if not has_git_version(package):
                 self.ctx.printer.error("Please specify a version with `@` when installing from git")
@@ -71,8 +73,10 @@ class Qip(object):
 
             if not specs:
                 # If the package has no version specified grab the latest one
-                test_cmd = ("pip install --ignore-installed --find-links"
-                                " {0} '{1}=='".format(self.ctx.target["package_idx"], name))
+                test_cmd = (
+                    "pip install --ignore-installed --find-links"
+                    " {0} '{1}=='".format(self.ctx.target["package_idx"], name)
+                )
                 output, stderr, ret_code = self.runner.run_pip(test_cmd)
                 match = re.search(r"\(from versions: ((.*))\)", output)
                 if match:
@@ -88,10 +92,12 @@ class Qip(object):
         and version specs [name: specs]
         """
         self.ctx.printer.status("Resolving deps for {}".format(package))
-        cmd = ("pip download --exists-action w '{0}' "
+        cmd = (
+            "pip download --exists-action w '{0}' "
             "-d /tmp --no-binary :all: --find-links {1} --no-cache"
             "| grep Collecting | cut -d' ' "
-            "-f2 | grep -v '{0}'".format(package, self.ctx.target["package_idx"]))
+            "-f2 | grep -v '{0}'".format(package, self.ctx.target["package_idx"])
+        )
         output, stderr, _ = self.runner.run_pip(cmd)
         deps = output.split()
 
@@ -105,13 +111,11 @@ class Qip(object):
             deps_install[name] = specs
             self.fetch_dependencies(dep, deps_install)
 
-    def install_package(self, package, version, download=False):
+    def install_package(self, package, version):
         """
-        Install a *package* of *version*. If download is *True* will
-        automatically download the package first, otherwise will prompt
-        to download
+        Install a *package* of *version*.
         """
-        spec = ','.join( (ver[0] + ver[1] for ver in version) )
+        spec = ','.join((ver[0] + ver[1] for ver in version))
         self.ctx.printer.status("Installing {} : {}".format(package, spec))
         temp_dir = None
 
@@ -122,26 +126,30 @@ class Qip(object):
                 self.ctx.printer.error("Unable to create temp directory")
                 sys.exit(1)
 
-            cmd = ("pip install --ignore-installed --no-deps --prefix {0}"
+            cmd = (
+                "pip install --ignore-installed --no-deps --prefix {0}"
                 " --no-index --no-cache-dir --find-links {1}"
                 " '{2}{3}'".format(temp_dir, self.ctx.target['package_idx'], package, spec)
-                )
+            )
 
             output, stderr, ret_code = self.runner.run_pip(cmd)
 
             lastline = output.split('\n')[-2].strip()
             m = re.search(r'(\S+-[\d\.]+)$', lastline)
             if m:
-                if os.path.isdir("{0}/{1}".format(self.ctx.target['install_dir'],
-                                                    m.group(1))):
-                    self.ctx.printer.warning("Package {} already installed to index."
-                                                .format(m.group(1)))
+                if os.path.isdir(
+                    "{0}/{1}".format(self.ctx.target['install_dir'], m.group(1))
+                ):
+                    self.ctx.printer.warning(
+                        "Package {} already installed to index.".format(m.group(1))
+                    )
                     if not self.ctx.yestoall and not click.confirm("Overwrite it?"):
                         self.runner.rmtree(temp_dir)
                         return "", 1
                 try:
-                    self.runner.rename_dir(temp_dir,
-                                    "{0}/{1}".format(self.ctx.target['install_dir'], m.group(1)))
+                    self.runner.rename_dir(
+                        temp_dir, "{0}/{1}".format(self.ctx.target['install_dir'], m.group(1))
+                    )
                 except OSError:
                     self.runner.rmtree(temp_dir)
             return output, ret_code
@@ -149,7 +157,7 @@ class Qip(object):
             if temp_dir:
                 self.runner.rmtree(temp_dir)
 
-    def check_to_download(self, package, output, download):
+    def check_to_download(self, package, output):
         """
         Confirmation prompt if the requested *package* is not found. Parses
         *output* to see if packge is missing. Returns *True* if user wishes

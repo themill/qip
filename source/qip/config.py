@@ -1,6 +1,9 @@
+# :coding: utf-8
+
 import os
 import types
 import errno
+
 
 class Config(dict):
     def __init__(self, defaults=None):
