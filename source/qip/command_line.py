@@ -8,7 +8,6 @@ import json
 import mlog
 
 import config
-from printer import Printer
 from qipcore import Qip, has_git_version
 
 
@@ -32,31 +31,31 @@ class QipContext(object):
 @click.option('--target', '-t', default=None)
 def qipcmd(ctx, verbose, y, target):
     """Install or download Python packages to an isolated location."""
-    mlog.configure()
-
-    # Retrieve config from environment.
     cfg.from_envvar("QIP_CONFIG", silent=True)
 
     qctx = QipContext()
-    qctx.printer = Printer(verbose)
     qctx.yestoall = y
     qctx.target = target
 
+    mlog.configure()
     qctx.mlogger = mlog.Logger(__name__ + ".main")
+
     mlog.root.handlers["stderr"].filterer.filterers[0].levels = mlog.levels
+
     try:
         verbosity = mlog.levels[::-1][verbose]
     except IndexError:
-        verbosity = 'debug'
+        verbosity = 'warning'
     mlog.root.handlers["stderr"].filterer.filterers[0].min = verbosity
+
     ctx.obj = qctx
 
 
 def get_target():
     targets = sorted(cfg['TARGETS'].keys())
-    print "Targets:"
+    print("Targets: ")
     for i, t in enumerate(targets):
-        print "[{}]  {}".format(i, t)
+        print("[{}]  {}".format(i, t))
     print
     target = click.prompt(
         "Select a target",
@@ -95,7 +94,7 @@ def write_deps_to_file(name, specs, deps, filename):
     """
     try:
         os.path.mkdirs(os.path.basename(filename))
-    except:
+    except OSError:
         pass
 
     with open(filename, 'w') as fh:
@@ -115,10 +114,12 @@ def read_deps_from_file(name, specs, filename):
 @qipcmd.command()
 @click.pass_obj
 @click.argument('package')
-@click.option('--nodeps', '-n', is_flag=True, help='Install the specified package without deps')
+@click.option('--nodeps', '-n', is_flag=True,
+              help='Install the specified package without deps')
 @click.option('--depfile', default="", help='Use json file to get deps')
 def install(ctx, **kwargs):
-    """Install PACKAGE to its own subdirectory under the configured target directory"""
+    """Install PACKAGE to its own subdirectory under the configured
+    target directory"""
 
     if ctx.target is None:
         ctx.target = get_target()
@@ -139,24 +140,27 @@ def install(ctx, **kwargs):
         filename = kwargs['depfile']
 
         if os.path.isfile(filename):
-            ctx.printer.status("Found a deps file for this package.")
+            ctx.mlogger.info("Found a deps file for this package.")
             if click.confirm('Read deps from it?'):
-                ctx.printer.status("Reading deps from file {}.".format(filename))
+                ctx.mlogger.info("Reading deps from file {}.".
+                                 format(filename), user=True)
                 deps = read_deps_from_file(name, specs, filename)
                 has_dep_file = True
             else:
-                ctx.printer.status("Fetching deps for {} and all its deps. "
-                                   "This may take some time.".format(kwargs['package']))
+                ctx.mlogger.info("Fetching deps for {} and all its deps. "
+                                 "This may take some time.".
+                                 format(kwargs['package']), user=True)
                 qip.fetch_dependencies(package, deps,)
         else:
-            ctx.printer.status("Fetching deps for {} and all its deps. "
-                               "This may take some time.".format(kwargs['package']))
+            ctx.mlogger.info("Fetching deps for {} and all its deps. "
+                             "This may take some time.".
+                             format(kwargs['package']), user=True)
             qip.fetch_dependencies(package, deps)
 
     deps[name] = specs
 
-    ctx.printer.status("Dependencies resolved. Required packages:")
-    ctx.printer.info("\t{}".format(', '.join(deps.keys())))
+    ctx.mlogger.info("Dependencies resolved. Required packages:")
+    ctx.mlogger.info("\t{}".format(', '.join(deps.keys())))
     if not ctx.yestoall and not click.confirm('Do you want to continue?'):
         sys.exit(0)
     if kwargs['depfile'] and not has_dep_file:
@@ -168,17 +172,19 @@ def install(ctx, **kwargs):
     for package, version in deps.iteritems():
         output, ret_code = qip.install_package(package, version)
         if ret_code == 0:
-            ctx.printer.info(output.split('\n')[-2])
+            ctx.mlogger.info(output.split('\n')[-2])
 
 
 @qipcmd.command()
 @click.pass_obj
 @click.argument('package')
 def download(ctx, **kwargs):
-    """Download PACKAGE to its own subdirectory under the configured target directory"""
+    """Download PACKAGE to its own subdirectory under the configured
+    target directory"""
     if (kwargs['package'].startswith("git@gitlab:") and
             not has_git_version(kwargs['package'])):
-        ctx.printer.error("Please specify a version with `@` when installing from git")
+        ctx.mlogger.error("Please specify a version with `@` "
+                          "when installing from git")
         sys.exit(1)
 
     package_name = set_git_ssh(kwargs['package'])

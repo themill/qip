@@ -87,23 +87,26 @@ class RemoteCmd(Command):
         ssh = paramiko.SSHClient()
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
-            ssh.connect(self.target["server"], username=username, password=self.password)
+            ssh.connect(self.target["server"], username=username,
+                        password=self.password)
         except paramiko.ssh_exception.AuthenticationException:
-            self.ctx.printer.error("Unable to connect to {} as {}."
+            self.ctx.mlogger.error("Unable to connect to {} as {}."
                                    .format(self.target["server"], username))
             sys.exit(1)
 
         cmd = "sudo -u admin3d {}".format(cmd)
 
-        self.ctx.printer.debug("Running {0} on {1}".format(cmd, self.target["server"]))
-        _, ssh_stdout, ssh_stderr = ssh.exec_command(cmd)#, get_pty=True)
+        self.ctx.mlogger.debug("Running {0} on {1}".
+                               format(cmd, self.target["server"]))
+        _, ssh_stdout, ssh_stderr = ssh.exec_command(cmd)
 
-        stdout, stderr = self.strip_output(ssh_stdout.readlines(), ssh_stderr.readlines())
+        stdout, stderr = self.strip_output(ssh_stdout.readlines(),
+                                           ssh_stderr.readlines())
 
         exit_status = ssh_stdout.channel.recv_exit_status()
         ssh.close()
 
-        self.ctx.printer.debug(u"Command returned: \n"
+        self.ctx.mlogger.debug(u"Command returned: \n"
                                "STDOUT: {0}\n"
                                "STDERR: {1}\n"
                                "Exit Code: {2}".format(
@@ -122,7 +125,8 @@ class LocalCmd(Command):
             self.target[k] = v.replace('{{platform}}', distro)
 
     def run_cmd(self, cmd):
-        self.ctx.printer.debug("Running {0} on {1}".format(cmd, self.target["server"]))
+        self.ctx.mlogger.debug("Running {0} on {1}".
+                               format(cmd, self.target["server"]))
 
         ps = subprocess.Popen(
             cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -133,7 +137,7 @@ class LocalCmd(Command):
             stdout.decode('utf-8'), stderr.decode('utf-8')
         )
 
-        self.ctx.printer.debug(u"Command returned: \n"
+        self.ctx.mlogger.debug(u"Command returned: \n"
                                "STDOUT: {0}\n"
                                "STDERR: {1}\n"
                                "Exit Code: {2}".format(
