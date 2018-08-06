@@ -16,6 +16,7 @@ Quarantined Installer for Python
     developer_info
     release/index
     glossary
+    api_reference/index
 
 ******************
 Indices and tables

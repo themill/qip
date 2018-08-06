@@ -13,4 +13,8 @@ qip
     :maxdepth: 1
     :glob:
 
+    qipcore
+    command_line
+    cmdrunner
+
 

@@ -73,6 +73,13 @@ class Qip(object):
         return True
 
     def get_name_and_specs(self, package):
+        """ Get the specs of the package from provided name. If there
+        are no specs as part of the package name it uses pip to
+        get the latest version
+
+        :parm package: The name of the package or Gitlab URL
+        :returns: A tuple of the name and version specs for the package
+        """
         if package.startswith("git+ssh://"):
             if not has_git_version(package):
                 raise QipError()
