@@ -111,11 +111,9 @@ class Qip(object):
             deps_install[name] = specs
             self.fetch_dependencies(dep, deps_install)
 
-    def install_package(self, package, version, download=False):
+    def install_package(self, package, version):
         """
-        Install a *package* of *version*. If download is *True* will
-        automatically download the package first, otherwise will prompt
-        to download
+        Install a *package* of *version*.
         """
         spec = ','.join((ver[0] + ver[1] for ver in version))
         self.ctx.printer.status("Installing {} : {}".format(package, spec))
@@ -159,7 +157,7 @@ class Qip(object):
             if temp_dir:
                 self.runner.rmtree(temp_dir)
 
-    def check_to_download(self, package, output, download):
+    def check_to_download(self, package, output):
         """
         Confirmation prompt if the requested *package* is not found. Parses
         *output* to see if packge is missing. Returns *True* if user wishes

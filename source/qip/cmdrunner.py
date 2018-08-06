@@ -42,15 +42,15 @@ class Command(object):
 
         return stdout, stderr
 
-    def mkdtemp(self, dir=None):
+    def mkdtemp(self, path=None):
         names = tempfile._get_candidate_names()
 
         # for seq in range(tempfile.TMP_MAX):
         name = next(names)
-        if dir is None:
-            dir = self.target["install_dir"]
+        if path is None:
+            path = self.target["install_dir"]
 
-        file = os.path.join(dir, "tmp" + name)
+        file = os.path.join(path, "tmp" + name)
 
         cmd = "mkdir -m"
         _, _, exit_status = self.run_cmd("{} {} {}".format(cmd, "755", file))
@@ -62,8 +62,8 @@ class Command(object):
         stdout, stderr, exit_status = self.run_cmd(cmd)
         return stdout, stderr, exit_status
 
-    def rmtree(self, dir):
-        cmd = "rm -rf {}".format(dir)
+    def rmtree(self, path):
+        cmd = "rm -rf {}".format(path)
         stdout, stderr, exit_status = self.run_cmd(cmd)
         return stdout, stderr, exit_status
 
