@@ -1,8 +1,7 @@
 # :coding: utf-8
+
 import click
-import subprocess
 import _version as ver
-import re
 import os
 import sys
 import json
@@ -10,14 +9,11 @@ import mlog
 
 import config
 from printer import Printer
-from distutils.dir_util import copy_tree
 from qipcore import Qip, has_git_version
-from cmdrunner import CmdRunner
 
 
 cfg = config.Config()
 cfg.from_pyfile("configs/base.py")
-cfg.from_envvar("QIP_CONFIG", silent=True)
 
 
 class QipContext(object):
@@ -37,6 +33,10 @@ class QipContext(object):
 def qipcmd(ctx, verbose, y, target):
     """Install or download Python packages to an isolated location."""
     mlog.configure()
+
+    # Retrieve config from environment.
+    cfg.from_envvar("QIP_CONFIG", silent=True)
+
     qctx = QipContext()
     qctx.printer = Printer(verbose)
     qctx.yestoall = y
@@ -52,26 +52,33 @@ def qipcmd(ctx, verbose, y, target):
     ctx.obj = qctx
 
 
-def get_target():
+def get_target(ctx, param, value):
     targets = sorted(cfg['TARGETS'].keys())
+    if value in targets:
+        return cfg['TARGETS'][value]
+
     print "Targets:"
     for i, t in enumerate(targets):
         print "[{}]  {}".format(i, t)
     print
-    target = click.prompt("Select a target",
-                            default=0,
-                            type=click.IntRange(0, len(targets) - 1, clamp=True),
-                            show_default=True)
+    target = click.prompt(
+        "Select a target",
+        default=0,
+        type=click.IntRange(0, len(targets) - 1, clamp=True),
+        show_default=True
+    )
     target = cfg['TARGETS'][targets[target]]
 
     return target
 
 
-def get_password(target):
+def get_password(ctx, param, value):
     password = ""
-    if target != "localhost":
-        password = click.prompt("User password (blank for keys)",
-                                     hide_input=True, default="", show_default=False)
+    if ctx.params["target"]["server"] != "localhost":
+        password = click.prompt(
+            "User password (blank for keys)",
+            hide_input=True, default="", show_default=False
+        )
     return password
 
 
@@ -84,70 +91,29 @@ def set_git_ssh(package):
     return package
 
 
-def write_deps_to_file(name, specs, deps, filename):
-    """
-    Dump a json representation of the *deps* and *specs* to *filename*
-    Should be used during testing only
-    """
-    try:
-        os.path.mkdirs(os.path.basename(filename))
-    except:
-        pass
-
-    with open(filename, 'w') as fh:
-        json.dump(deps, fh)
-
-
-def read_deps_from_file(name, specs, filename):
-    """
-    Read the deps from *filename* for the given package *name* and *specs*
-    Should be using during testing only
-    """
-    with open(filename, 'r') as fh:
-        deps = json.load(fh)
-    return deps
-
-
 @qipcmd.command()
 @click.pass_obj
 @click.argument('package')
+@click.option('--target', callback=get_target)
+@click.option('--password', callback=get_password, hide_input=True)
 @click.option('--nodeps', '-n', is_flag=True, help='Install the specified package without deps')
-@click.option('--depfile', default="", help='Use json file to get deps')
 def install(ctx, **kwargs):
     """Install PACKAGE to its own subdirectory under the configured target directory"""
 
-    if ctx.target is None:
-        ctx.target = get_target()
-    else:
-        ctx.target = cfg["TARGETS"][ctx.target]
-    ctx.password = get_password(ctx.target)
+    ctx.target = kwargs["target"]
+    ctx.password = kwargs["password"]
 
     qip = Qip(ctx)
 
     package = set_git_ssh(kwargs['package'])
     name, specs = qip.get_name_and_specs(package)
 
-    version = '_'.join( (ver[0] + ver[1] for ver in specs) )
-    has_dep_file = False
-    # TODO: Remove depfile when out of alpha. It's not a reliable mechanism
+    version = '_'.join((ver[0] + ver[1] for ver in specs))
     deps = {}
     if not kwargs['nodeps']:
-        filename = kwargs['depfile']
-
-        if os.path.isfile(filename):
-            ctx.printer.status("Found a deps file for this package.")
-            if click.confirm('Read deps from it?'):
-                ctx.printer.status("Reading deps from file {}.".format(filename))
-                deps = read_deps_from_file(name, specs, filename)
-                has_dep_file = True
-            else:
-                ctx.printer.status("Fetching deps for {} and all its deps. "
-                                   "This may take some time.".format(kwargs['package']))
-                qip.fetch_dependencies(package, deps,)
-        else:
-            ctx.printer.status("Fetching deps for {} and all its deps. "
-                               "This may take some time.".format(kwargs['package']))
-            qip.fetch_dependencies(package, deps)
+        ctx.printer.status("Fetching deps for {} and all its deps. "
+                           "This may take some time.".format(kwargs['package']))
+        qip.fetch_dependencies(package, deps)
 
     deps[name] = specs
 
@@ -155,8 +121,6 @@ def install(ctx, **kwargs):
     ctx.printer.info("\t{}".format(', '.join(deps.keys())))
     if not ctx.yestoall and not click.confirm('Do you want to continue?'):
         sys.exit(0)
-    if kwargs['depfile'] and not has_dep_file:
-        write_deps_to_file(name, specs, deps, filename)
 
     for package, version in deps.iteritems():
         qip.download_package(package, version)
@@ -170,6 +134,8 @@ def install(ctx, **kwargs):
 @qipcmd.command()
 @click.pass_obj
 @click.argument('package')
+@click.option('--target', callback=get_target)
+@click.option('--password', callback=get_password, hide_input=True)
 def download(ctx, **kwargs):
     """Download PACKAGE to its own subdirectory under the configured target directory"""
     if (kwargs['package'].startswith("git@gitlab:") and
@@ -178,12 +144,8 @@ def download(ctx, **kwargs):
         sys.exit(1)
 
     package_name = set_git_ssh(kwargs['package'])
-
-    if ctx.target is None:
-        ctx.target = get_target()
-    else:
-        ctx.target = cfg["TARGETS"][ctx.target]
-    ctx.password = get_password(ctx.target)
+    ctx.target = kwargs["target"]
+    ctx.password = kwargs["password"]
 
     qip = Qip(ctx)
     # Specs are already part of the package_name in this case
