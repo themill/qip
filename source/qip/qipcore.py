@@ -181,13 +181,11 @@ class Qip(object):
                        click.confirm("Overwrite it?")):
                         self.runner.rmtree(temp_dir)
                         return "", 1
-                try:
-                    self.runner.install_and_sync(
-                        temp_dir, "{0}/{1}".
-                        format(self.ctx.target['install_dir'], m.group(1))
-                    )
-                except OSError:
-                    self.runner.rmtree(temp_dir)
+
+                self.runner.install_and_sync(
+                    temp_dir, "{0}/{1}".
+                    format(self.ctx.target['install_dir'], m.group(1))
+                )
 
             return output, ret_code
         finally:
