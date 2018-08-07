@@ -5,7 +5,6 @@ import getpass
 import subprocess
 import re
 import tempfile
-import platform
 import os
 
 
@@ -56,10 +55,10 @@ class Command(object):
 
         return file, exit_status
 
-    def rename_dir(self, from_dir, to_dir):
-        cmd = "rsync -azvl {}/ master:{}".format(from_dir, to_dir)
-        stdout, stderr, exit_status = self.run_cmd(cmd)
-        return stdout, stderr, exit_status
+    def install_and_sync(self, from_dir, to_dir):
+        for loc, server in self.ctx.cfg['LOCATION_LUT'].iteritems():
+            cmd = "rsync -azvl {0}/ {2}:{1}".format(from_dir, to_dir, server)
+            self.run_cmd(cmd)
 
     def rmtree(self, path):
         cmd = "rm -rf {}".format(path)
@@ -117,11 +116,6 @@ class RemoteCmd(Command):
 class LocalCmd(Command):
     def __init__(self, ctx):
         super(LocalCmd, self).__init__(ctx)
-
-        distro = platform.release()
-        distro = "-".join(distro.split('.')[-2:]).replace('_', '-')
-        for k, v in self.target.iteritems():
-            self.target[k] = v.replace('{{platform}}', distro)
 
     def run_cmd(self, cmd):
         self.ctx.mlogger.debug("Running {0} on {1}".
