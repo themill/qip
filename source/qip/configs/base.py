@@ -1,5 +1,3 @@
-DEP_STORE = "/tmp/qip_deps"
-
 CENTOS72 = {
     "server": "dev3d-3",
     "platform": "el7-x86-64",
@@ -29,3 +27,12 @@ TARGETS = {
     "centos65": CENTOS65,
     "localhost": LOCAL
 }
+
+LOCATION_LUT = {
+    "CHICAGO": "bugsy",
+    "LA": "marmont",
+    "LONDON": "master",
+    "NY": "turing",
+    "BANGALORE": "cobra",
+}
+
