@@ -24,51 +24,46 @@ def has_git_version(package):
 
 
 class Qip(object):
-    def __init__(self, ctx):
-        self.ctx = ctx
-        self.runner = CmdRunner(ctx)
+    def __init__(self, target, password, logger):
+        self.target = target
+        self.logger = logger
+        self.runner = CmdRunner(target, password)
 
-    def download_package(self, package, version):
+    def download_package(self, package, spec):
         """
         Download *package* with *spec* from Pypi or gitlab. Returns
         *False* if unable to do so, and *True* if successful.
 
-        :param package: Name of pacakge to download
+        :param package: Name of package to download
         :param version: The version spec of the package
         :returns: True if download successful, False otherwise.
         """
-        if version:
-            spec = ','.join((ver[0] + ver[1] for ver in version))
-        else:
-            spec = ''
-
         cmd = (
             "pip download --no-deps --exists-action a --dest {0} --no-cache "
-            "--find-links {0}".format(self.ctx.target["package_idx"])
+            "--find-links {0}".format(self.target["package_idx"])
             )
 
         cmd += " '{}{}'".format(package, spec)
-        self.ctx.mlogger.info("Downloading {0}{1}".format(package, spec),
-                              user=True)
+
         output, stderr, ret_code = self.runner.run_pip(cmd)
 
         output = output.split('\n')[1].strip()
         if output.startswith('File was already downloaded'):
-            self.ctx.mlogger.info("{0}".format(output), user=True)
-            self.ctx.mlogger.info("Package exists. Download skipped.",
-                                  user=True)
+            self.logger.info("{0}".format(output), user=True)
+            self.logger.info("Package exists. Download skipped.",
+                             user=True)
             return True
 
         if ret_code != 0:
-            self.ctx.mlogger.error("Unable to download requested package. "
-                                   "Reason from pip below")
-            self.ctx.mlogger.error(stderr)
-            self.ctx.mlogger.error("If this is a package from Gitlab you "
-                                   "should download it first.")
+            self.logger.error("Unable to download requested package. "
+                              "Reason from pip below")
+            self.logger.error(stderr)
+            self.logger.error("If this is a package from Gitlab you "
+                              "should download it first.")
             return False
 
-        self.ctx.mlogger.info("Package {0} {1} downloaded.".
-                              format(package, spec), user=True)
+        self.logger.info("Package {0} {1} downloaded.".
+                         format(package, spec), user=True)
         return True
 
     def get_name_and_specs(self, package):
@@ -95,7 +90,7 @@ class Qip(object):
                 # If the package has no version specified grab the latest one
                 test_cmd = (
                     "pip install --ignore-installed --find-links"
-                    " {0} '{1}=='".format(self.ctx.target["package_idx"], name)
+                    " {0} '{1}=='".format(self.target["package_idx"], name)
                 )
                 output, stderr, ret_code = self.runner.run_pip(test_cmd)
                 match = re.search(r"\(from versions: ((.*))\)", output)
@@ -115,14 +110,12 @@ class Qip(object):
         :param package: The package name for which to get dependecies
         :param deps_install: List of the dependencies to install later
         """
-        self.ctx.mlogger.info("Resolving deps for {}".format(package),
-                              user=True)
         cmd = (
             "pip download --exists-action w '{0}' "
             "-d /tmp --no-binary :all: --find-links {1} --no-cache"
             "| grep Collecting | cut -d' ' "
             "-f2 | grep -v '{0}'".
-            format(package, self.ctx.target["package_idx"])
+            format(package, self.target["package_idx"])
         )
         output, stderr, _ = self.runner.run_pip(cmd)
         deps = output.split()
@@ -132,13 +125,13 @@ class Qip(object):
             name = pkg_req.unsafe_name
             specs = pkg_req.specs
             if name in deps_install.keys():
-                self.ctx.mlogger.info("\tSkipping {}. Already processed. ".
+                self.logger.info("\tSkipping {}. Already processed. ".
                                       format(name), user=True)
                 continue
             deps_install[name] = specs
             self.fetch_dependencies(dep, deps_install)
 
-    def install_package(self, package, version):
+    def install_package(self, package, spec):
         """
         Install a *package* of *version*.
 
@@ -146,9 +139,7 @@ class Qip(object):
         :param version: the version spec for the package
         :returns: a tuple of the command output and return code
         """
-        spec = ','.join((ver[0] + ver[1] for ver in version))
-        self.ctx.mlogger.info("Installing {} : {}".format(package, spec),
-                              user=True)
+
         temp_dir = None
 
         # Need this to catch hard exists and clean up temp dir
@@ -160,7 +151,7 @@ class Qip(object):
             cmd = (
                 "pip install --ignore-installed --no-deps --prefix {0}"
                 " --no-index --no-cache-dir --find-links {1}"
-                " '{2}{3}'".format(temp_dir, self.ctx.target['package_idx'],
+                " '{2}{3}'".format(temp_dir, self.target['package_idx'],
                                    package, spec)
             )
 
@@ -170,10 +161,10 @@ class Qip(object):
             m = re.search(r'(\S+-[\d\.]+)$', lastline)
             if m:
                 if os.path.isdir(
-                    "{0}/{1}".format(self.ctx.target['install_dir'],
+                    "{0}/{1}".format(self.target['install_dir'],
                                      m.group(1))
                 ):
-                    self.ctx.mlogger.warning(
+                    self.logger.warning(
                         "Package {} already installed to index.".
                         format(m.group(1))
                     )
@@ -184,7 +175,7 @@ class Qip(object):
                 try:
                     self.runner.rename_dir(
                         temp_dir, "{0}/{1}".
-                        format(self.ctx.target['install_dir'], m.group(1))
+                        format(self.target['install_dir'], m.group(1))
                     )
                 except OSError:
                     self.runner.rmtree(temp_dir)
@@ -194,16 +185,17 @@ class Qip(object):
             if temp_dir:
                 self.runner.rmtree(temp_dir)
 
+    # TODO Remove when switching to Devpy
     def check_to_download(self, package, output):
         """
-        Confirmation prompt if the requested *package* is not found. Parses
-        *output* to see if package is missing. Returns *True* if user wishes
-        to download the package, *False* otherwise
+        If the package was not found in the index, based on pip's
+        output, return True, otherwise a different error occured,
+        return False
         """
         output = output.split('\n')[-2]
         if output.startswith("No matching distribution found for"):
-            self.ctx.mlogger.info("{0} not found in package index.".
+            self.logger.info("{0} not found in package index.".
                                   format(package), user=True)
-            self.ctx.mlogger.info("Downloading it....", user=True)
+            self.logger.info("Downloading it....", user=True)
             return True
         return False

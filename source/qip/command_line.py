@@ -130,9 +130,6 @@ def install(ctx, **kwargs):
     """Install PACKAGE to its own subdirectory under the configured
     target directory
     """
-    ctx.target = kwargs["target"]
-    ctx.password = kwargs["password"]
-
     set_target_platform(ctx.target)
     try:
         check_paths_exist(ctx.target)
@@ -140,7 +137,7 @@ def install(ctx, **kwargs):
         print e.message
         sys.exit(1)
 
-    qip = Qip(ctx)
+    qip = Qip(ctx.target, ctx.password, ctx.mlogger)
 
     package = set_git_ssh(kwargs['package'])
     try:
@@ -164,12 +161,15 @@ def install(ctx, **kwargs):
     if not ctx.yestoall and not click.confirm('Do you want to continue?'):
         sys.exit(0)
 
+    # TODO Remove when using devpi server
     for package, version in deps.iteritems():
         qip.download_package(package, version)
 
-    for package, version in deps.iteritems():
+    for package, specs in deps.iteritems():
+        ctx.mlogger.info("Installing {} : {}".format(package, spec),
+                         user=True)
         try:
-            output, ret_code = qip.install_package(package, version)
+            output, ret_code = qip.install_package(package, spec)
         except QipError as e:
             print(e.message)
             sys.exit(1)

@@ -10,10 +10,10 @@ import os
 
 
 class CmdRunner(object):
-    def __init__(self, ctx):
-        self.cmd = RemoteCmd(ctx)
-        if ctx.target['server'] is 'localhost':
-            self.cmd = LocalCmd(ctx)
+    def __init__(self, target, password):
+        self.cmd = RemoteCmd(target, password)
+        if target['server'] is 'localhost':
+            self.cmd = LocalCmd(target, password)
 
     def __getattr__(self, attr):
         try:
@@ -24,10 +24,9 @@ class CmdRunner(object):
 
 
 class Command(object):
-    def __init__(self, ctx):
-        self.target = ctx.target
-        self.ctx = ctx
-        self.password = ctx.password
+    def __init__(self, target, password):
+        self.target = target
+        self.password = password
 
     def strip_output(self, stdout, stderr):
         # Strip shell colour code characters
@@ -77,8 +76,8 @@ class Command(object):
 
 
 class RemoteCmd(Command):
-    def __init__(self, ctx):
-        super(RemoteCmd, self).__init__(ctx)
+    def __init__(self, target, password):
+        super(RemoteCmd, self).__init__(target, password)
 
     def run_cmd(self, cmd):
         username = getpass.getuser()
@@ -115,8 +114,8 @@ class RemoteCmd(Command):
 
 
 class LocalCmd(Command):
-    def __init__(self, ctx):
-        super(LocalCmd, self).__init__(ctx)
+    def __init__(self, target, password):
+        super(LocalCmd, self).__init__(target, password)
 
         distro = platform.release()
         distro = "-".join(distro.split('.')[-2:]).replace('_', '-')

@@ -1,0 +1,16 @@
+{
+  "test/integration/test_command_line.py::test_download[download external package with explicit version: flask==1.0.2]": true, 
+  "test/integration/test_command_line.py::test_download[download external package: flask]": true, 
+  "test/integration/test_command_line.py::test_download[download external package: shadow]": true, 
+  "test/integration/test_command_line.py::test_download[download external package: sphinx]": true, 
+  "test/integration/test_command_line.py::test_download[download internal package: mlog]": true, 
+  "test/integration/test_command_line.py::test_download_exists": true, 
+  "test/integration/test_command_line.py::test_download_internal_without_version": true, 
+  "test/integration/test_command_line.py::test_install_external[install external package with version: flask]": true, 
+  "test/integration/test_command_line.py::test_install_external[install external package without version: flask]": true, 
+  "test/integration/test_command_line.py::test_install_internal[install internal package with version: mlog]": true, 
+  "test/integration/test_command_line.py::test_install_internal[install internal package without version: mlog]": true, 
+  "test/integration/test_command_line.py::test_password_fail": true, 
+  "test/integration/test_command_line.py::test_target_prompt": true, 
+  "test/unit/test_command_line.py::test_without_arguments": true
+}
