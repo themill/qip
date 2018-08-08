@@ -23,34 +23,6 @@ class QipContext(object):
     password = ""
 
 
-@click.group()
-@click.pass_context
-@click.version_option(version=ver.__version__)
-@click.option("-v", '--verbose', count=True)
-@click.option("-y", is_flag=True, help="Yes to all prompts")
-@click.option('--target', '-t', default=None)
-def qipcmd(ctx, verbose, y, target):
-    """Install or download Python packages to an isolated location."""
-    cfg.from_envvar("QIP_CONFIG", silent=True)
-
-    qctx = QipContext()
-    qctx.yestoall = y
-    qctx.target = target
-
-    mlog.configure()
-    qctx.mlogger = mlog.Logger(__name__ + ".main")
-
-    mlog.root.handlers["stderr"].filterer.filterers[0].levels = mlog.levels
-
-    try:
-        verbosity = mlog.levels[::-1][verbose]
-    except IndexError:
-        verbosity = 'warning'
-    mlog.root.handlers["stderr"].filterer.filterers[0].min = verbosity
-
-    ctx.obj = qctx
-
-
 def get_target(ctx, param, value):
     """ Prompt the user to select a target from the known
     targets. If one is specified in the commandline, this
@@ -77,6 +49,7 @@ def get_target(ctx, param, value):
     return target
 
 
+
 def get_password(ctx, param, value):
     """ Prompt user for password if remote is not localhost
 
@@ -89,6 +62,36 @@ def get_password(ctx, param, value):
             hide_input=True, default="", show_default=False
         )
     return password
+
+
+@click.group()
+@click.pass_context
+@click.version_option(version=ver.__version__)
+@click.option("-v", '--verbose', count=True)
+@click.option("-y", is_flag=True, help="Yes to all prompts")
+@click.option('--target', '-t', callback=get_target)
+@click.option('--password', callback=get_password, hide_input=True)
+def qipcmd(ctx, verbose, y, target, password):
+    """Install or download Python packages to an isolated location."""
+    cfg.from_envvar("QIP_CONFIG", silent=True)
+
+    qctx = QipContext()
+    qctx.yestoall = y
+    qctx.target = target
+    qctx.password = password
+
+    mlog.configure()
+    qctx.mlogger = mlog.Logger(__name__ + ".main")
+
+    mlog.root.handlers["stderr"].filterer.filterers[0].levels = mlog.levels
+
+    try:
+        verbosity = mlog.levels[::-1][verbose]
+    except IndexError:
+        verbosity = 'warning'
+    mlog.root.handlers["stderr"].filterer.filterers[0].min = verbosity
+
+    ctx.obj = qctx
 
 
 def set_git_ssh(package):
@@ -121,8 +124,6 @@ def check_paths_exist(target):
 @qipcmd.command()
 @click.pass_obj
 @click.argument('package')
-@click.option('--target', callback=get_target)
-@click.option('--password', callback=get_password, hide_input=True)
 @click.option('--nodeps', '-n', is_flag=True,
               help='Install the specified package without deps')
 def install(ctx, **kwargs):
@@ -180,8 +181,6 @@ def install(ctx, **kwargs):
 @qipcmd.command()
 @click.pass_obj
 @click.argument('package')
-@click.option('--target', callback=get_target)
-@click.option('--password', callback=get_password, hide_input=True)
 def download(ctx, **kwargs):
     """Download PACKAGE to its own subdirectory under the configured
     target directory"""
@@ -192,8 +191,6 @@ def download(ctx, **kwargs):
         sys.exit(1)
 
     package_name = set_git_ssh(kwargs['package'])
-    ctx.target = kwargs["target"]
-    ctx.password = kwargs["password"]
 
     set_target_platform(ctx.target)
     try:
