@@ -4,6 +4,8 @@ import click
 import _version as ver
 import sys
 import mlog
+import platform
+import os
 
 import config
 from qipcore import QipError, Qip, has_git_version
@@ -98,6 +100,24 @@ def set_git_ssh(package):
     return package
 
 
+def set_target_platform(target):
+    distro = platform.release()
+    distro = "-".join(distro.split('.')[-2:]).replace('_', '-')
+    for k, v in target.iteritems():
+        target[k] = v.replace('{{platform}}', distro)
+
+    return target
+
+
+def check_paths_exist(target):
+    if not os.path.exists(target['install_dir']):
+        raise QipError("Install directory ({}) does not exist."
+                       .format(target['install_dir']))
+    if not os.path.exists(target['package_idx']):
+        raise QipError("Package index directory ({}) does not exist."
+                       .format(target['package_idx']))
+
+
 @qipcmd.command()
 @click.pass_obj
 @click.argument('package')
@@ -109,9 +129,15 @@ def install(ctx, **kwargs):
     """Install PACKAGE to its own subdirectory under the configured
     target directory
     """
-
     ctx.target = kwargs["target"]
     ctx.password = kwargs["password"]
+
+    set_target_platform(ctx.target)
+    try:
+        check_paths_exist(ctx.target)
+    except QipError as e:
+        print e.message
+        sys.exit(1)
 
     qip = Qip(ctx)
 
@@ -123,7 +149,6 @@ def install(ctx, **kwargs):
                           "when installing from git")
         sys.exit(1)
 
-    version = '_'.join((ver[0] + ver[1] for ver in specs))
     deps = {}
     if not kwargs['nodeps']:
         ctx.mlogger.info("Fetching deps for {} and all its deps. "
@@ -169,6 +194,13 @@ def download(ctx, **kwargs):
     package_name = set_git_ssh(kwargs['package'])
     ctx.target = kwargs["target"]
     ctx.password = kwargs["password"]
+
+    set_target_platform(ctx.target)
+    try:
+        check_paths_exist(ctx.target)
+    except QipError as e:
+        print e.message
+        sys.exit(1)
 
     qip = Qip(ctx)
     # Specs are already part of the package_name in this case
