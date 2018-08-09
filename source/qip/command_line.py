@@ -49,7 +49,6 @@ def get_target(ctx, param, value):
     return target
 
 
-
 def get_password(ctx, param, value):
     """ Prompt user for password if remote is not localhost
 
@@ -166,10 +165,10 @@ def install(ctx, **kwargs):
         qip.download_package(package, version)
 
     for package, specs in deps.iteritems():
-        ctx.mlogger.info("Installing {} : {}".format(package, spec),
+        ctx.mlogger.info("Installing {} : {}".format(package, specs),
                          user=True)
         try:
-            output, ret_code = qip.install_package(package, spec)
+            output, ret_code = qip.install_package(package, specs, ctx.yestoall)
         except QipError as e:
             print(e.message)
             sys.exit(1)

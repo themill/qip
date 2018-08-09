@@ -10,10 +10,10 @@ import os
 
 
 class CmdRunner(object):
-    def __init__(self, target, password):
-        self.cmd = RemoteCmd(target, password)
+    def __init__(self, target, password, logger):
+        self.cmd = RemoteCmd(target, password, logger)
         if target['server'] is 'localhost':
-            self.cmd = LocalCmd(target, password)
+            self.cmd = LocalCmd(target, password, logger)
 
     def __getattr__(self, attr):
         try:
@@ -24,9 +24,10 @@ class CmdRunner(object):
 
 
 class Command(object):
-    def __init__(self, target, password):
+    def __init__(self, target, password, logger):
         self.target = target
         self.password = password
+        self.logger = logger
 
     def strip_output(self, stdout, stderr):
         # Strip shell colour code characters
@@ -56,7 +57,10 @@ class Command(object):
         return file, exit_status
 
     def rename_dir(self, from_dir, to_dir):
-        cmd = "rsync -azvl {}/ master:{}".format(from_dir, to_dir)
+        if self.target['server'] != "localhost":
+            cmd = "rsync -azvl {}/ master:{}".format(from_dir, to_dir)
+        else:
+            cmd = "rsync -azvl {}/ {}".format(from_dir, to_dir)
         stdout, stderr, exit_status = self.run_cmd(cmd)
         return stdout, stderr, exit_status
 
@@ -76,8 +80,8 @@ class Command(object):
 
 
 class RemoteCmd(Command):
-    def __init__(self, target, password):
-        super(RemoteCmd, self).__init__(target, password)
+    def __init__(self, target, password, logger):
+        super(RemoteCmd, self).__init__(target, password, logger)
 
     def run_cmd(self, cmd):
         username = getpass.getuser()
@@ -88,14 +92,14 @@ class RemoteCmd(Command):
             ssh.connect(self.target["server"], username=username,
                         password=self.password)
         except paramiko.ssh_exception.AuthenticationException:
-            self.ctx.mlogger.error("Unable to connect to {} as {}."
-                                   .format(self.target["server"], username))
+            self.logger.error("Unable to connect to {} as {}."
+                              .format(self.target["server"], username))
             raise
 
         cmd = "sudo -u admin3d {}".format(cmd)
 
-        self.ctx.mlogger.debug("Running {0} on {1}".
-                               format(cmd, self.target["server"]))
+        self.logger.debug("Running {0} on {1}"
+                          .format(cmd, self.target["server"]))
         _, ssh_stdout, ssh_stderr = ssh.exec_command(cmd)
 
         stdout, stderr = self.strip_output(ssh_stdout.readlines(),
@@ -104,18 +108,18 @@ class RemoteCmd(Command):
         exit_status = ssh_stdout.channel.recv_exit_status()
         ssh.close()
 
-        self.ctx.mlogger.debug(u"Command returned: \n"
-                               "STDOUT: {0}\n"
-                               "STDERR: {1}\n"
-                               "Exit Code: {2}".format(
-                                stdout, stderr, exit_status))
+        self.logger.debug(u"Command returned: \n"
+                           "STDOUT: {0}\n"
+                           "STDERR: {1}\n"
+                           "Exit Code: {2}"
+                           .format(stdout, stderr, exit_status))
 
         return stdout, stderr, exit_status
 
 
 class LocalCmd(Command):
-    def __init__(self, target, password):
-        super(LocalCmd, self).__init__(target, password)
+    def __init__(self, target, password, logger):
+        super(LocalCmd, self).__init__(target, password, logger)
 
         distro = platform.release()
         distro = "-".join(distro.split('.')[-2:]).replace('_', '-')
@@ -123,8 +127,8 @@ class LocalCmd(Command):
             self.target[k] = v.replace('{{platform}}', distro)
 
     def run_cmd(self, cmd):
-        self.ctx.mlogger.debug("Running {0} on {1}".
-                               format(cmd, self.target["server"]))
+        self.logger.debug("Running {0} on {1}".
+                          format(cmd, self.target["server"]))
 
         ps = subprocess.Popen(
             cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -135,10 +139,10 @@ class LocalCmd(Command):
             stdout.decode('utf-8'), stderr.decode('utf-8')
         )
 
-        self.ctx.mlogger.debug(u"Command returned: \n"
-                               "STDOUT: {0}\n"
-                               "STDERR: {1}\n"
-                               "Exit Code: {2}".format(
-                                stdout, stderr, ps.returncode))
+        self.logger.debug(u"Command returned: \n"
+                           "STDOUT: {0}\n"
+                           "STDERR: {1}\n"
+                           "Exit Code: {2}"
+                           .format(stdout, stderr, ps.returncode))
 
         return stdout, stderr, ps.returncode

@@ -27,7 +27,7 @@ class Qip(object):
     def __init__(self, target, password, logger):
         self.target = target
         self.logger = logger
-        self.runner = CmdRunner(target, password)
+        self.runner = CmdRunner(target, password, logger)
 
     def download_package(self, package, spec):
         """
@@ -85,7 +85,6 @@ class Qip(object):
             pkg_req = Req.parse(package)
             name = pkg_req.unsafe_name
             specs = pkg_req.specs
-
             if not specs:
                 # If the package has no version specified grab the latest one
                 test_cmd = (
@@ -93,7 +92,7 @@ class Qip(object):
                     " {0} '{1}=='".format(self.target["package_idx"], name)
                 )
                 output, stderr, ret_code = self.runner.run_pip(test_cmd)
-                match = re.search(r"\(from versions: ((.*))\)", output)
+                match = re.search(r"\(from versions: ((.*))\)", stderr)
                 if match:
                     version = match.group(1).split(", ")[-1]
                     specs = [('==', version)]
@@ -125,13 +124,13 @@ class Qip(object):
             name = pkg_req.unsafe_name
             specs = pkg_req.specs
             if name in deps_install.keys():
-                self.logger.info("\tSkipping {}. Already processed. ".
-                                      format(name), user=True)
+                self.logger.info("\tSkipping {}. Already processed. "
+                                 .format(name), user=True)
                 continue
             deps_install[name] = specs
             self.fetch_dependencies(dep, deps_install)
 
-    def install_package(self, package, spec):
+    def install_package(self, package, spec, yestoall=False):
         """
         Install a *package* of *version*.
 
@@ -139,7 +138,6 @@ class Qip(object):
         :param version: the version spec for the package
         :returns: a tuple of the command output and return code
         """
-
         temp_dir = None
 
         # Need this to catch hard exists and clean up temp dir
@@ -168,7 +166,7 @@ class Qip(object):
                         "Package {} already installed to index.".
                         format(m.group(1))
                     )
-                    if (not self.ctx.yestoall and not
+                    if (not yestoall and not
                        click.confirm("Overwrite it?")):
                         self.runner.rmtree(temp_dir)
                         return "", 1
@@ -194,8 +192,8 @@ class Qip(object):
         """
         output = output.split('\n')[-2]
         if output.startswith("No matching distribution found for"):
-            self.logger.info("{0} not found in package index.".
-                                  format(package), user=True)
+            self.logger.info("{0} not found in package index."
+                             .format(package), user=True)
             self.logger.info("Downloading it....", user=True)
             return True
         return False

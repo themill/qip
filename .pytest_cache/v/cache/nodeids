@@ -1,5 +1,7 @@
 [
   "test/unit/test_command_line.py::test_context", 
   "test/unit/test_qipcore.py::test_has_git_version", 
-  "test/unit/test_qipcore.py::test_check_download"
+  "test/unit/test_qipcore.py::test_get_name_and_specs_no_spec", 
+  "test/unit/test_qipcore.py::test_get_name_and_specs_spec", 
+  "test/unit/test_qipcore.py::test_install_package"
 ]
