@@ -61,8 +61,8 @@ class Command(object):
             stdout, stderr, exit_status = self.run_cmd(cmd)
         else:
             for loc, server in self.ctx.cfg['LOCATION_LUT'].iteritems():
-                cmd = "rsync -azvl {0}/ {2}:{1}"
-                      .format(from_dir, to_dir, server)
+                cmd = ("rsync -azvl {0}/ {2}:{1}"
+                      .format(from_dir, to_dir, server))
 
                 stdout, stderr, exit_status = self.run_cmd(cmd)
                 if exit_status != 0:
