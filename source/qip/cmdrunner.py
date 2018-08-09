@@ -56,13 +56,19 @@ class Command(object):
         return file, exit_status
 
     def install_and_sync(self, from_dir, to_dir):
-        for loc, server in self.ctx.cfg['LOCATION_LUT'].iteritems():
-            cmd = "rsync -azvl {0}/ {2}:{1}".format(from_dir, to_dir, server)
+        if self.target['server'] == 'localhost':
+            cmd = "rsync -azvl {0}/ {1}".format(from_dir, to_dir)
             stdout, stderr, exit_status = self.run_cmd(cmd)
-            if exit_status != 0:
-                self.ctx.mlogger.error("Sync to {} failed with error: {}\n"
-                                       "Carrying on with other servers."
-                                       .format(server, stderr))
+        else:
+            for loc, server in self.ctx.cfg['LOCATION_LUT'].iteritems():
+                cmd = "rsync -azvl {0}/ {2}:{1}"
+                      .format(from_dir, to_dir, server)
+
+                stdout, stderr, exit_status = self.run_cmd(cmd)
+                if exit_status != 0:
+                    self.ctx.mlogger.error("Sync to {} failed with error: {}\n"
+                                        "Carrying on with other servers."
+                                        .format(server, stderr))
 
     def rmtree(self, path):
         cmd = "rm -rf {}".format(path)
