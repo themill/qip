@@ -168,7 +168,8 @@ def install(ctx, **kwargs):
         ctx.mlogger.info("Installing {} : {}".format(package, specs),
                          user=True)
         try:
-            output, ret_code = qip.install_package(package, specs, ctx.yestoall)
+            output, ret_code = qip.install_package(package, specs,
+                                                   ctx.yestoall)
         except QipError as e:
             print(e.message)
             sys.exit(1)

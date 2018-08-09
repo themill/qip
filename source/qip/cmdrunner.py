@@ -72,7 +72,6 @@ class Command(object):
     def run_pip(self, cmd):
         cmd = re.sub(r'^pip\b', self.target["pipcmd"], cmd)
         stdout, stderr, exit_status = self.run_cmd(cmd)
-
         return stdout, stderr, exit_status
 
     def run_cmd(self, cmd):
@@ -140,9 +139,9 @@ class LocalCmd(Command):
         )
 
         self.logger.debug(u"Command returned: \n"
-                           "STDOUT: {0}\n"
-                           "STDERR: {1}\n"
-                           "Exit Code: {2}"
-                           .format(stdout, stderr, ps.returncode))
+                          "STDOUT: {0}\n"
+                          "STDERR: {1}\n"
+                          "Exit Code: {2}"
+                          .format(stdout, stderr, ps.returncode))
 
         return stdout, stderr, ps.returncode
