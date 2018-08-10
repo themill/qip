@@ -5,7 +5,6 @@ import getpass
 import subprocess
 import re
 import tempfile
-import platform
 import os
 
 
@@ -56,13 +55,21 @@ class Command(object):
 
         return file, exit_status
 
-    def rename_dir(self, from_dir, to_dir):
-        if self.target['server'] != "localhost":
-            cmd = "rsync -azvl {}/ master:{}".format(from_dir, to_dir)
+    def install_and_sync(self, from_dir, to_dir):
+        if to_dir.startswith('/mill3d/server/apps'):
+            for loc, server in self.ctx.cfg['LOCATION_LUT'].iteritems():
+                cmd = ("rsync -azvl {0}/ {2}:{1}"
+                       .format(from_dir, to_dir, server))
+
+                stdout, stderr, exit_status = self.run_cmd(cmd)
+                if exit_status != 0:
+                    self.ctx.mlogger.error("Sync to {} failed with error: {}\n"
+                                           "Carrying on with other servers."
+                                           .format(server, stderr))
         else:
-            cmd = "rsync -azvl {}/ {}".format(from_dir, to_dir)
-        stdout, stderr, exit_status = self.run_cmd(cmd)
-        return stdout, stderr, exit_status
+            cmd = "rsync -azvl {0}/ {1}".format(from_dir, to_dir)
+            stdout, stderr, exit_status = self.run_cmd(cmd)
+
 
     def rmtree(self, path):
         cmd = "rm -rf {}".format(path)
@@ -119,11 +126,6 @@ class RemoteCmd(Command):
 class LocalCmd(Command):
     def __init__(self, target, password, logger):
         super(LocalCmd, self).__init__(target, password, logger)
-
-        distro = platform.release()
-        distro = "-".join(distro.split('.')[-2:]).replace('_', '-')
-        for k, v in self.target.iteritems():
-            self.target[k] = v.replace('{{platform}}', distro)
 
     def run_cmd(self, cmd):
         self.logger.debug("Running {0} on {1}".

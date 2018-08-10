@@ -13,12 +13,13 @@ from qipcore import QipError, Qip, has_git_version
 
 cfg = config.Config()
 cfg.from_pyfile("configs/base.py")
+cfg.from_envvar("QIP_CONFIG", silent=True)
 
 
 class QipContext(object):
     logger = None
     target_conf_dict = {}
-    qip_config = {}
+    cfg = None
     target = None
     password = ""
 
@@ -30,9 +31,9 @@ def get_target(ctx, param, value):
 
     :returns: dictionary containing target config
     """
-    targets = sorted(cfg['TARGETS'].keys())
+    targets = sorted(ctx.obj.cfg['TARGETS'].keys())
     if value in targets:
-        return cfg['TARGETS'][value]
+        return ctx.obj.cfg['TARGETS'][value]
 
     print("Targets:")
     for i, t in enumerate(targets):
@@ -44,7 +45,7 @@ def get_target(ctx, param, value):
         type=click.IntRange(0, len(targets) - 1, clamp=True),
         show_default=True
     )
-    target = cfg['TARGETS'][targets[target]]
+    target = ctx.obj.cfg['TARGETS'][targets[target]]
 
     return target
 
@@ -72,9 +73,13 @@ def get_password(ctx, param, value):
 @click.option('--password', callback=get_password, hide_input=True)
 def qipcmd(ctx, verbose, y, target, password):
     """Install or download Python packages to an isolated location."""
+    qctx = QipContext()
+
+    global cfg
     cfg.from_envvar("QIP_CONFIG", silent=True)
 
-    qctx = QipContext()
+    qctx.cfg = cfg
+
     qctx.yestoall = y
     qctx.target = target
     qctx.password = password
