@@ -31,9 +31,9 @@ def get_target(ctx, param, value):
 
     :returns: dictionary containing target config
     """
-    targets = sorted(ctx.obj.cfg['TARGETS'].keys())
+    targets = sorted(cfg['TARGETS'].keys())
     if value in targets:
-        return ctx.obj.cfg['TARGETS'][value]
+        return cfg['TARGETS'][value]
 
     print("Targets:")
     for i, t in enumerate(targets):
@@ -45,7 +45,7 @@ def get_target(ctx, param, value):
         type=click.IntRange(0, len(targets) - 1, clamp=True),
         show_default=True
     )
-    target = ctx.obj.cfg['TARGETS'][targets[target]]
+    target = cfg['TARGETS'][targets[target]]
 
     return target
 

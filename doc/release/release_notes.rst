@@ -41,6 +41,25 @@ Release Notes
         Print statements are replaced with mlog info statements with the user
         tag set to True so they always show regardless of verbosity
 
+    .. change:: changed
+
+        Remove depfile functionality as it was only for testing
+
+    ..change:: new
+
+        Add unit tests
+
+    ..change:: new
+
+        Sync installs to all sites automatically
+
+    ..change:: changed
+
+        Move config settings to click context
+
+    ..change:: new
+
+        QipCore now raises expceptions instead of exiting
 
 .. release:: 0.1.0
 

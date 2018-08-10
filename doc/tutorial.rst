@@ -7,6 +7,10 @@ Tutorial
 Downloading a package
 ---------------------
 
+.. Note::
+
+    This will become obsolete when devpi server integration is complete in qip
+
 To download a package use the download command
 
 .. code-block:: bash
@@ -31,29 +35,34 @@ If you want to download something for the Gitlab repo, use the repos SSH URL
 Installing a package
 --------------------
 
-A downloaded package is easily installed with
+To install a package use the `install` command. If you omit the target
+or password options, then you will be prompted to select a known
+target from a list, as well as a prompt fro the password.
+
+For example:
+
+.. code-block:: Python
+
+    $> qip install flask
+       Targets:
+       [0]  centos65
+       [1]  centos72
+       [2]  localhost
+
+       Select a target [0]:
+
+Once the target is selected you will be asked for a password, except for the case
+of the localhost.
+
+qip will then proceed to resolve dependencies and install the packages as required.
+
+If you want to install a single package without any of its dependencies, you
+can pass the `--no-deps` argument to the install command
 
 .. code-block:: bash
 
-    $> qip install shadow==3.4.0
+    $> qip install --nodeps flask
 
-This will start resolving dependencies and offer to download and install these too. If you
-want to automatically download dependencies, without any interaction, use the --download options
-
-.. code-block:: bash
-
-    $> qip install shadow==3.4.0 --download
-
-If on the other hand you want to only install the specified package, use the --nodeps flag
-
-.. code-block:: bash
-
-    $> qip install shadow==3.4.0 --nodeps
-
-You will notice that you are prompted to enter a target. Currently these are ``Centos72``,
-``Centos65``, adn ``localhost``. Localhost is used for CI deployment only as it will
-run the qip commands on the local machine as admin3d, and most machines are not setup
-with passwordless admin3d sudo.
-
-If you select one of the other machines, you will be prompted to enter your user password
-before the installation/download will begin.
+If you are installing a package that already exists, then you will asked if you
+want to overwrite it. You can skip these prompts and assume "yes" with the `-y`
+option.
