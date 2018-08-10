@@ -123,7 +123,15 @@ class Qip(object):
             pkg_req = Req.parse(dep)
             name = pkg_req.unsafe_name
             specs = pkg_req.specs
-            if name in deps_install.keys():
+            if
+LOCATION_LUT = {
+    "CHICAGO": "bugsy",
+    "LA": "marmont",
+    "LONDON": "master",
+    "NY": "turing",
+    "BANGALORE": "cobra",
+}
+ name in deps_install.keys():
                 self.logger.info("\tSkipping {}. Already processed. "
                                  .format(name), user=True)
                 continue

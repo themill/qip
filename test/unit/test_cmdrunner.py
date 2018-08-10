@@ -1,5 +1,5 @@
 # :coding: utf-8
-from qip.cmdrunner import CmdRunner
+from qip.cmdrunner import CmdRunner, LocalCmd
 from unittest_helper import Logger, TEST
 import os
 import pytest
@@ -15,11 +15,20 @@ def test_mkdtemp(runner, tmpdir):
     assert os.path.exists(tmp_path)
 
 
-def test_install_and_sync(runner, tmpdir):
+def test_install_and_sync_local(runner, tmpdir, monkeypatch):
+    def mocked_runcmd(self, cmd):
+        return cmd, "", 0
+    monkeypatch.setattr(LocalCmd, 'run_cmd', mocked_runcmd)
+
     src_dir = str(tmpdir.mkdir("src"))
     assert os.path.exists(src_dir)
-    runner.install_and_sync(src_dir, str(tmpdir)+"/renamed")
-    assert os.path.exists(str(tmpdir)+"/renamed")
+    cmd, _, _ = runner.install_and_sync(src_dir, str(tmpdir)+"/renamed")
+    assert cmd == ("rsync -azvl {0}/ {1}"
+                  .format(src_dir, str(tmpdir)+"/renamed"))
+
+
+def test_install_and_sync_remote(runner, tmpdir, monkeypatch):
+    pass
 
 
 def test_rmtree(runner, tmpdir):

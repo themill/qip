@@ -27,11 +27,3 @@ TARGETS = {
     "centos65": CENTOS65,
     "localhost": LOCAL
 }
-
-LOCATION_LUT = {
-    "CHICAGO": "bugsy",
-    "LA": "marmont",
-    "LONDON": "master",
-    "NY": "turing",
-    "BANGALORE": "cobra",
-}
