@@ -35,4 +35,3 @@ LOCATION_LUT = {
     "NY": "turing",
     "BANGALORE": "cobra",
 }
-
