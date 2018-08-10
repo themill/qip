@@ -15,10 +15,10 @@ def test_mkdtemp(runner, tmpdir):
     assert os.path.exists(tmp_path)
 
 
-def test_rename_dir(runner, tmpdir):
+def test_install_and_sync(runner, tmpdir):
     src_dir = str(tmpdir.mkdir("src"))
     assert os.path.exists(src_dir)
-    runner.rename_dir(src_dir, str(tmpdir)+"/renamed")
+    runner.install_and_sync(src_dir, str(tmpdir)+"/renamed")
     assert os.path.exists(str(tmpdir)+"/renamed")
 
 

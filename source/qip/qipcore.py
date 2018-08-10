@@ -173,7 +173,7 @@ class Qip(object):
 
                 self.runner.install_and_sync(
                     temp_dir, "{0}/{1}".
-                    format(self.ctx.target['install_dir'], m.group(1))
+                    format(self.target['install_dir'], m.group(1))
                 )
 
             return output, ret_code

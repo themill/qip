@@ -19,7 +19,7 @@ class CmdRunner(object):
             return getattr(self.cmd, attr)
         except AttributeError:
             # If attribute was not found in self.cmd, then try in self
-            return object.__getattr__(self, attr)
+            return object.__getattribute__(self, attr)
 
 
 class Command(object):
@@ -69,7 +69,6 @@ class Command(object):
         else:
             cmd = "rsync -azvl {0}/ {1}".format(from_dir, to_dir)
             stdout, stderr, exit_status = self.run_cmd(cmd)
-
 
     def rmtree(self, path):
         cmd = "rm -rf {}".format(path)
