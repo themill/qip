@@ -108,10 +108,10 @@ class RemoteCmd(Command):
         ssh.close()
 
         self.logger.debug(u"Command returned: \n"
-                           "STDOUT: {0}\n"
-                           "STDERR: {1}\n"
-                           "Exit Code: {2}"
-                           .format(stdout, stderr, exit_status))
+                          "STDOUT: {0}\n"
+                          "STDERR: {1}\n"
+                          "Exit Code: {2}"
+                          .format(stdout, stderr, exit_status))
 
         return stdout, stderr, exit_status
 
