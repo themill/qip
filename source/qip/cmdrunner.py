@@ -6,6 +6,7 @@ import subprocess
 import re
 import tempfile
 import os
+import wiz
 
 
 LOCATION_LUT = {
@@ -87,10 +88,11 @@ class Command(object):
 
     def run_pip(self, cmd):
         cmd = re.sub(r'^pip\b', self.target["pipcmd"], cmd)
-        stdout, stderr, exit_status = self.run_cmd(cmd)
+        context = wiz.resolve_context(["python==2.7.*"])
+        stdout, stderr, exit_status = self.run_cmd(cmd, context["environ"])
         return stdout, stderr, exit_status
 
-    def run_cmd(self, cmd):
+    def run_cmd(self, cmd, env=None):
         raise NotImplementedError
 
 
@@ -98,7 +100,7 @@ class RemoteCmd(Command):
     def __init__(self, target, password, logger):
         super(RemoteCmd, self).__init__(target, password, logger)
 
-    def run_cmd(self, cmd):
+    def run_cmd(self, cmd, env=None):
         username = getpass.getuser()
 
         ssh = paramiko.SSHClient()
@@ -113,9 +115,9 @@ class RemoteCmd(Command):
 
         cmd = "sudo -u admin3d {}".format(cmd)
 
-        self.logger.debug("Running {0} on {1}"
-                          .format(cmd, self.target["server"]))
-        _, ssh_stdout, ssh_stderr = ssh.exec_command(cmd)
+        self.logger.debug("Running {0} on {1} [{2}]"
+                          .format(cmd, self.target["server"], env))
+        _, ssh_stdout, ssh_stderr = ssh.exec_command(cmd, environment=env)
 
         stdout, stderr = self.strip_output(ssh_stdout.readlines(),
                                            ssh_stderr.readlines())
@@ -136,12 +138,15 @@ class LocalCmd(Command):
     def __init__(self, target, password, logger):
         super(LocalCmd, self).__init__(target, password, logger)
 
-    def run_cmd(self, cmd):
-        self.logger.debug("Running {0} on {1}".
-                          format(cmd, self.target["server"]))
+    def run_cmd(self, cmd, env=None):
+        self.logger.debug("Running {0} on {1} [{2}]".
+                          format(cmd, self.target["server"], env))
 
         ps = subprocess.Popen(
-            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            cmd, shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env
         )
         stdout, stderr = ps.communicate()
 

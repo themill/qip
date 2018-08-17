@@ -148,9 +148,8 @@ class Qip(object):
 
             cmd = (
                 "pip install --ignore-installed --no-deps --prefix {0}"
-                " --no-index --no-cache-dir --find-links {1}"
-                " '{2}{3}'".format(temp_dir, self.target['package_idx'],
-                                   package, spec)
+                " --no-cache-dir "
+                " '{1}{2}'".format(temp_dir, package, spec)
             )
 
             output, stderr, ret_code = self.runner.run_pip(cmd)

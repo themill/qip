@@ -88,9 +88,8 @@ def qipcmd(ctx, verbose, y, target, password):
     qctx.mlogger = mlog.Logger(__name__ + ".main")
 
     mlog.root.handlers["stderr"].filterer.filterers[0].levels = mlog.levels
-
     try:
-        verbosity = mlog.levels[::-1][verbose]
+        verbosity = mlog.levels[::-1][min(verbose, len(mlog.levels)-1)]
     except IndexError:
         verbosity = 'warning'
     mlog.root.handlers["stderr"].filterer.filterers[0].min = verbosity
@@ -166,14 +165,15 @@ def install(ctx, **kwargs):
         sys.exit(0)
 
     # TODO Remove when using devpi server
-    for package, version in deps.iteritems():
-        qip.download_package(package, version)
+    #for package, version in deps.iteritems():
+    #    qip.download_package(package, version)
 
     for package, specs in deps.iteritems():
         ctx.mlogger.info("Installing {} : {}".format(package, specs),
                          user=True)
         try:
-            output, ret_code = qip.install_package(package, specs,
+            spec = ','.join((s[0] + s[1] for s in specs))
+            output, ret_code = qip.install_package(package, spec,
                                                    ctx.yestoall)
         except QipError as e:
             print(e.message)
