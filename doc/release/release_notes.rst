@@ -8,6 +8,14 @@ Release Notes
 
     .. change:: changed
 
+        Use wiz to resolve pip config environment for devpi
+
+    .. change:: changed
+
+        Remove download command due to use of devpi index instead
+
+    .. change:: changed
+
         Remove support for depfile
 
     .. change:: changed

@@ -2,7 +2,22 @@
 
 from qip.qipcore import Qip, has_git_version
 import os
+import pytest
 from unittest_helper import Logger, TEST
+
+
+@pytest.fixture()
+def dev_env(mocker):
+    """Mock the environment variable used by config.
+
+    Ensure that the environment variable CONFIG is explicitly set
+    to config/base.py for the entirety of the module using the fixture.
+
+    """
+    mocker.patch.dict(os.environ, {
+        "QIP_CONFIG": os.path.realpath(os.path.join(
+            os.path.dirname(__file__), "../../source/qip/configs/testing.py"))
+    })
 
 
 def test_has_git_version():
@@ -12,14 +27,15 @@ def test_has_git_version():
     assert has_git_version("test.git@master") is True
 
 
-def test_get_name_and_specs_no_spec():
+def test_get_name_and_specs_no_spec(dev_env):
+    print "=+++++++++++++++++++", os.environ['QIP_CONFIG']
     qip = Qip(TEST, "", Logger())
     name, specs = qip.get_name_and_specs("flask")
     assert name == "flask"
     assert specs == [('==', '1.0.2')]
 
 
-def test_get_name_and_specs_spec():
+def test_get_name_and_specs_spec(dev_env):
     qip = Qip(TEST, "", Logger())
     name, specs = qip.get_name_and_specs("flask==1.0.1")
     assert name == "flask"
@@ -29,19 +45,17 @@ def test_get_name_and_specs_spec():
     assert specs == [('<', '1.0')]
 
 
-def test_install_package(tmpdir):
-    TEST['package_idx'] = str(tmpdir.mkdir("index"))
-    TEST['install_dir'] = str(tmpdir.mkdir("packages"))
+def test_install_package(tmpdir, dev_env):
+    TEST['install_dir'] = str(tmpdir.mkdir("index"))
+    TEST['package_idx'] = str(tmpdir.mkdir("packages"))
     qip = Qip(TEST, "", Logger())
     qip.install_package("flask", "==1.0.2", True)
     assert os.path.exists(TEST['install_dir'] + "/flask-1.0.2")
-    assert os.path.exists(TEST['package_idx'] +
-                          "/Flask-1.0.2-py2.py3-none-any.whl")
 
 
-def test_fetch_dependencies(tmpdir):
-    TEST['package_idx'] = str(tmpdir.mkdir("index"))
-    TEST['install_dir'] = str(tmpdir.mkdir("packages"))
+def test_fetch_dependencies(tmpdir, dev_env):
+    TEST['install_dir'] = str(tmpdir.mkdir("index"))
+    TEST['package_idx'] = str(tmpdir.mkdir("packages"))
     print TEST
     qip = Qip(TEST, "", Logger())
     deps = {}

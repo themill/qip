@@ -52,7 +52,7 @@ class Qip(object):
                 # If the package has no version specified grab the latest one
                 test_cmd = (
                     "pip install --ignore-installed "
-                    "'{1}=='".format(name)
+                    "'{0}=='".format(name)
                 )
                 output, stderr, ret_code = self.runner.run_pip(test_cmd)
                 match = re.search(r"\(from versions: ((.*))\)", stderr)

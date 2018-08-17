@@ -20,8 +20,7 @@ class Logger(object):
 TEST = {
     "server": "localhost",
     "platform": "el7-x86-64",
-    "pipcmd":
-        "/mill3d/server/apps/PYTHON/el7-x86-64/mill_python-2.7.12/bin/pip",
+    "pipcmd": "pip",
     "install_dir": "/tmp/test-packages/",
     "package_idx": "/tmp/test-index/"
 }
