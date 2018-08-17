@@ -29,43 +29,6 @@ class Qip(object):
         self.logger = logger
         self.runner = CmdRunner(target, password, logger)
 
-    def download_package(self, package, spec):
-        """
-        Download *package* with *spec* from Pypi or gitlab. Returns
-        *False* if unable to do so, and *True* if successful.
-
-        :param package: Name of package to download
-        :param version: The version spec of the package
-        :returns: True if download successful, False otherwise.
-        """
-        cmd = (
-            "pip download --no-deps --exists-action a --dest {0} --no-cache "
-            "--find-links {0}".format(self.target["package_idx"])
-            )
-
-        cmd += " '{}{}'".format(package, spec)
-
-        output, stderr, ret_code = self.runner.run_pip(cmd)
-
-        output = output.split('\n')[1].strip()
-        if output.startswith('File was already downloaded'):
-            self.logger.info("{0}".format(output), user=True)
-            self.logger.info("Package exists. Download skipped.",
-                             user=True)
-            return True
-
-        if ret_code != 0:
-            self.logger.error("Unable to download requested package. "
-                              "Reason from pip below")
-            self.logger.error(stderr)
-            self.logger.error("If this is a package from Gitlab you "
-                              "should download it first.")
-            return False
-
-        self.logger.info("Package {0} {1} downloaded.".
-                         format(package, spec), user=True)
-        return True
-
     def get_name_and_specs(self, package):
         """ Get the specs of the package from provided name. If there
         are no specs as part of the package name it uses pip to
@@ -88,8 +51,8 @@ class Qip(object):
             if not specs:
                 # If the package has no version specified grab the latest one
                 test_cmd = (
-                    "pip install --ignore-installed --find-links"
-                    " {0} '{1}=='".format(self.target["package_idx"], name)
+                    "pip install --ignore-installed "
+                    "'{1}=='".format(name)
                 )
                 output, stderr, ret_code = self.runner.run_pip(test_cmd)
                 match = re.search(r"\(from versions: ((.*))\)", stderr)
@@ -111,10 +74,10 @@ class Qip(object):
         """
         cmd = (
             "pip download --exists-action w '{0}' "
-            "-d /tmp --no-binary :all: --find-links {1} --no-cache"
+            "-d /tmp --no-binary :all: --no-cache"
             "| grep Collecting | cut -d' ' "
             "-f2 | grep -v '{0}'".
-            format(package, self.target["package_idx"])
+            format(package)
         )
         output, stderr, _ = self.runner.run_pip(cmd)
         deps = output.split()

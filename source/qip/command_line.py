@@ -8,7 +8,7 @@ import platform
 import os
 
 import config
-from qipcore import QipError, Qip, has_git_version
+from qipcore import QipError, Qip
 
 
 cfg = config.Config()
@@ -164,10 +164,6 @@ def install(ctx, **kwargs):
     if not ctx.yestoall and not click.confirm('Do you want to continue?'):
         sys.exit(0)
 
-    # TODO Remove when using devpi server
-    #for package, version in deps.iteritems():
-    #    qip.download_package(package, version)
-
     for package, specs in deps.iteritems():
         ctx.mlogger.info("Installing {} : {}".format(package, specs),
                          user=True)
@@ -181,32 +177,6 @@ def install(ctx, **kwargs):
 
         if ret_code == 0:
             ctx.mlogger.info(output.split('\n')[-2])
-
-
-@qipcmd.command()
-@click.pass_obj
-@click.argument('package')
-def download(ctx, **kwargs):
-    """Download PACKAGE to its own subdirectory under the configured
-    target directory"""
-    if (kwargs['package'].startswith("git@gitlab:") and
-            not has_git_version(kwargs['package'])):
-        ctx.mlogger.error("Please specify a version with `@` "
-                          "when installing from git")
-        sys.exit(1)
-
-    package_name = set_git_ssh(kwargs['package'])
-
-    set_target_platform(ctx.target)
-    try:
-        check_paths_exist(ctx.target)
-    except QipError as e:
-        print e.message
-        sys.exit(1)
-
-    qip = Qip(ctx)
-    # Specs are already part of the package_name in this case
-    qip.download_package(package_name, None)
 
 
 def main(arguments=None):

@@ -33,7 +33,6 @@ def test_install_package(tmpdir):
     TEST['package_idx'] = str(tmpdir.mkdir("index"))
     TEST['install_dir'] = str(tmpdir.mkdir("packages"))
     qip = Qip(TEST, "", Logger())
-    qip.download_package("flask", "==1.0.2")
     qip.install_package("flask", "==1.0.2", True)
     assert os.path.exists(TEST['install_dir'] + "/flask-1.0.2")
     assert os.path.exists(TEST['package_idx'] +
