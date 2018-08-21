@@ -26,8 +26,8 @@ with open(
 INSTALL_REQUIRES = [
     "mlog >= 0.0.6, < 1",
     "click >= 6.7",
-    "paramiko >= 1.16, < 3"
-    "wiz" >= '0.16.0'
+    "paramiko >= 1.16, < 3",
+    "wiz >= 0.16.0, < 1"
 ]
 DOC_REQUIRES = [
     "sphinx >= 1.2.2, < 2",
@@ -42,9 +42,8 @@ DOC_REQUIRES = [
 ]
 TEST_REQUIRES = [
     "pytest-runner >= 2.7, < 3",
-    "pytest >= 2.9, < 3",
+    "pytest >= 3.0.0, < 4",
     "pytest-mock >= 0.11, < 1",
-    "pytest-catchlog >= 1, < 2",
     "pytest-xdist >= 1.1, < 2",
     "pytest-cov >= 2, < 3"
 ]
