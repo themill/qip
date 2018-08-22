@@ -21,6 +21,9 @@ def dev_env(mocker):
 
 
 def test_has_git_version():
+    """
+    Test the has_git_version function
+    """
     assert has_git_version("test.git") is False
     assert has_git_version("test.git@") is False
     assert has_git_version("test.git@1.90") is True
@@ -28,6 +31,10 @@ def test_has_git_version():
 
 
 def test_get_name_and_specs_no_spec(dev_env):
+    """
+    Check if the specs and name parsing works if no specs
+    are supplied
+    """
     qip = Qip(TEST, "", Logger())
     name, specs = qip.get_name_and_specs("flask")
     assert name == "flask"
@@ -35,6 +42,9 @@ def test_get_name_and_specs_no_spec(dev_env):
 
 
 def test_get_name_and_specs_spec(dev_env):
+    """
+    Check that returned specs match if specs are supplied
+    """
     qip = Qip(TEST, "", Logger())
     name, specs = qip.get_name_and_specs("flask==1.0.1")
     assert name == "flask"
@@ -45,16 +55,20 @@ def test_get_name_and_specs_spec(dev_env):
 
 
 def test_install_package(tmpdir, dev_env):
+    """
+    Test that packages are installed correctly
+    """
     TEST['install_dir'] = str(tmpdir.mkdir("index"))
-    TEST['package_idx'] = str(tmpdir.mkdir("packages"))
     qip = Qip(TEST, "", Logger())
     qip.install_package("flask", "==1.0.2", True)
     assert os.path.exists(TEST['install_dir'] + "/flask-1.0.2")
 
 
 def test_fetch_dependencies(tmpdir, dev_env):
+    """
+    Test that dependencies are resolved as expected
+    """
     TEST['install_dir'] = str(tmpdir.mkdir("index"))
-    TEST['package_idx'] = str(tmpdir.mkdir("packages"))
     qip = Qip(TEST, "", Logger())
     deps = {}
     qip.fetch_dependencies("flask", deps)
