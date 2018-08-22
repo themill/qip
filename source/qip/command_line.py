@@ -163,7 +163,9 @@ def install(ctx, **kwargs):
         sys.exit(0)
 
     for package, specs in deps.iteritems():
-        ctx.mlogger.info("Installing {} : {}".format(package, specs),
+        spec_str = ','.join(["{}{}".format(s[0], s[1]) for s in specs])
+
+        ctx.mlogger.info("Installing {} : {}".format(package, spec_str),
                          user=True)
         try:
             spec = ','.join((s[0] + s[1] for s in specs))
