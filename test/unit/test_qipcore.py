@@ -58,7 +58,7 @@ def test_install_package(tmpdir, dev_env):
     """
     Test that packages are installed correctly
     """
-    TEST['install_dir'] = str(tmpdir.mkdir("index"))
+    TEST['install_dir'] = str(tmpdir.mkdir("packages"))
     qip = Qip(TEST, "", Logger())
     qip.install_package("flask", "==1.0.2", True)
     assert os.path.exists(TEST['install_dir'] + "/flask-1.0.2")
@@ -66,9 +66,11 @@ def test_install_package(tmpdir, dev_env):
 
 def test_fetch_dependencies(tmpdir, dev_env):
     """
-    Test that dependencies are resolved as expected
+    Test that dependencies are resolved as expected.
+    Dependencies for package should appear in the install
+    dir
     """
-    TEST['install_dir'] = str(tmpdir.mkdir("index"))
+    TEST['install_dir'] = str(tmpdir.mkdir("packages"))
     qip = Qip(TEST, "", Logger())
     deps = {}
     qip.fetch_dependencies("flask", deps)

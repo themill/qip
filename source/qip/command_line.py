@@ -89,6 +89,7 @@ def qipcmd(ctx, verbose, y, target, password):
 
     mlog.root.handlers["stderr"].filterer.filterers[0].levels = mlog.levels
     try:
+        # Get the mlog verbosity from cli option, capped to max levels
         verbosity = mlog.levels[::-1][min(verbose, len(mlog.levels)-1)]
     except IndexError:
         verbosity = 'warning'

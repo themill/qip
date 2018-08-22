@@ -22,5 +22,4 @@ TEST = {
     "platform": "el7-x86-64",
     "pipcmd": "pip",
     "install_dir": "/tmp/test-packages/",
-    "package_idx": "/tmp/test-index/"
 }

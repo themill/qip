@@ -11,8 +11,7 @@ resolve clean environments using only the packages required by the wiz environme
 
 qip does this by wrapping pip commands to query, download, and install packages. Packages
 can either be downloaded or installed. When installing a package qip will resolve the
-package's dependencies and install those too. If any packages are missing from the index
-it will offer to download them also.
+package's dependencies and install those too.
 
 Resulting pacakge installation will look like this:
 
