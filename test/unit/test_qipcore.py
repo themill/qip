@@ -28,7 +28,6 @@ def test_has_git_version():
 
 
 def test_get_name_and_specs_no_spec(dev_env):
-    print "=+++++++++++++++++++", os.environ['QIP_CONFIG']
     qip = Qip(TEST, "", Logger())
     name, specs = qip.get_name_and_specs("flask")
     assert name == "flask"
@@ -56,7 +55,6 @@ def test_install_package(tmpdir, dev_env):
 def test_fetch_dependencies(tmpdir, dev_env):
     TEST['install_dir'] = str(tmpdir.mkdir("index"))
     TEST['package_idx'] = str(tmpdir.mkdir("packages"))
-    print TEST
     qip = Qip(TEST, "", Logger())
     deps = {}
     qip.fetch_dependencies("flask", deps)
