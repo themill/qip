@@ -67,19 +67,20 @@ def test_without_arguments():
 def test_target_prompt():
     """Prompt asks for User Password."""
     runner = CliRunner()
-    result = runner.invoke(qipcmd, ['download', 'test'])
-
-    assert not result.exit_code == 0
-    assert result.exception
+    result = runner.invoke(qipcmd, ['install', 'test'])
+    assert result.exit_code == 0
+    assert not result.exception
     assert result.output.split('\n')[0] == "Targets:"
 
 
 @pytest.mark.usefixtures("base_config")
 def test_password_fail():
-    """Prompt asks for User Password."""
+    """Prompt asks for User Password.
+    This test will fail if there's an shh key on the target server
+    """
     runner = CliRunner()
     result = runner.invoke(
-        qipcmd, ['--target', 'centos72', 'download', 'test'], input='test\n'
+        qipcmd, ['--target', 'centos72', 'install', 'test'], input='test\n'
     )
 
     assert not result.exit_code == 0
@@ -88,110 +89,6 @@ def test_password_fail():
         "Error: Unable to connect to dev3d-3 as {}.".format(getpass.getuser())
         in result.output.split('\n')[-3]
     )
-
-
-@pytest.mark.parametrize(
-    "package, expected_output, expected_package",
-    [
-        (
-            "flask==1.0.2",
-            "Successfully installed flask-1.0.2",
-            "flask-1.0.2"
-        ),
-        (
-            "flask",
-            "Successfully installed flask-1.0.2",
-            "flask-1.0.2"
-        )
-    ],
-    ids=[
-        "install external package with version: flask",
-        "install external package without version: flask",
-    ]
-)
-@pytest.mark.usefixtures("testing_config")
-def test_install_external(package, expected_output, expected_package):
-    """Install external library.
-
-    Using the test config:
-
-    - execute for external packages
-        qip --target test install {package}={version}
-
-    The package should appear in /tmp/packages
-
-    """
-    runner = CliRunner()
-    result = runner.invoke(
-        qipcmd, ['--target', 'test', 'install', package],
-        color=False, input='\ny\n'
-    )
-    assert result.exit_code == 0
-    assert not result.exception
-    # TODO: get paths from config or create new tmp paths instead of config
-    assert expected_output in result.output.split('\n')[-2]
-    assert os.path.exists('/tmp/packages')
-    assert os.path.isdir('/tmp/packages')
-    assert os.path.isdir('/tmp/packages/{}'.format(expected_package))
-
-
-
-@pytest.mark.parametrize(
-    "repo, package, expected_output, expected_package",
-    [
-        (
-            "git@gitlab:rnd/mlog.git@0.2.1",
-            "mlog==0.2.1",
-            "Successfully installed mlog-0.2.1",
-            "mlog-0.2.1.zip"
-        ),
-        (
-            "git@gitlab:rnd/mlog.git@0.2.1",
-            "mlog",
-            "Successfully installed mlog-0.2.1",
-            "mlog-0.2.1.zip"
-        ),
-    ],
-    ids=[
-        "install internal package with version: mlog",
-        "install internal package without version: mlog",
-    ]
-)
-@pytest.mark.usefixtures("testing_config")
-def test_install_internal(repo, package, expected_output, expected_package):
-    """Install internal library from gitlab.
-
-    Using the test config:
-
-    - execute for internal packages:
-        qip --target test install {package}=={version}
-
-    This will download the package first from the gitlab repo, and then install
-    it into /tmp/packages.
-
-    """
-    runner = CliRunner()
-
-    # download
-    result = runner.invoke(
-        qipcmd, ['--target', 'test', 'download', repo], color=False
-    )
-    assert result.exit_code == 0
-    assert not result.exception
-
-    # install
-    result = runner.invoke(
-        qipcmd, ['--target', 'test', 'install', package],
-        color=False, input='\ny\n'
-    )
-    assert result.exit_code == 0
-    assert not result.exception
-    # TODO: get paths from config or create new tmp paths instead of config
-    assert expected_output in result.output.split('\n')[-2]
-    assert os.path.exists('/tmp/packages')
-    assert os.path.isdir('/tmp/packages')
-    assert os.path.isdir('/tmp/packages/{}'.format(expected_package))
-
 
 def test_install_no_user():
     """Install without a user directory in London.

@@ -114,8 +114,10 @@ class Qip(object):
                 " --no-cache-dir "
                 " '{1}{2}'".format(temp_dir, package, spec)
             )
-
-            output, stderr, ret_code = self.runner.run_pip(cmd)
+            try:
+                output, stderr, ret_code = self.runner.run_pip(cmd)
+            except Exception:
+                raise QipError()
 
             lastline = output.split('\n')[-2].strip()
             m = re.search(r'(\S+-[\d\.]+)$', lastline)
