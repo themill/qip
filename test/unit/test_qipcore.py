@@ -22,7 +22,8 @@ def dev_env(mocker):
 
 def test_has_git_version():
     """
-    Test the has_git_version function
+    Test the has_git_version function returns the correct
+    boolean
     """
     assert has_git_version("test.git") is False
     assert has_git_version("test.git@") is False
@@ -33,7 +34,7 @@ def test_has_git_version():
 def test_get_name_and_specs_no_spec(dev_env):
     """
     Check if the specs and name parsing works if no specs
-    are supplied
+    are supplied. i.e. return the latest version
     """
     qip = Qip(TEST, "", Logger())
     name, specs = qip.get_name_and_specs("flask")
@@ -56,7 +57,8 @@ def test_get_name_and_specs_spec(dev_env):
 
 def test_install_package(tmpdir, dev_env):
     """
-    Test that packages are installed correctly
+    Test that packages are installed correctly in the packages
+    directory with the correct version
     """
     TEST['install_dir'] = str(tmpdir.mkdir("packages"))
     qip = Qip(TEST, "", Logger())

@@ -143,17 +143,3 @@ class Qip(object):
             if temp_dir:
                 self.runner.rmtree(temp_dir)
 
-    # TODO Remove when switching to Devpy
-    def check_to_download(self, package, output):
-        """
-        If the package was not found in the index, based on pip's
-        output, return True, otherwise a different error occured,
-        return False
-        """
-        output = output.split('\n')[-2]
-        if output.startswith("No matching distribution found for"):
-            self.logger.info("{0} not found in package index."
-                             .format(package), user=True)
-            self.logger.info("Downloading it....", user=True)
-            return True
-        return False

@@ -21,7 +21,7 @@ def test_mkdtemp(runner, tmpdir):
 
 def test_install_and_sync_local(runner, tmpdir, monkeypatch):
     """
-    Test the install and sync feature to ensuire the command
+    Test the install and sync feature to ensure the rsync command
     generated is as expected
     """
     def mocked_runcmd(self, cmd):

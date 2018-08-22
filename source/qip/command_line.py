@@ -120,9 +120,6 @@ def check_paths_exist(target):
     if not os.path.exists(target['install_dir']):
         raise QipError("Install directory ({}) does not exist."
                        .format(target['install_dir']))
-    if not os.path.exists(target['package_idx']):
-        raise QipError("Package index directory ({}) does not exist."
-                       .format(target['package_idx']))
 
 
 @qipcmd.command()
