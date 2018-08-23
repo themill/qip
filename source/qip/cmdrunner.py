@@ -4,7 +4,7 @@ import paramiko
 import getpass
 import subprocess
 import re
-import tempfile
+import uuid
 import os
 import wiz
 
@@ -40,8 +40,9 @@ class Command(object):
 
     def strip_output(self, stdout, stderr):
         # Strip shell colour code characters
-        ansi_escape = re.compile(r'\x1B\[[0-?]*[ -/]*[@-~]',
-                                 re.IGNORECASE | re.MULTILINE)
+        ansi_escape = re.compile(
+            r'\x1B\[[0-?]*[ -/]*[@-~]', re.IGNORECASE | re.MULTILINE
+        )
         stdout = u''.join(stdout)
         stdout = ansi_escape.sub('', stdout)
 
@@ -51,34 +52,43 @@ class Command(object):
         return stdout, stderr
 
     def mkdtemp(self, path=None):
-        names = tempfile._get_candidate_names()
-
-        # for seq in range(tempfile.TMP_MAX):
-        name = next(names)
         if path is None:
             path = self.target["install_dir"]
 
-        file = os.path.join(path, "tmp" + name)
-
-        cmd = "mkdir -m"
-        _, _, exit_status = self.run_cmd("{} {} {}".format(cmd, "755", file))
-
-        return file, exit_status
+        _file = os.path.join(path, "tmp" + uuid.uuid4().hex)
+        _, _, exit_status = self.run_cmd("mkdir -m 755 {}".format(_file))
+        return _file, exit_status
 
     def install_and_sync(self, from_dir, to_dir):
+        stdout = None
+        stderr = None
+        exit_status = None
+
         if to_dir.startswith('/mill3d/server/apps'):
             for loc, server in LOCATION_LUT.iteritems():
-                cmd = ("rsync -azvl {0}/ {2}:{1}"
-                       .format(from_dir, to_dir, server))
+                cmd = (
+                    "rsync -azvl {source}/ {server}:{destination}".format(
+                        source=from_dir,
+                        destination=to_dir,
+                        server=server
+                    )
+                )
 
                 stdout, stderr, exit_status = self.run_cmd(cmd)
                 if exit_status != 0:
-                    self.logger.error("Sync to {} failed with error: {}\n"
-                                      "Carrying on with other servers."
-                                      .format(server, stderr))
+                    self.logger.error(
+                        "Sync to '{}' failed with error: {}\n"
+                        "Carrying on with other servers.".format(
+                            server, stderr
+                        )
+                    )
         else:
-            cmd = "rsync -azvl {0}/ {1}".format(from_dir, to_dir)
+            cmd = "rsync -azvl {source}/ {destination}".format(
+                source=from_dir,
+                destination=to_dir,
+            )
             stdout, stderr, exit_status = self.run_cmd(cmd)
+
         return stdout, stderr, exit_status
 
     def rmtree(self, path):

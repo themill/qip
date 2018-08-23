@@ -1,10 +1,12 @@
 # :coding: utf-8
 
-from pkg_resources import Requirement as Req
-import click
 import os
 import re
-from cmdrunner import CmdRunner
+
+from pkg_resources import Requirement as Req
+import click
+
+import qip.cmdrunner
 
 
 class QipError(Exception):
@@ -27,7 +29,7 @@ class Qip(object):
     def __init__(self, target, password, logger):
         self.target = target
         self.logger = logger
-        self.runner = CmdRunner(target, password, logger)
+        self.runner = qip.cmdrunner.CmdRunner(target, password, logger)
 
     def get_name_and_specs(self, package):
         """ Get the specs of the package from provided name. If there
@@ -51,8 +53,7 @@ class Qip(object):
             if not specs:
                 # If the package has no version specified grab the latest one
                 test_cmd = (
-                    "pip install --ignore-installed "
-                    "'{0}=='".format(name)
+                    "pip install --ignore-installed {!r}==".format(name)
                 )
                 output, stderr, ret_code = self.runner.run_pip(test_cmd)
                 match = re.search(r"\(from versions: ((.*))\)", stderr)
@@ -98,7 +99,6 @@ class Qip(object):
         Install a *package* of *version*.
 
         :param package: Name of package to install
-        :param version: the version spec for the package
         :returns: a tuple of the command output and return code
         """
         temp_dir = None
@@ -111,8 +111,7 @@ class Qip(object):
 
             cmd = (
                 "pip install --ignore-installed --no-deps --prefix {0}"
-                " --no-cache-dir "
-                " '{1}{2}'".format(temp_dir, package, spec)
+                " --no-cache-dir '{1}{2}'".format(temp_dir, package, spec)
             )
             try:
                 output, stderr, ret_code = self.runner.run_pip(cmd)
@@ -120,6 +119,7 @@ class Qip(object):
                 raise QipError()
 
             lastline = output.split('\n')[-2].strip()
+            print(lastline)
             m = re.search(r'(\S+-[\d\.]+)$', lastline)
             if m:
                 if os.path.isdir(
