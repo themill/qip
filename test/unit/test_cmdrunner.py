@@ -154,7 +154,7 @@ def test_rmtree(mocked_run_cmd, logger):
 def test_run_pip(mocked_run_cmd, logger, mocked_wiz_resolve_context):
     """Run pip command."""
     runner = LocalCmd({}, "P@$sw0rd", logger)
-    stdout, stderr, exit_status = runner.run_pip("pip install thing")
+    stdout, stderr, exit_status = runner.run_pip("install thing")
     mocked_run_cmd.assert_called_once_with("pip install thing", "__ENVIRON__")
     mocked_wiz_resolve_context.assert_called_once_with(["python==2.7.*"])
 

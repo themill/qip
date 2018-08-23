@@ -78,8 +78,8 @@ def test_install_package(logger, mocked_cmd_runner):
 
     mocked_cmd_runner.mkdtemp.assert_called_once_with("/tmp")
     mocked_cmd_runner.run_pip.assert_called_once_with(
-        "pip install --ignore-installed --no-deps --prefix /path/to/tmp"
-        " --no-cache-dir 'foo==0.1.0'"
+        "install --ignore-installed --no-deps --prefix /path/to/tmp"
+        " --no-cache-dir  'foo==0.1.0'"
     )
     mocked_cmd_runner.install_and_sync.assert_called_once_with(
         "/path/to/tmp", "/path/to/destination/foo-0.1.0"
@@ -105,25 +105,25 @@ def test_fetch_dependencies(logger, mocked_cmd_runner):
 
     assert mocked_cmd_runner.run_pip.call_count == 4
     mocked_cmd_runner.run_pip.assert_any_call(
-        "pip download --exists-action w 'foo' "
+        "download --exists-action w 'foo' "
         "-d /tmp --no-binary :all: --no-cache"
         "| grep Collecting | cut -d' ' "
         "-f2 | grep -v 'foo'"
     )
     mocked_cmd_runner.run_pip.assert_any_call(
-        "pip download --exists-action w 'bar>=2.10' "
+        "download --exists-action w 'bar>=2.10' "
         "-d /tmp --no-binary :all: --no-cache"
         "| grep Collecting | cut -d' ' "
         "-f2 | grep -v 'bar>=2.10'"
     )
     mocked_cmd_runner.run_pip.assert_any_call(
-        "pip download --exists-action w 'bim==1.0' "
+        "download --exists-action w 'bim==1.0' "
         "-d /tmp --no-binary :all: --no-cache"
         "| grep Collecting | cut -d' ' "
         "-f2 | grep -v 'bim==1.0'"
     )
     mocked_cmd_runner.run_pip.assert_any_call(
-        "pip download --exists-action w 'bam>=0.14.1' "
+        "download --exists-action w 'bam>=0.14.1' "
         "-d /tmp --no-binary :all: --no-cache"
         "| grep Collecting | cut -d' ' "
         "-f2 | grep -v 'bam>=0.14.1'"

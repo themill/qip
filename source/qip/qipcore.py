@@ -4,7 +4,6 @@ import os
 import re
 
 from pkg_resources import Requirement as Req
-import click
 
 import qip.cmdrunner
 
