@@ -119,7 +119,6 @@ class Qip(object):
                 raise QipError()
 
             lastline = output.split('\n')[-2].strip()
-            print(lastline)
             m = re.search(r'(\S+-[\d\.]+)$', lastline)
             if m:
                 if os.path.isdir(
