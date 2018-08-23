@@ -87,6 +87,7 @@ class Command(object):
         return stdout, stderr, exit_status
 
     def run_pip(self, cmd):
+        cmd = "pip {}".format(cmd)
         context = wiz.resolve_context(["python==2.7.*"])
         stdout, stderr, exit_status = self.run_cmd(cmd, context["environ"])
         return stdout, stderr, exit_status

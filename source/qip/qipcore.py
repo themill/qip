@@ -51,7 +51,7 @@ class Qip(object):
             if not specs:
                 # If the package has no version specified grab the latest one
                 test_cmd = (
-                    "pip install --ignore-installed "
+                    "install --ignore-installed "
                     "'{0}=='".format(name)
                 )
                 output, stderr, ret_code = self.runner.run_pip(test_cmd)
@@ -73,7 +73,7 @@ class Qip(object):
         :param deps_install: List of the dependencies to install later
         """
         cmd = (
-            "pip download --exists-action w '{0}' "
+            "download --exists-action w '{0}' "
             "-d /tmp --no-binary :all: --no-cache"
             "| grep Collecting | cut -d' ' "
             "-f2 | grep -v '{0}'".
@@ -110,7 +110,7 @@ class Qip(object):
                 raise QipError("Unable to create temp directory")
 
             cmd = (
-                "pip install --ignore-installed --no-deps --prefix {0}"
+                "install --ignore-installed --no-deps --prefix {0}"
                 " --no-cache-dir "
                 " '{1}{2}'".format(temp_dir, package, spec)
             )
