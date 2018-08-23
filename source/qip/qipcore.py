@@ -1,13 +1,16 @@
 # :coding: utf-8
 
 from pkg_resources import Requirement as Req
-import click
 import os
 import re
 from cmdrunner import CmdRunner
 
 
 class QipError(Exception):
+    pass
+
+
+class QipPackageInstalled(Exception):
     pass
 
 
@@ -93,7 +96,7 @@ class Qip(object):
             deps_install[name] = specs
             self.fetch_dependencies(dep, deps_install)
 
-    def install_package(self, package, spec, yestoall=False):
+    def install_package(self, package, spec, overwrite=False):
         """
         Install a *package* of *version*.
 
@@ -125,15 +128,11 @@ class Qip(object):
                 if os.path.isdir(
                     "{0}/{1}".format(self.target['install_dir'],
                                      m.group(1))
-                ):
-                    self.logger.warning(
-                        "Package {} already installed to index.".
-                        format(m.group(1))
-                    )
-                    if (not yestoall and not
-                       click.confirm("Overwrite it?")):
-                        self.runner.rmtree(temp_dir)
-                        return "", 1
+
+                ) and not overwrite:
+                    raise QipPackageInstalled("Package {} already "
+                                              "installed to index."
+                                              .format(m.group(1)))
 
                 self.runner.install_and_sync(
                     temp_dir, "{0}/{1}".
@@ -144,4 +143,3 @@ class Qip(object):
         finally:
             if temp_dir:
                 self.runner.rmtree(temp_dir)
-

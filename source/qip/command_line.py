@@ -8,7 +8,7 @@ import platform
 import os
 
 import config
-from qipcore import QipError, Qip
+from qipcore import QipError, Qip, QipPackageInstalled
 
 
 cfg = config.Config()
@@ -72,7 +72,7 @@ def get_password(ctx, param, value):
 @click.option('--target', '-t', callback=get_target)
 @click.option('--password', callback=get_password, hide_input=True)
 def qipcmd(ctx, verbose, y, target, password):
-    """Install or download Python packages to an isolated location."""
+    """Install Python packages to an isolated location."""
     qctx = QipContext()
 
     global cfg
@@ -135,7 +135,7 @@ def install(ctx, **kwargs):
     try:
         check_paths_exist(ctx.target)
     except QipError as e:
-        print e.message
+        print(e.message)
         sys.exit(1)
 
     qip = Qip(ctx.target, ctx.password, ctx.mlogger)
@@ -169,8 +169,18 @@ def install(ctx, **kwargs):
                          user=True)
         try:
             spec = ','.join((s[0] + s[1] for s in specs))
-            output, ret_code = qip.install_package(package, spec,
-                                                   ctx.yestoall)
+            overwrite = ctx.yestoall
+            try:
+                output, ret_code = qip.install_package(package, spec,
+                                                       overwrite)
+            except QipPackageInstalled as e:
+                ctx.mlogger.warning(e)
+                if (not ctx.yestoall and click.confirm("Overwrite it?")):
+                    output, ret_code = qip.install_package(package, spec,
+                                                           True)
+                else:
+                    continue
+
         except QipError as e:
             print(e.message)
             sys.exit(1)
