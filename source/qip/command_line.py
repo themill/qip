@@ -93,6 +93,7 @@ def qipcmd(ctx, verbose, y, target, password):
         verbosity = mlog.levels[::-1][min(verbose, len(mlog.levels)-1)]
     except IndexError:
         verbosity = 'warning'
+
     mlog.root.handlers["stderr"].filterer.filterers[0].min = verbosity
 
     ctx.obj = qctx
@@ -174,7 +175,7 @@ def install(ctx, **kwargs):
                 output, ret_code = qip.install_package(package, spec,
                                                        overwrite)
             except QipPackageInstalled as e:
-                ctx.mlogger.warning(e)
+                ctx.mlogger.warning(e, user=True)
                 if (not ctx.yestoall and click.confirm("Overwrite it?")):
                     output, ret_code = qip.install_package(package, spec,
                                                            True)
