@@ -86,9 +86,10 @@ def test_password_fail():
     assert not result.exit_code == 0
     assert result.exception
     assert (
-        "Error: Unable to connect to dev3d-3 as {}.".format(getpass.getuser())
-        in result.output.split('\n')[-3]
+        "error: Unable to connect to dev3d-3 as {}.".format(getpass.getuser())
+        in result.output
     )
+
 
 def test_install_no_user():
     """Install without a user directory in London.

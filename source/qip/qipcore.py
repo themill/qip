@@ -13,6 +13,10 @@ class QipError(Exception):
     pass
 
 
+class QipPackageInstalled(Exception):
+    pass
+
+
 def has_git_version(package):
     """ Regex to test if a gitlab URL has a version specified
 
@@ -41,7 +45,8 @@ class Qip(object):
         """
         if package.startswith("git+ssh://"):
             if not has_git_version(package):
-                raise QipError()
+                raise QipError("Please specify a version with `@` "
+                               "when installing from git")
 
             package_name = os.path.basename(package)
             name, specs = package_name.split('.git@')
@@ -55,7 +60,11 @@ class Qip(object):
                 test_cmd = (
                     "pip install --ignore-installed {!r}==".format(name)
                 )
-                output, stderr, ret_code = self.runner.run_pip(test_cmd)
+                try:
+                    output, stderr, ret_code = self.runner.run_pip(test_cmd)
+                except QipError as e:
+                    raise e
+
                 match = re.search(r"\(from versions: ((.*))\)", stderr)
                 if match:
                     version = match.group(1).split(", ")[-1]
@@ -74,7 +83,7 @@ class Qip(object):
         :param deps_install: List of the dependencies to install later
         """
         cmd = (
-            "pip download --exists-action w '{0}' "
+            "download --exists-action w '{0}' "
             "-d /tmp --no-binary :all: --no-cache"
             "| grep Collecting | cut -d' ' "
             "-f2 | grep -v '{0}'".
@@ -94,7 +103,7 @@ class Qip(object):
             deps_install[name] = specs
             self.fetch_dependencies(dep, deps_install)
 
-    def install_package(self, package, spec, yestoall=False):
+    def install_package(self, package, spec, overwrite=False):
         """
         Install a *package* of *version*.
 
@@ -110,8 +119,9 @@ class Qip(object):
                 raise QipError("Unable to create temp directory")
 
             cmd = (
-                "pip install --ignore-installed --no-deps --prefix {0}"
-                " --no-cache-dir '{1}{2}'".format(temp_dir, package, spec)
+                "install --ignore-installed --no-deps --prefix {0}"
+                " --no-cache-dir "
+                " '{1}{2}'".format(temp_dir, package, spec)
             )
             try:
                 output, stderr, ret_code = self.runner.run_pip(cmd)
@@ -124,15 +134,11 @@ class Qip(object):
                 if os.path.isdir(
                     "{0}/{1}".format(self.target['install_dir'],
                                      m.group(1))
-                ):
-                    self.logger.warning(
-                        "Package {} already installed to index.".
-                        format(m.group(1))
-                    )
-                    if (not yestoall and not
-                       click.confirm("Overwrite it?")):
-                        self.runner.rmtree(temp_dir)
-                        return "", 1
+
+                ) and not overwrite:
+                    raise QipPackageInstalled("Package {} already "
+                                              "installed to index."
+                                              .format(m.group(1)))
 
                 self.runner.install_and_sync(
                     temp_dir, "{0}/{1}".
@@ -143,4 +149,3 @@ class Qip(object):
         finally:
             if temp_dir:
                 self.runner.rmtree(temp_dir)
-
