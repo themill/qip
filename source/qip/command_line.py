@@ -136,7 +136,7 @@ def install(ctx, **kwargs):
     try:
         check_paths_exist(ctx.target)
     except QipError as e:
-        print(e.message)
+        ctx.mlogger.error(e.message)
         sys.exit(1)
 
     qip = Qip(ctx.target, ctx.password, ctx.mlogger)
@@ -144,9 +144,8 @@ def install(ctx, **kwargs):
     package = set_git_ssh(kwargs['package'])
     try:
         name, specs = qip.get_name_and_specs(package)
-    except QipError:
-        ctx.mlogger.error("Please specify a version with `@` "
-                          "when installing from git")
+    except QipError as e:
+        ctx.mlogger.error(e)
         sys.exit(1)
 
     deps = {}

@@ -7,6 +7,7 @@ import re
 import tempfile
 import os
 import wiz
+import qipcore
 
 
 LOCATION_LUT = {
@@ -109,9 +110,8 @@ class RemoteCmd(Command):
             ssh.connect(self.target["server"], username=username,
                         password=self.password)
         except paramiko.ssh_exception.AuthenticationException:
-            self.logger.error("Unable to connect to {} as {}."
-                              .format(self.target["server"], username))
-            raise
+            raise qipcore.QipError("Unable to connect to {} as {}."
+                                   .format(self.target["server"], username))
 
         cmd = "sudo -u admin3d {}".format(cmd)
 

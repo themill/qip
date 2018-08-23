@@ -42,7 +42,8 @@ class Qip(object):
         """
         if package.startswith("git+ssh://"):
             if not has_git_version(package):
-                raise QipError()
+                raise QipError("Please specify a version with `@` "
+                               "when installing from git")
 
             package_name = os.path.basename(package)
             name, specs = package_name.split('.git@')
@@ -57,7 +58,11 @@ class Qip(object):
                     "install --ignore-installed "
                     "'{0}=='".format(name)
                 )
-                output, stderr, ret_code = self.runner.run_pip(test_cmd)
+                try:
+                    output, stderr, ret_code = self.runner.run_pip(test_cmd)
+                except QipError as e:
+                    raise e
+
                 match = re.search(r"\(from versions: ((.*))\)", stderr)
                 if match:
                     version = match.group(1).split(", ")[-1]
