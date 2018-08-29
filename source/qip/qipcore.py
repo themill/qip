@@ -3,7 +3,10 @@
 from pkg_resources import Requirement as Req
 import os
 import re
-from cmdrunner import LocalCmd
+import shutil
+import tempfile
+import wiz
+import subprocess
 
 
 class QipError(Exception):
@@ -30,7 +33,6 @@ class Qip(object):
     def __init__(self, outdir, logger):
         self.outdir = outdir
         self.logger = logger
-        self.runner = LocalCmd(logger)
 
     def get_name_and_specs(self, package):
         """ Get the specs of the package from provided name. If there
@@ -59,7 +61,7 @@ class Qip(object):
                     "'{0}=='".format(name)
                 )
                 try:
-                    output, stderr, ret_code = self.runner.run_pip(test_cmd)
+                    output, stderr, ret_code = self.run_pip(test_cmd)
                 except QipError as e:
                     raise e
 
@@ -87,7 +89,7 @@ class Qip(object):
             "-f2 | grep -v '{0}'".
             format(package)
         )
-        output, stderr, _ = self.runner.run_pip(cmd)
+        output, stderr, _ = self.run_pip(cmd)
         deps = output.split()
 
         for dep in deps:
@@ -113,8 +115,9 @@ class Qip(object):
 
         # Need this to catch hard exists and clean up temp dir
         try:
-            temp_dir, exit_status = self.runner.mkdtemp("/tmp")
-            if exit_status != 0:
+            try:
+                temp_dir = tempfile.mkdtemp(dir="/tmp")
+            except OSError:
                 raise QipError("Unable to create temp directory")
 
             cmd = (
@@ -123,7 +126,7 @@ class Qip(object):
                 " '{1}{2}'".format(temp_dir, package, spec)
             )
             try:
-                output, stderr, ret_code = self.runner.run_pip(cmd)
+                output, stderr, ret_code = self.run_pip(cmd)
             except Exception:
                 raise QipError()
 
@@ -139,7 +142,7 @@ class Qip(object):
                                               "installed to index."
                                               .format(m.group(1)))
 
-                self.runner.install(
+                self.install(
                     temp_dir, "{0}/{1}".
                     format(self.outdir, m.group(1))
                 )
@@ -147,4 +150,53 @@ class Qip(object):
             return output, ret_code
         finally:
             if temp_dir:
-                self.runner.rmtree(temp_dir)
+                shutil.rmtree(temp_dir)
+
+    def strip_output(self, stdout, stderr):
+        # Strip shell colour code characters
+        ansi_escape = re.compile(
+            r'\x1B\[[0-?]*[ -/]*[@-~]', re.IGNORECASE | re.MULTILINE
+        )
+
+        stdout = u''.join(stdout)
+        stdout = ansi_escape.sub('', stdout)
+
+        stderr = u''.join(stderr)
+        stderr = ansi_escape.sub('', stderr)
+
+        return stdout, stderr
+
+    def run_pip(self, cmd):
+        cmd = "pip {}".format(cmd)
+        context = wiz.resolve_context(["python==2.7.*"])
+        stdout, stderr, exit_status = self.run_cmd(cmd, context["environ"])
+        return stdout, stderr, exit_status
+
+    def install(self, from_dir, to_dir):
+        cmd = "rsync -azvl {0}/ {1}".format(from_dir, to_dir)
+        stdout, stderr, exit_status = self.run_cmd(cmd)
+        return stdout, stderr, exit_status
+
+    def run_cmd(self, cmd, env=None):
+        self.logger.debug("Running {0} ".
+                          format(cmd,))
+
+        ps = subprocess.Popen(
+            cmd, shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            env=env
+        )
+        stdout, stderr = ps.communicate()
+
+        stdout, stderr = self.strip_output(
+            stdout.decode('utf-8'), stderr.decode('utf-8')
+        )
+
+        self.logger.debug(u"Command returned: \n"
+                          "STDOUT: {0}\n"
+                          "STDERR: {1}\n"
+                          "Exit Code: {2}"
+                          .format(stdout, stderr, ps.returncode))
+
+        return stdout, stderr, ps.returncode
