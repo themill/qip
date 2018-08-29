@@ -51,6 +51,10 @@ def install(**kwargs):
     """
     logger = configure_mlog(kwargs['verbose'])
 
+    if not kwargs["outdir"]:
+        logger.error("Please specify an output directory.")
+        sys.exit(1)
+
     if not os.path.exists(kwargs["outdir"]):
         try:
             os.makedirs(kwargs["outdir"])

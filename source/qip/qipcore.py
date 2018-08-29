@@ -2,9 +2,8 @@
 
 import os
 import re
-import shutil
-import tempfile
 import wiz
+import uuid
 import subprocess
 from pkg_resources import Requirement as Req
 
@@ -113,9 +112,8 @@ class Qip(object):
 
         # Need this to catch hard exists and clean up temp dir
         try:
-            try:
-                temp_dir = tempfile.mkdtemp(dir="/tmp")
-            except OSError:
+            temp_dir, exit_status = self.mkdtemp("/tmp")
+            if exit_status != 0:
                 raise QipError("Unable to create temp directory")
 
             cmd = (
@@ -148,7 +146,7 @@ class Qip(object):
             return output, ret_code
         finally:
             if temp_dir:
-                shutil.rmtree(temp_dir, ignore_errors=True)
+                self.rmtree(temp_dir)
 
     def strip_output(self, stdout, stderr):
         # Strip shell colour code characters
@@ -172,6 +170,16 @@ class Qip(object):
 
     def install(self, from_dir, to_dir):
         cmd = "rsync -azvl {0}/ {1}".format(from_dir, to_dir)
+        stdout, stderr, exit_status = self.run_cmd(cmd)
+        return stdout, stderr, exit_status
+
+    def mkdtemp(self, path):
+        _file = os.path.join(path, "tmp" + uuid.uuid4().hex)
+        _, _, exit_status = self.run_cmd("mkdir -m 755 {}".format(_file))
+        return _file, exit_status
+
+    def rmtree(self, path):
+        cmd = "rm -rf {}".format(path)
         stdout, stderr, exit_status = self.run_cmd(cmd)
         return stdout, stderr, exit_status
 
