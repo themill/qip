@@ -6,6 +6,7 @@ import shutil
 import tempfile
 import wiz
 import subprocess
+from pkg_resources import Requirement as Req
 
 
 class QipError(Exception):
@@ -147,7 +148,7 @@ class Qip(object):
             return output, ret_code
         finally:
             if temp_dir:
-                shutil.rmtree(temp_dir)
+                shutil.rmtree(temp_dir, ignore_errors=True)
 
     def strip_output(self, stdout, stderr):
         # Strip shell colour code characters
