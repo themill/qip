@@ -4,12 +4,12 @@ import pytest
 from qip.qipcore import Qip, has_git_version
 import tempfile
 
+
 @pytest.fixture()
-def mocked_qipcore(mocker):
-    """Return mocked 'CmdRunner' instance."""
-    instance = mocker.Mock()
-    mocker.patch.object(Qip, "run_pip", autospec=True)
-    return instance
+def mocked_run_pip(mocker):
+    """Return mocked 'run_pip' command."""
+    mocked_run_pip = mocker.patch.object(Qip, "run_pip", autospec=True)
+    return mocked_run_pip
 
 
 def test_has_git_version():
@@ -20,10 +20,9 @@ def test_has_git_version():
     assert has_git_version("test.git@master") is True
 
 
-def test_get_name_and_specs_no_spec(logger, mocker, tmpdir):
+def test_get_name_and_specs_no_spec(logger, mocked_run_pip, tmpdir):
     """Parse requirement with no specifier supplied.
     """
-    mocked_run_pip = mocker.patch.object(Qip, "run_pip", autospec=True)
     mocked_run_pip.return_value = (
         "",
         (
@@ -59,12 +58,11 @@ def test_get_name_and_specs_spec(logger, tmpdir):
     assert specs == [('<', '1.0')]
 
 
-def test_install_package(logger, mocker, tmpdir):
+def test_install_package(logger, mocked_run_pip, mocker, tmpdir):
     """Install package in directory with correct version.
     """
     mkdtemp = mocker.patch.object(tempfile, 'mkdtemp')
     mkdtemp.return_value = "/tmp/testing"
-    mocked_run_pip = mocker.patch.object(Qip, "run_pip", autospec=True)
     mocked_run_pip.return_value = (
         (
             "Installing collected packages: bar, bim, bam, foo\n"
@@ -72,7 +70,6 @@ def test_install_package(logger, mocker, tmpdir):
         ),
         "", 0
     )
-    #mocked_install_package = mocker.patch.object(Qip, "install_package", autospec=True)
 
     _qip = Qip('/tmp/testing', logger)
     _qip.install_package("foo", "==0.1.0", True)
@@ -82,11 +79,9 @@ def test_install_package(logger, mocker, tmpdir):
         "install --ignore-installed --no-deps --prefix /tmp/testing"
         " --no-cache-dir  'foo==0.1.0'"
     )
-    #mocked_install_package.assert_called_once_with(
-    #    "/path/to/tmp", "/path/to/destination/foo-0.1.0"
-    #)
 
-def test_fetch_dependencies(logger, mocker, tmpdir):
+
+def test_fetch_dependencies(logger, mocked_run_pip, mocker, tmpdir):
     """Fetch dependencies for requirement package."""
     mocked_run_pip = mocker.patch.object(Qip, "run_pip", autospec=True)
     mocked_run_pip.return_value = (
