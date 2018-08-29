@@ -1,6 +1,5 @@
 # :coding: utf-8
 
-from pkg_resources import Requirement as Req
 import os
 import re
 import shutil
@@ -57,8 +56,7 @@ class Qip(object):
             if not specs:
                 # If the package has no version specified grab the latest one
                 test_cmd = (
-                    "install --ignore-installed "
-                    "'{0}=='".format(name)
+                    "pip install --ignore-installed {!r}==".format(name)
                 )
                 try:
                     output, stderr, ret_code = self.run_pip(test_cmd)
@@ -108,7 +106,6 @@ class Qip(object):
         Install a *package* of *version*.
 
         :param package: Name of package to install
-        :param version: the version spec for the package
         :returns: a tuple of the command output and return code
         """
         temp_dir = None
