@@ -9,9 +9,8 @@ packages to specific locations in an isolated manner. Each package resides in it
 directory under the install directory. The purpose for this is to enable wiz to
 resolve clean environments using only the packages required by the wiz environment.
 
-qip does this by wrapping pip commands to query, download, and install packages. Packages
-can either be downloaded or installed. When installing a package qip will resolve the
-package's dependencies and install those too.
+qip does this by wrapping pip commands to query and install packages.
+When installing a package qip will resolve the package's dependencies and install those too.
 
 Resulting pacakge installation will look like this:
 
