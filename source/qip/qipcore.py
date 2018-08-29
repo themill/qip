@@ -3,7 +3,7 @@
 from pkg_resources import Requirement as Req
 import os
 import re
-from cmdrunner import CmdRunner
+from cmdrunner import LocalCmd
 
 
 class QipError(Exception):
@@ -27,10 +27,10 @@ def has_git_version(package):
 
 
 class Qip(object):
-    def __init__(self, target, password, logger):
-        self.target = target
+    def __init__(self, outdir, logger):
+        self.outdir = outdir
         self.logger = logger
-        self.runner = CmdRunner(target, password, logger)
+        self.runner = LocalCmd(logger)
 
     def get_name_and_specs(self, package):
         """ Get the specs of the package from provided name. If there
@@ -95,7 +95,7 @@ class Qip(object):
             name = pkg_req.unsafe_name
             specs = pkg_req.specs
             if name in deps_install.keys():
-                self.logger.info("\tSkipping {}. Already processed. "
+                self.logger.info("\tSkipping {}. Already satisfied. "
                                  .format(name), user=True)
                 continue
             deps_install[name] = specs
@@ -131,7 +131,7 @@ class Qip(object):
             m = re.search(r'(\S+-[\d\.]+)$', lastline)
             if m:
                 if os.path.isdir(
-                    "{0}/{1}".format(self.target['install_dir'],
+                    "{0}/{1}".format(self.outdir,
                                      m.group(1))
 
                 ) and not overwrite:
@@ -139,9 +139,9 @@ class Qip(object):
                                               "installed to index."
                                               .format(m.group(1)))
 
-                self.runner.install_and_sync(
+                self.runner.install(
                     temp_dir, "{0}/{1}".
-                    format(self.target['install_dir'], m.group(1))
+                    format(self.outdir, m.group(1))
                 )
 
             return output, ret_code
