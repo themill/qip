@@ -127,10 +127,17 @@ class Qip(object):
                 raise QipError()
 
             lastline = output.split('\n')[-2].strip()
-            m = re.search(r'(\S+-[\d\.]+)$', lastline)
+
+            m = re.search(r'((\S+)-[\d\.]+)$', lastline)
             if m:
+                outdir = os.path.join(self.outdir, m.group(2))
+                _, _, exit_status = self.run_cmd("mkdir -p -m 755 {}".format(outdir))
+                if exit_status != 0:
+                    raise QipError("Unable to create install "
+                                   "directory: {}", outdir)
+
                 if os.path.isdir(
-                    "{0}/{1}".format(self.outdir,
+                    "{0}/{1}".format(outdir,
                                      m.group(1))
 
                 ) and not overwrite:
@@ -140,7 +147,7 @@ class Qip(object):
 
                 self.install(
                     temp_dir, "{0}/{1}".
-                    format(self.outdir, m.group(1))
+                    format(outdir, m.group(1))
                 )
 
             return output, ret_code
