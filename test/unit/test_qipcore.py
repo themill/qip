@@ -3,13 +3,21 @@
 import pytest
 from qip.qipcore import Qip, has_git_version
 import tempfile
-
+import uuid
 
 @pytest.fixture()
 def mocked_run_pip(mocker):
     """Return mocked 'run_pip' command."""
     mocked_run_pip = mocker.patch.object(Qip, "run_pip", autospec=True)
     return mocked_run_pip
+
+
+@pytest.fixture()
+def mocked_uuid(mocker):
+    """Return a predictable uuid for tmp directory"""
+    mock_uuid = mocker.patch.object(uuid, 'uuid4', autospec=True)
+    mock_uuid.return_value = uuid.UUID(hex='5ecd5827b6ef4067b5ac3ceac07dde9f')
+    return mock_uuid
 
 
 def test_has_git_version():
@@ -58,7 +66,7 @@ def test_get_name_and_specs_spec(logger, tmpdir):
     assert specs == [('<', '1.0')]
 
 
-def test_install_package(logger, mocked_run_pip, mocker, tmpdir):
+def test_install_package(logger, mocked_run_pip, mocked_uuid, mocker, tmpdir):
     """Install package in directory with correct version.
     """
     mkdtemp = mocker.patch.object(tempfile, 'mkdtemp')
@@ -76,7 +84,8 @@ def test_install_package(logger, mocked_run_pip, mocker, tmpdir):
 
     mocked_run_pip.assert_called_once_with(
         _qip,
-        "install --ignore-installed --no-deps --prefix /tmp/testing"
+        "install --ignore-installed --no-deps "
+        "--prefix /tmp/tmp5ecd5827b6ef4067b5ac3ceac07dde9f"
         " --no-cache-dir  'foo==0.1.0'"
     )
 
