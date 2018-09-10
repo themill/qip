@@ -26,7 +26,7 @@ with open(
 INSTALL_REQUIRES = [
     "mlog >= 0.0.6, < 1",
     "click >= 6.7",
-    "wiz >= 0.16.0, < 1"
+    "wiz >= 1.0.0, < 1"
 ]
 DOC_REQUIRES = [
     "sphinx >= 1.2.2, < 2",
