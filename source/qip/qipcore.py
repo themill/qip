@@ -131,7 +131,8 @@ class Qip(object):
             m = re.search(r'((\S+)-[\d\.]+)$', lastline)
             if m:
                 outdir = os.path.join(self.outdir, m.group(2))
-                _, _, exit_status = self.run_cmd("mkdir -p -m 755 {}".format(outdir))
+                _, _, exit_status = self.run_cmd("mkdir -p -m 755 {}"
+                                                 .format(outdir))
                 if exit_status != 0:
                     raise QipError("Unable to create install "
                                    "directory: {}", outdir)

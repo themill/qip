@@ -27,6 +27,10 @@ def configure_mlog(verbose):
     mlog.configure()
     logger = mlog.Logger(__name__ + ".main")
     mlog.root.handlers["stderr"].filterer.filterers[0].levels = mlog.levels
+
+    # Ensure we are always at warning at least
+    if verbose < 1:
+        verbose = 1
     try:
         # Get the mlog verbosity from cli option, capped to max levels
         verbosity = mlog.levels[::-1][min(verbose, len(mlog.levels)-1)]
@@ -95,6 +99,7 @@ def install(**kwargs):
         try:
             output, ret_code = qip.install_package(package, specs,
                                                    kwargs["y"])
+
         except QipError as e:
             logger.error(e.message)
             sys.exit(1)
@@ -103,9 +108,8 @@ def install(**kwargs):
             if click.confirm("Do you want to overwrite it?"):
                 output, ret_code = qip.install_package(package, specs,
                                                        True)
-
         if ret_code == 0:
-            logger.info(output.split("\n")[-2])
+            logger.info(output.split("\n")[-2], user=True)
 
 
 def main(arguments=None):
