@@ -13,7 +13,7 @@ target from a list, as well as a prompt fro the password.
 
 For example:
 
-.. code-block:: Python
+.. code-block:: bash
 
     $> qip install flask
        Targets:

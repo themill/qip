@@ -15,6 +15,5 @@ qip
 
     qipcore
     command_line
-    cmdrunner
 
 
