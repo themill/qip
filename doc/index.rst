@@ -13,7 +13,6 @@ Quarantined Installer for Python
     installing
     tutorial
     command_line
-    developer_info
     release/index
     glossary
     api_reference/index

@@ -4,7 +4,7 @@
 Release Notes
 *************
 
-.. release:: 0.2.0
+.. release:: Upcoming
 
     .. change:: changed
 
