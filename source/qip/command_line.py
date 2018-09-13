@@ -108,6 +108,11 @@ def install(**kwargs):
             if click.confirm("Do you want to overwrite it?"):
                 output, ret_code = qip.install_package(package, specs,
                                                        True)
+            else:
+                logger.info("Skipping installation of {}."
+                            .format(package), user=True)
+                continue
+
         if ret_code == 0:
             logger.info(output.split("\n")[-2], user=True)
 

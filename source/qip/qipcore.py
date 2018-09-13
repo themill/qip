@@ -156,10 +156,10 @@ class Qip(object):
         )
 
         stdout = u''.join(stdout)
-        stdout = ansi_escape.sub('', stdout)
+        stdout = ansi_escape.sub(u'', stdout)
 
         stderr = u''.join(stderr)
-        stderr = ansi_escape.sub('', stderr)
+        stderr = ansi_escape.sub(u'', stderr)
 
         return stdout, stderr
 
