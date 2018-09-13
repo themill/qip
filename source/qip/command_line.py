@@ -60,14 +60,6 @@ def install(**kwargs):
         logger.error("Please specify an output directory.")
         sys.exit(1)
 
-    if not os.path.exists(kwargs["outdir"]):
-        try:
-            os.makedirs(kwargs["outdir"])
-        except os.error:
-            logger.error("Unable to create target dir {}"
-                         .format(kwargs["outdir"]))
-            sys.exit(1)
-
     qip = Qip(kwargs["outdir"], logger)
 
     package = set_git_ssh(kwargs["package"])
@@ -90,6 +82,14 @@ def install(**kwargs):
             sys.exit(1)
 
     deps[name] = specs
+
+    if not os.path.exists(kwargs["outdir"]):
+        try:
+            os.makedirs(kwargs["outdir"])
+        except os.error:
+            logger.error("Unable to create target dir {}"
+                         .format(kwargs["outdir"]))
+            sys.exit(1)
 
     logger.info("Dependencies resolved. Required packages:", user=True)
     logger.info("\t{}".format(", ".join(deps.keys())), user=True)
