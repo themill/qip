@@ -72,7 +72,7 @@ html_copy_source = True
 
 # -- Autodoc ------------------------------------------------------------------
 
-autodoc_default_flags = ["members", "undoc-members", "inherited-members"]
+autodoc_default_options = ["members", "undoc-members", "inherited-members"]
 autodoc_member_order = "bysource"
 
 
