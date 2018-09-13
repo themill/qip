@@ -6,14 +6,7 @@ import wiz
 import uuid
 import subprocess
 from pkg_resources import Requirement as Req
-
-
-class QipError(Exception):
-    pass
-
-
-class QipPackageInstalled(Exception):
-    pass
+from qip_exception import QipError, QipPackageInstalled
 
 
 def has_git_version(package):

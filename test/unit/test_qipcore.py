@@ -5,6 +5,7 @@ from qip.qipcore import Qip, has_git_version
 import tempfile
 import uuid
 
+
 @pytest.fixture()
 def mocked_run_pip(mocker):
     """Return mocked 'run_pip' command."""
