@@ -83,7 +83,11 @@ def install(**kwargs):
         logger.info("Fetching deps for {} and all its deps. "
                     "This may take some time."
                     .format(kwargs["package"]), user=True)
-        qip.fetch_dependencies(package, deps)
+        try:
+            qip.fetch_dependencies(package, deps)
+        except QipError as e:
+            logger.error(e)
+            sys.exit(1)
 
     deps[name] = specs
 

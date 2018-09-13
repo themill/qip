@@ -80,7 +80,10 @@ class Qip(object):
             "-f2 | grep -v '{0}'".
             format(package)
         )
-        output, stderr, _ = self.run_pip(cmd)
+        output, stderr, exit_code = self.run_pip(cmd)
+        if exit_code != 0:
+            raise QipError("{}".format(stderr))
+
         deps = output.split()
 
         for dep in deps:
