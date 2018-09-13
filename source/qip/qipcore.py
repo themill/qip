@@ -77,12 +77,16 @@ class Qip(object):
             "download --exists-action w '{0}' "
             "-d /tmp --no-binary :all: --no-cache"
             "| grep Collecting | cut -d' ' "
-            "-f2 | grep -v '{0}'".
+            "-f2".
             format(package)
         )
+
         output, stderr, exit_code = self.run_pip(cmd)
+        # Replace the grep from the cmd with a replace. If there's only
+        # one package, the grep gives a non-zero exit code
+        output.replace(package+'\n', '')
         if exit_code != 0:
-            raise QipError("{}".format(stderr))
+            raise QipError("{}\n{}".format(output, stderr))
 
         deps = output.split()
 
