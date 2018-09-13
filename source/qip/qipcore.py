@@ -89,7 +89,7 @@ class Qip(object):
             specs = pkg_req.specs
             if name in deps_install.keys():
                 self.logger.info("\tSkipping {}. Already satisfied. "
-                                 .format(name), user=True)
+                                 .format(name))
                 continue
             deps_install[name] = specs
             self.fetch_dependencies(dep, deps_install)
