@@ -26,7 +26,7 @@ with open(
 INSTALL_REQUIRES = [
     "mlog >= 0.0.6, < 1",
     "click >= 6.7",
-    "wiz >= 1.0.0, < 1",
+    "wiz >= 1.0.0, < 2",
     "pip >= 9.0.1, <= 18.0"
 ]
 DOC_REQUIRES = [
