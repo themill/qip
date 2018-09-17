@@ -72,7 +72,9 @@ html_copy_source = True
 
 # -- Autodoc ------------------------------------------------------------------
 
-autodoc_default_options = ["members", "undoc-members", "inherited-members"]
+autodoc_default_options = {"members": None,
+                           "undoc-members": None,
+                           "inherited-members": None}
 autodoc_member_order = "bysource"
 
 
