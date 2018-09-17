@@ -63,6 +63,13 @@ class Qip(object):
 
         return name, specs
 
+    def parse_dependencies(self, deps):
+        out_deps = []
+        for line in deps.split("\n"):
+            if line.startswith("Collecting"):
+                out_deps.append(line.split()[1])
+        return out_deps
+
     def fetch_dependencies(self, package, deps_install):
         """
         Recursively fetch dependencies for *package*. Populates the
@@ -76,19 +83,15 @@ class Qip(object):
         cmd = (
             "download --exists-action w '{0}' "
             "-d /tmp --no-binary :all: --no-cache"
-            "| grep Collecting | cut -d' ' "
-            "-f2".
-            format(package)
+            .format(package)
         )
 
         output, stderr, exit_code = self.run_pip(cmd)
-        # Replace the grep from the cmd with a replace. If there's only
-        # one package, the grep gives a non-zero exit code
-        output.replace(package+'\n', '')
         if exit_code != 0:
             raise QipError("{}\n{}".format(output, stderr))
 
-        deps = output.split()
+        deps = self.parse_dependencies(output)
+        deps.remove("{}".format(package))
 
         for dep in deps:
             pkg_req = Req.parse(dep)
