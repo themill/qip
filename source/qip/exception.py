@@ -3,4 +3,5 @@ class QipError(Exception):
 
 
 class QipPackageInstalled(Exception):
+    target_dir
     pass
