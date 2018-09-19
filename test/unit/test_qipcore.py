@@ -91,12 +91,36 @@ def test_install_package(logger, mocked_run_pip, mocked_uuid, mocker, tmpdir):
     )
 
 
+deps = {"'foo'": (
+                    "Collecting foo\n"
+                    "Collecting bar>=2.10 (from foo)\n"
+                    "Collecting bim==1.0 (from foo)\n"
+                    "Collecting bam>=0.14.1 (from foo)", "", 0
+               ),
+        "'bar'": ("Collecting bar>=2.10 (from foo)\n", "", 0),
+        "'bar>=2.10'": ("Collecting bar>=2.10 (from foo)\n", "", 0),
+        "'bim'": ("Collecting bim==1.0 (from foo)\n", "", 0),
+        "'bim==1.0'": ("Collecting bim==1.0 (from foo)\n", "", 0),
+        "'bam'": ("Collecting bam>=0.14.1 (from foo))\n", "", 0),
+        "'bam>=0.14.1'": ("Collecting bam>=0.14.1 (from foo))\n", "", 0),
+        }
+
+
+def dep_side_effect(package, *args, **kwargs):
+    p = args[0].split()[3]
+    print p, deps[p]
+    return deps[p]
+
+
 def test_fetch_dependencies(logger, mocked_run_pip, mocker, tmpdir):
     """Fetch dependencies for requirement package."""
     mocked_run_pip = mocker.patch.object(Qip, "run_pip", autospec=True)
-    mocked_run_pip.return_value = (
-        "bar>=2.10\nbim==1.0\nbam>=0.14.1", "", 0
-    )
+    #mocked_run_pip.return_value = (
+    #    "Collecting bar>=2.10 (from foo)\n"
+    #    "Collecting bim==1.0 (from foo)\n"
+    #    "Collecting bam>=0.14.1 (from foo)", "", 0
+    #)
+    mocked_run_pip.side_effect = dep_side_effect
 
     expected_deps = {}
     _qip = Qip(tmpdir, logger)
@@ -113,27 +137,20 @@ def test_fetch_dependencies(logger, mocked_run_pip, mocker, tmpdir):
         _qip,
         "download --exists-action w 'foo' "
         "-d /tmp --no-binary :all: --no-cache"
-        "| grep Collecting | cut -d' ' "
-        "-f2 | grep -v 'foo'"
+
     )
     mocked_run_pip.assert_any_call(
         _qip,
         "download --exists-action w 'bar>=2.10' "
         "-d /tmp --no-binary :all: --no-cache"
-        "| grep Collecting | cut -d' ' "
-        "-f2 | grep -v 'bar>=2.10'"
     )
     mocked_run_pip.assert_any_call(
         _qip,
         "download --exists-action w 'bim==1.0' "
         "-d /tmp --no-binary :all: --no-cache"
-        "| grep Collecting | cut -d' ' "
-        "-f2 | grep -v 'bim==1.0'"
     )
     mocked_run_pip.assert_any_call(
         _qip,
         "download --exists-action w 'bam>=0.14.1' "
         "-d /tmp --no-binary :all: --no-cache"
-        "| grep Collecting | cut -d' ' "
-        "-f2 | grep -v 'bam>=0.14.1'"
     )
