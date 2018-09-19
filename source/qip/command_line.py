@@ -5,6 +5,7 @@ import _version as ver
 import sys
 import mlog
 import os
+import shutil
 
 from qipcore import QipError, Qip, QipPackageInstalled
 
@@ -107,9 +108,11 @@ def install(**kwargs):
         except QipError as e:
             logger.error(e.message)
             sys.exit(1)
+
         except QipPackageInstalled as e:
             logger.warning(e.message)
             if click.confirm("Do you want to overwrite it?"):
+                qip.rmtree(e.target_dir)
                 output, ret_code = qip.install_package(package, specs,
                                                        True)
             else:

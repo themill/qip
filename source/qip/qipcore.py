@@ -6,7 +6,7 @@ import wiz
 import uuid
 import subprocess
 from pkg_resources import Requirement as Req
-from qip_exception import QipError, QipPackageInstalled
+from exception import QipError, QipPackageInstalled
 
 
 def has_git_version(package):
@@ -140,19 +140,15 @@ class Qip(object):
                     raise QipError("Unable to create install "
                                    "directory: {}", outdir)
 
-                if os.path.isdir(
-                    "{0}/{1}".format(outdir,
-                                     m.group(1))
+                install_target = os.path.join(outdir, m.group(1))
+                if os.path.isdir(install_target) and not overwrite:
+                    ex = QipPackageInstalled("Package {} already "
+                                             "installed to index."
+                                             .format(m.group(1)))
+                    ex.target_dir = install_target
+                    raise ex
 
-                ) and not overwrite:
-                    raise QipPackageInstalled("Package {} already "
-                                              "installed to index."
-                                              .format(m.group(1)))
-
-                self.install(
-                    temp_dir, "{0}/{1}".
-                    format(outdir, m.group(1))
-                )
+                self.install(temp_dir, install_target)
 
             return output, ret_code
         finally:
@@ -165,11 +161,11 @@ class Qip(object):
             r'\x1B\[[0-?]*[ -/]*[@-~]', re.IGNORECASE | re.MULTILINE
         )
 
-        stdout = u''.join(stdout)
-        stdout = ansi_escape.sub(u'', stdout)
+        stdout = ''.join(stdout)
+        stdout = ansi_escape.sub('', stdout)
 
-        stderr = u''.join(stderr)
-        stderr = ansi_escape.sub(u'', stderr)
+        stderr = ''.join(stderr)
+        stderr = ansi_escape.sub('', stderr)
 
         return stdout, stderr
 
