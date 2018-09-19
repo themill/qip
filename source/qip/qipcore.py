@@ -150,7 +150,7 @@ class Qip(object):
 
                 self.install(temp_dir, install_target)
 
-            return output, ret_code
+            return output, ret_code, install_target
         finally:
             if temp_dir:
                 self.rmtree(temp_dir)
