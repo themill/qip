@@ -5,10 +5,10 @@ import _version as ver
 import sys
 import mlog
 import os
-import re
 import json
 
-from qipcore import QipError, Qip, QipPackageInstalled
+from qipcore import Qip
+from exception import QipError, QipPackageInstalled
 
 
 class QipContext(object):
@@ -44,16 +44,11 @@ def configure_mlog(verbose):
 
 
 def save_out_requirements(requirements):
-    filename = os.path.join(requirements[0], "requirements.json")
-    output = {}
-    regex = re.compile(r'(.+)-([.\d]+)$')
-    for requirement in requirements[1:]:
-        m = regex.match(requirement)
-        if m:
-            output[os.path.basename(m.group(1))] = m.group(2)
-
-    with open(filename, 'w') as fh:
-        fh.write(json.dumps(output, indent=4))
+    for _, v in requirements.iteritems():
+        if v["path"] and v["deps"]:
+            filename = os.path.join(v["path"], "requirements.json")
+            with open(filename, 'w') as fh:
+                fh.write(json.dumps(v["deps"], indent=4))
 
 
 @click.command()
@@ -111,16 +106,13 @@ def install(**kwargs):
     if not kwargs["y"] and not click.confirm("Do you want to continue?"):
         sys.exit(0)
 
-    requirements = []
-
     for package, specs in deps.iteritems():
         specs = ",".join((x[0]+x[1] for x in specs))
         logger.info("Installing {} : {}".format(package, specs),
                     user=True)
         try:
-            output, ret_code, install_dir = qip.install_package(package, specs,
-                                                                kwargs["y"])
-            requirements.append(install_dir)
+            output, ret_code = qip.install_package(package, specs,
+                                                   kwargs["y"])
         except QipError as e:
             logger.error(e.message)
             sys.exit(1)
@@ -139,7 +131,7 @@ def install(**kwargs):
         if ret_code == 0:
             logger.info(output.split("\n")[-2], user=True)
 
-    save_out_requirements(requirements)
+    save_out_requirements(qip.dependency_tracker)
 
 
 def main(arguments=None):

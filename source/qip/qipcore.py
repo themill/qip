@@ -25,6 +25,7 @@ class Qip(object):
     def __init__(self, outdir, logger):
         self.outdir = outdir
         self.logger = logger
+        self.dependency_tracker = dict()
 
     def get_name_and_specs(self, package):
         """ Get the specs of the package from provided name. If there
@@ -93,10 +94,16 @@ class Qip(object):
         deps = self.parse_dependencies(output)
         deps.remove("{}".format(package))
 
+        cur_pkg_req = Req.parse(package)
+        cur_name = cur_pkg_req.unsafe_name
+
+        self.dependency_tracker[cur_name] = {"deps": [],
+                                             "path": ""}
         for dep in deps:
             pkg_req = Req.parse(dep)
             name = pkg_req.unsafe_name
             specs = pkg_req.specs
+            self.dependency_tracker[cur_name]["deps"].append({name: ""})
             if name in deps_install.keys():
                 self.logger.info("\tSkipping {}. Already satisfied. "
                                  .format(name))
@@ -149,11 +156,19 @@ class Qip(object):
                     raise ex
 
                 self.install(temp_dir, install_target)
+                self.set_dependecies(package, install_target)
 
-            return output, ret_code, install_target
+            return output, ret_code
         finally:
             if temp_dir:
                 self.rmtree(temp_dir)
+
+    def set_dependecies(self, package, target):
+        self.dependency_tracker[package]["path"] = target
+        for k, v in self.dependency_tracker.iteritems():
+            for i, dep in enumerate(v["deps"]):
+                if dep.get(package) is not None:
+                    self.dependency_tracker[k]["deps"][i][package] = target
 
     def strip_output(self, stdout, stderr):
         # Strip shell colour code characters
