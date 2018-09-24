@@ -103,7 +103,7 @@ class Qip(object):
         """
         cmd = (
             "download --exists-action w '{0}' "
-            "-d /tmp --no-binary :all: --no-cache"
+            "-d /tmp --no-binary :all:"
             .format(package)
         )
 
