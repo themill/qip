@@ -31,7 +31,7 @@ class Qip(object):
     :ivar dependency_tracker: a dictionary tracking dependencies that are
                               installed with a package. See the
                               `set_dependencies function
-                              <api_reference/core.html#qip.core.Qip.set_dependecies>`__
+                              <apigit+ssh://git@gitlab/rnd/mlog.git@0.2.1_reference/core.html#qip.core.Qip.set_dependecies>`__
                               for more info on its layout
     """
     def __init__(self, outdir, logger):
@@ -114,8 +114,11 @@ class Qip(object):
         deps = self.parse_dependencies(output)
         deps.remove("{}".format(package))
 
-        cur_pkg_req = Req.parse(package)
-        cur_name = cur_pkg_req.unsafe_name
+        m = re.search(r"\/(\w+)\.git.*$", package)
+        if m:
+            cur_name = m.group(1)
+        else:
+            cur_name = Req.parse(package).unsafe_name
 
         self.dependency_tracker[cur_name] = {"deps": [],
                                              "path": ""}
