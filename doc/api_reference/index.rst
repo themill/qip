@@ -13,7 +13,7 @@ qip
     :maxdepth: 1
     :glob:
 
-    qipcore
+    core
     command_line
 
 

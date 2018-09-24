@@ -1,10 +1,12 @@
-qipcore
---------
+core
+----
 
 .. toctree::
    :maxdepth: 2
 
-.. autoclass:: qip.qipcore.Qip
+.. _core_api:
+
+.. autoclass:: qip.core.Qip
    :members:
    :undoc-members:
    :inherited-members:
