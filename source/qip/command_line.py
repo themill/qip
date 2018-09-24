@@ -7,7 +7,7 @@ import mlog
 import os
 import json
 
-from qipcore import Qip
+from core import Qip
 from exception import QipError, QipPackageInstalled
 
 
