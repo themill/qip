@@ -1,7 +1,7 @@
 # :coding: utf-8
 
 import pytest
-from qip.qipcore import Qip, has_git_version
+from qip.core import Qip, has_git_version
 import tempfile
 import uuid
 

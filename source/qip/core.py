@@ -185,7 +185,12 @@ class Qip(object):
                     raise ex
 
                 self.install(temp_dir, install_target)
-                self.set_dependecies(package, install_target)
+                try:
+                    self.set_dependecies(package, install_target)
+                except KeyError:
+                    # We are not installing dependencies so no need to set
+                    # them
+                    pass
 
             return output, ret_code
         finally:
