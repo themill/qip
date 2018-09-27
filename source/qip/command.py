@@ -39,7 +39,7 @@ def execute(command, environ_mapping, quiet=False):
             for line in lines_iterator:
                 output.append(line)
                 _line = line.rstrip()
-                print(_line.decode("latin"), end="\n")
+                print(_line.decode("latin"))
 
     errors = process.stderr.readlines()
     if len(errors):
