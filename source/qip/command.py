@@ -29,8 +29,6 @@ def execute(command, environ_mapping, quiet=False):
         env=environ_mapping
     )
 
-    output = None
-
     if not quiet:
         output = []
 
@@ -41,8 +39,11 @@ def execute(command, environ_mapping, quiet=False):
                 _line = line.rstrip()
                 print(_line.decode("latin"))
 
-    errors = process.stderr.readlines()
-    if len(errors):
-        raise RuntimeError("".join(errors))
+        stderr = process.stderr.readlines()
+    else:
+        output, stderr = process.communicate()
 
-    return "".join(output or process.stdout.readlines())
+    if len(stderr):
+        raise RuntimeError(stderr)
+
+    return output
