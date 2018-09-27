@@ -36,7 +36,11 @@ def main(verbosity):
     ),
     default=None
 )
-@click.argument("requests", nargs=-1)
+@click.argument(
+    "requests",
+    help="Python package(s) to install",
+    nargs=-1
+)
 def install(requests, output, overwrite_installed):
     """Qip install command line interface."""
     qip.install(requests, output, overwrite_installed)
