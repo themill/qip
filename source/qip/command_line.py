@@ -1,138 +1,42 @@
 # :coding: utf-8
 
 import click
-import _version as ver
-import sys
 import mlog
-import os
-import json
 
-from core import Qip
-from exception import QipError, QipPackageInstalled
+import qip
+from qip import __version__
 
 
-class QipContext(object):
-    logger = None
-    yestoall = {}
-
-
-def set_git_ssh(package):
-    """
-    Replace the gitlab copied prefix with the one for pip
-    """
-    if package.startswith("git@gitlab:"):
-        package = "git+ssh://" + package.replace(":", "/")
-    return package
-
-
-def configure_mlog(verbose):
+@click.group()
+@click.version_option(version=__version__)
+@click.option(
+    "-v", "--verbosity",
+    help="Set the logging output verbosity.",
+    type=click.Choice(mlog.levels),
+    default="info"
+)
+def main(verbosity):
+    """Qip command line interface."""
     mlog.configure()
-    logger = mlog.Logger(__name__ + ".main")
-    mlog.root.handlers["stderr"].filterer.filterers[0].levels = mlog.levels
-
-    # Ensure we are always at warning at least
-    if verbose < 1:
-        verbose = 1
-    try:
-        # Get the mlog verbosity from cli option, capped to max levels
-        verbosity = mlog.levels[::-1][min(verbose, len(mlog.levels)-1)]
-    except IndexError:
-        verbosity = "warning"
-
     mlog.root.handlers["stderr"].filterer.filterers[0].min = verbosity
-    return logger
 
 
-def save_out_requirements(requirements):
-    for _, v in requirements.iteritems():
-        if v["path"] and v["deps"]:
-            filename = os.path.join(v["path"], "requirements.json")
-            with open(filename, 'w') as fh:
-                fh.write(json.dumps(v["deps"], indent=4))
-
-
-@click.command()
-@click.version_option(version=ver.__version__)
-@click.option("-v", "--verbose", count=True)
-@click.option("-y", is_flag=True, help="Yes to all prompts")
-@click.argument("package")
-@click.option("--nodeps", "-n", is_flag=True,
-              help="Install the specified package without deps")
-@click.option("--outdir", "-o", help="Directory to install package to",
-              default="")
-def install(**kwargs):
-    """Install PACKAGE to its own subdirectory under the requested
-    target directory
-    """
-    logger = configure_mlog(kwargs["verbose"])
-
-    if kwargs["outdir"] == "":
-        logger.error("Please specify an output directory.")
-        sys.exit(1)
-
-    qip = Qip(kwargs["outdir"], logger)
-
-    package = set_git_ssh(kwargs["package"])
-    try:
-        name, specs = qip.get_name_and_specs(package)
-    except QipError:
-        logger.error("Please specify a version with `@` "
-                     "when installing from git")
-        sys.exit(1)
-
-    deps = {}
-    if not kwargs["nodeps"]:
-        logger.info("Fetching deps for {} and all its deps. "
-                    "This may take some time."
-                    .format(kwargs["package"]), user=True)
-        try:
-            qip.fetch_dependencies(package, deps)
-        except QipError as e:
-            logger.error(e)
-            sys.exit(1)
-
-    deps[name] = specs
-
-    if not os.path.exists(kwargs["outdir"]):
-        try:
-            os.makedirs(kwargs["outdir"])
-        except os.error:
-            logger.error("Unable to create target dir {}"
-                         .format(kwargs["outdir"]))
-            sys.exit(1)
-
-    logger.info("Dependencies resolved. Required packages:", user=True)
-    logger.info("\t{}".format(", ".join(deps.keys())), user=True)
-    if not kwargs["y"] and not click.confirm("Do you want to continue?"):
-        sys.exit(0)
-
-    for package, specs in deps.iteritems():
-        specs = ",".join((x[0]+x[1] for x in specs))
-        logger.info("Installing {} : {}".format(package, specs),
-                    user=True)
-        try:
-            output, ret_code = qip.install_package(package, specs,
-                                                   kwargs["y"])
-        except QipError as e:
-            logger.error(e.message)
-            sys.exit(1)
-
-        except QipPackageInstalled as e:
-            logger.warning(e.message)
-            if click.confirm("Do you want to overwrite it?"):
-                qip.rmtree(e.target_dir)
-                output, ret_code = qip.install_package(package, specs,
-                                                       True)
-            else:
-                logger.info("Skipping installation of {}."
-                            .format(package), user=True)
-                continue
-
-        if ret_code == 0:
-            logger.info(output.split("\n")[-2], user=True)
-
-    save_out_requirements(qip.dependency_tracker)
-
-
-def main(arguments=None):
-    install()
+@main.command()
+@click.option(
+    "-o", "--output",
+    help="Destination for the installation",
+    type=click.Path(),
+    required=True
+)
+@click.option(
+    "--overwrite-installed/--skip-installed",
+    help=(
+         "Indicate whether packages already installed should be overwritten "
+         "or skipped. By default, a user confirmation will be required."
+    ),
+    default=None
+)
+@click.argument("requests", nargs=-1)
+def install(requests, output, overwrite_installed):
+    """Qip install command line interface."""
+    qip.install(requests, output, overwrite_installed)
