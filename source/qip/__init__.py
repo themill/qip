@@ -21,7 +21,9 @@ import qip.filesystem
 from ._version import __version__
 
 
-def install(requests, output_path, overwrite_packages=False):
+def install(
+    requests, output_path, overwrite_packages=False, no_dependencies=False
+):
     """Install packages to *output_path* from *requests*.
 
     * *requests* should be a list of packages that should be installed.
@@ -29,6 +31,8 @@ def install(requests, output_path, overwrite_packages=False):
     * *overwrite_packages* should indicate whether packages already installed
     should be overwritten. If None, a user confirmation will be prompted.
     Default is False.
+    * *no_dependencies* should indicate whether package dependencies should be
+    skipped. Default is False.
 
     """
     logger = mlog.Logger(__name__ + ".install")
@@ -61,12 +65,13 @@ def install(requests, output_path, overwrite_packages=False):
             continue
 
         # Fill up queue with requirements extracted from package dependencies.
-        for dependency in _package.get("dependencies", []):
-            request = dependency.get("key", "")
-            if dependency.get("required_version"):
-                request += dependency.get("required_version")
+        if not no_dependencies:
+            for dependency in _package.get("dependencies", []):
+                request = dependency.get("key", "")
+                if dependency.get("required_version"):
+                    request += dependency.get("required_version")
 
-            queue.put(Requirement(request))
+                queue.put(Requirement(request))
 
         # Install package to destination.
         copy_to_destination(

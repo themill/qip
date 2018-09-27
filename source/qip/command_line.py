@@ -36,7 +36,15 @@ def main(verbosity):
     ),
     default=None
 )
+@click.option(
+    "--no-dependencies",
+    help=(
+         "Install the specified package(s) without dependencies."
+    ),
+    is_flag=True,
+    default=False
+)
 @click.argument("requests", nargs=-1)
-def install(requests, output, overwrite_installed):
+def install(requests, output, overwrite_installed, no_dependencies):
     """Qip install command line interface."""
-    qip.install(requests, output, overwrite_installed)
+    qip.install(requests, output, overwrite_installed, no_dependencies)
