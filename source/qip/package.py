@@ -51,6 +51,7 @@ def fetch_package_from_environ(name, environ_mapping):
 
         {
             "package": {
+                "identifier": "Foo-0.1.0",
                 "key": "foo",
                 "package_name": "Foo",
                 "installed_version": "0.1.0",
@@ -82,29 +83,69 @@ def fetch_package_from_environ(name, environ_mapping):
     )
 
     try:
-        packages = json.loads(result)
+        environment_packages = json.loads(result)
     except ValueError:
         raise RuntimeError(
             "Impossible to fetch tree package for '{}'".format(name)
         )
 
-    package = None
-    for _package in packages:
-        _name = _package.get("package", {}).get("key")
+    mapping = None
+    for _mapping in environment_packages:
+        _name = _mapping.get("package", {}).get("key")
         if _name == name:
-            package = _package
+            mapping = _mapping
             break
 
-    if package is None:
+    if mapping is None:
         raise RuntimeError(
             "Impossible to fetch installed package for '{}'".format(name)
         )
 
-    logger.info(
-        "Fetched {name}-{version}.".format(
-            name=package["package"]["package_name"],
-            version=package["package"]["installed_version"],
+    # Build a unique identifier for the package.
+    mapping["package"]["identifier"] = extract_identifier(mapping["package"])
+
+    logger.info("Fetched {}.".format(mapping["package"]["identifier"]))
+    return mapping
+
+
+def extract_identifier(mapping):
+    """Return corresponding identifier from package *mapping*.
+
+    *mapping* must be in the form of::
+
+        {
+            "key": "foo",
+            "package_name": "Foo",
+            "installed_version": "1.11",
+        }
+
+    Corresponding identifier would be "Foo-1.11"
+
+    """
+    return qip.filesystem.sanitise_value(
+        "{name}-{version}".format(
+            name=mapping["package_name"],
+            version=mapping["installed_version"]
         )
     )
-    return package
 
+
+def extract_request(mapping):
+    """Return corresponding request from package *mapping*.
+
+    *mapping* must be in the form of::
+
+        {
+            "key": "foo",
+            "package_name": "Foo",
+            "installed_version": "1.11",
+            "required_version": ">=1.5",
+        }
+
+    Corresponding request would be "foo >=1.5"
+
+    """
+    return "{name} {specifier}".format(
+        name=mapping["key"],
+        specifier=mapping["required_version"] or ""
+    ).strip()

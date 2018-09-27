@@ -48,6 +48,9 @@ def install(
     # Update environment mapping.
     environ_mapping = fetch_environ(mapping={"PYTHONPATH": install_path})
 
+    # Record package identifiers to prevent duplication
+    package_identifiers = set()
+
     # Fill up queue with requirements extracted from requests.
     queue = _queue.Queue()
     for request in requests:
@@ -57,30 +60,35 @@ def install(
         requirement = queue.get()
 
         try:
-            _package = qip.package.install(
+            package_mapping = qip.package.install(
                 requirement, temporary_path, environ_mapping
             )
         except RuntimeError as error:
             logger.error(error)
             continue
 
-        # Fill up queue with requirements extracted from package dependencies.
-        if not no_dependencies:
-            for dependency in _package.get("dependencies", []):
-                request = dependency.get("key", "")
-                if dependency.get("required_version"):
-                    request += dependency.get("required_version")
-
-                queue.put(Requirement(request))
-
         # Install package to destination.
         copy_to_destination(
-            _package["package"]["package_name"],
-            _package["package"]["installed_version"],
+            package_mapping,
             temporary_path,
             output_path,
             overwrite_packages
         )
+
+        package_identifiers.add(package_mapping["package"]["identifier"])
+
+        # Fill up queue with requirements extracted from package dependencies.
+        if not no_dependencies:
+            for mapping in package_mapping.get("dependencies", []):
+                identifier = qip.package.extract_identifier(mapping)
+                if identifier in package_identifiers:
+                    continue
+
+                request = qip.package.extract_request(mapping)
+                _requirement = Requirement(request)
+                queue.put(_requirement)
+
+                package_identifiers.add(identifier)
 
         # Clean up for next installation.
         logger.debug("Clean up directory content")
@@ -88,13 +96,11 @@ def install(
 
 
 def copy_to_destination(
-    package_name, version, source_path, destination_path,
-    overwrite_packages=False
+    package_mapping, source_path, destination_path, overwrite_packages=False
 ):
     """Copy package from *source_path* to *destination_path*.
 
-    * *package_name* should be the name of the package (e.g. "Foo")
-    * *version* should be the version of the package (e.g. "0.1.0")
+    * *package_mapping* should be a mapping of the python package built.
     * *source_path* should be the path where the package was built
     * *destination_path* should be the installation path
     * *overwrite_packages* should indicate whether packages already installed
@@ -104,44 +110,34 @@ def copy_to_destination(
     """
     logger = mlog.Logger(__name__ + ".copy_to_destination")
 
-    full_package_name = qip.filesystem.sanitise_value(
-        "{name}-{version}".format(
-            name=package_name,
-            version=version
-        )
-    )
+    name = package_mapping["package"]["package_name"]
+    identifier = package_mapping["package"]["identifier"]
 
-    target = os.path.join(destination_path, package_name)
-    full_target = os.path.join(target, full_package_name)
+    target = os.path.join(destination_path, name)
+    full_target = os.path.join(target, identifier)
 
     if os.path.isdir(full_target):
         if overwrite_packages is None:
             overwrite_packages = click.confirm(
-                "Overwrite '{}'?".format(full_package_name)
+                "Overwrite '{}'?".format(identifier)
             )
 
-        # Remove package previously installed if necessary.
         if overwrite_packages:
             logger.warning(
-                "Overwriting '{}' which is already installed.".format(
-                    full_package_name
-                )
+                "Overwrite '{}' which is already installed.".format(identifier)
             )
             shutil.rmtree(full_target)
 
-        # Otherwise, indicate that copy should be skipped.
         else:
             logger.warning(
-                "Skipped '{}' which is already installed.".format(
-                    full_package_name
-                )
+                "Skip '{}' which is already installed.".format(identifier)
             )
             return
 
     qip.filesystem.ensure_directory(target)
     shutil.copytree(source_path, full_target)
 
-    logger.info("Installed {}.".format(full_package_name))
+    logger.info("Installed {}.".format(identifier))
 
 
 def fetch_environ(mapping=None):
