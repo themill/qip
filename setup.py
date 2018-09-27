@@ -24,10 +24,11 @@ with open(
 
 # Compute dependencies.
 INSTALL_REQUIRES = [
-    "mlog >= 0.0.6, < 1",
-    "click >= 6.7",
+    "pipdeptree >= 0.13.0, < 1",
+    "packaging >= 17.1, < 18",
     "wiz >= 1.0.0, < 2",
-    "pip >= 9.0.1, <= 18.0"
+    "mlog >= 0.0.6, < 1",
+    "click >= 6.7"
 ]
 DOC_REQUIRES = [
     "sphinx >= 1.2.2, < 2",
