@@ -21,7 +21,7 @@ def ensure_directory(path):
         if error.errno != errno.EEXIST:
             raise
 
-        if not os.path.isdir(path):
+        if not os.path.exists(path):
             raise
 
 
