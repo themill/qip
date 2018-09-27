@@ -15,8 +15,7 @@ def execute(command, environ_mapping, quiet=False):
         "pip install foo"
 
     * *environ_mapping* should be a mapping with all environment variables which
-    must be set for the *command* to run properly.
-
+      must be set for the *command* to run properly.
     * *quiet* indicate whether output lines should be hidden. Default is False.
 
     """
