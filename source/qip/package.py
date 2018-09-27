@@ -131,7 +131,7 @@ def extract_identifier(mapping):
 
 
 def extract_request(mapping):
-    """Return corresponding request from package *mapping*.
+    """Return corresponding requirement request from package *mapping*.
 
     *mapping* must be in the form of::
 
@@ -147,5 +147,5 @@ def extract_request(mapping):
     """
     return "{name} {specifier}".format(
         name=mapping["key"],
-        specifier=mapping["required_version"] or ""
+        specifier=mapping.get("required_version") or ""
     ).strip()
