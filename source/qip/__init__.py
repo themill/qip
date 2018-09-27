@@ -102,6 +102,8 @@ def copy_to_destination(
     Default is False.
 
     """
+    logger = mlog.Logger(__name__ + ".copy_to_destination")
+
     full_package_name = qip.filesystem.sanitise_value(
         "{name}-{version}".format(
             name=package_name,
@@ -120,14 +122,26 @@ def copy_to_destination(
 
         # Remove package previously installed if necessary.
         if overwrite_packages:
+            logger.warning(
+                "Overwriting '{}' which is already installed.".format(
+                    full_package_name
+                )
+            )
             shutil.rmtree(full_target)
 
         # Otherwise, indicate that copy should be skipped.
         else:
+            logger.warning(
+                "Skipped '{}' which is already installed.".format(
+                    full_package_name
+                )
+            )
             return
 
     qip.filesystem.ensure_directory(target)
     shutil.copytree(source_path, full_target)
+
+    logger.info("Installed {}.".format(full_package_name))
 
 
 def fetch_environ(mapping=None):

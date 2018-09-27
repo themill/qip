@@ -24,7 +24,7 @@ def install(requirement, destination, environ_mapping):
     """
     logger = mlog.Logger(__name__ + ".install")
 
-    logger.info("Install {}".format(requirement))
+    logger.info("Installing {}...".format(requirement))
     qip.command.execute(
         "pip install "
         "--ignore-installed "
@@ -40,7 +40,6 @@ def install(requirement, destination, environ_mapping):
         environ_mapping
     )
 
-    logger.info("Fetch dependencies")
     return fetch_package_from_environ(requirement.name, environ_mapping)
 
 
@@ -76,6 +75,8 @@ def fetch_package_from_environ(name, environ_mapping):
     needed.
 
     """
+    logger = mlog.Logger(__name__ + ".fetch_package_from_environ")
+
     result = qip.command.execute(
         "pipdeptree --json", environ_mapping, quiet=True
     )
@@ -99,5 +100,11 @@ def fetch_package_from_environ(name, environ_mapping):
             "Impossible to fetch installed package for '{}'".format(name)
         )
 
+    logger.info(
+        "Fetched {name}-{version}.".format(
+            name=package["package"]["package_name"],
+            version=package["package"]["installed_version"],
+        )
+    )
     return package
 
