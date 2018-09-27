@@ -123,7 +123,8 @@ def copy_to_destination(
             shutil.rmtree(full_target)
 
         # Otherwise, indicate that copy should be skipped.
-        return
+        else:
+            return
 
     qip.filesystem.ensure_directory(target)
     shutil.copytree(source_path, full_target)
