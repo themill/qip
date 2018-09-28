@@ -50,7 +50,12 @@ def install(requests, output, overwrite_installed, no_dependencies):
 
       Command example::
 
-          qip install sphinx --output .
+          qip install foo --output .
+          qip install "foo==0.1.0" --output .
+          qip install "foo >= 7, < 8" --output .
+          qip install "git@gitlab:rnd/foo.git" --output .
+          qip install "git@gitlab:rnd/foo.git@0.1.0" --output .
+          qip install "git@gitlab:rnd/foo.git@dev" --output .
 
     """
     qip.install(requests, output, overwrite_installed, no_dependencies)
