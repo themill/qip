@@ -54,6 +54,7 @@ def fetch_mapping_from_environ(name, environ_mapping):
         {
             "identifier": "Foo-0.1.0",
             "name": "Foo",
+            "key": "foo",
             "version": "0.1.0",
             "description": "This is a Python package",
             "system": {
@@ -87,6 +88,7 @@ def fetch_mapping_from_environ(name, environ_mapping):
 
     mapping = {
         "identifier": extract_identifier(dependency_mapping["package"]),
+        "key": dependency_mapping["package"]["key"],
         "name": dependency_mapping["package"]["package_name"],
         "version": dependency_mapping["package"]["installed_version"],
     }
