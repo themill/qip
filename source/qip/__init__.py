@@ -109,33 +109,44 @@ def copy_to_destination(
     logger = mlog.Logger(__name__ + ".copy_to_destination")
 
     name = package_mapping["name"]
-    identifier = package_mapping["identifier"]
+    folder_identifier = package_mapping["identifier"]
+
+    if package_mapping.get("system"):
+        os_mapping = package_mapping["system"]["os"]
+        folder_identifier += "-{}{}".format(
+            os_mapping["name"], os_mapping["major_version"]
+        )
 
     target = os.path.join(destination_path, name)
-    full_target = os.path.join(target, identifier)
+    full_target = os.path.join(target, folder_identifier)
 
     if os.path.isdir(full_target):
         if overwrite_packages is None:
             overwrite_packages = click.confirm(
-                "Overwrite '{}'?".format(identifier)
+                "Overwrite '{}'?".format(folder_identifier)
             )
 
         if overwrite_packages:
             logger.warning(
-                "Overwrite '{}' which is already installed.".format(identifier)
+                "Overwrite '{}' which is already installed.".format(
+                    folder_identifier
+                )
             )
             shutil.rmtree(full_target)
 
         else:
             logger.warning(
-                "Skip '{}' which is already installed.".format(identifier)
+                "Skip '{}' which is already installed.".format(
+                    folder_identifier
+                )
             )
             return
 
     qip.filesystem.ensure_directory(target)
     shutil.copytree(source_path, full_target)
+    logger.debug("Source copied in '{}'".format(full_target))
 
-    logger.info("Installed {}.".format(identifier))
+    logger.info("Installed {}.".format(folder_identifier))
 
 
 def fetch_environ(mapping=None):
