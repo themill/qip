@@ -30,12 +30,12 @@ def execute(command, environ_mapping, quiet=False):
     )
 
     if not quiet:
-        output = []
+        output = ""
 
         lines_iterator = iter(process.stdout.readline, b"")
         while process.poll() is None:
             for line in lines_iterator:
-                output.append(line)
+                output += line
                 _line = line.rstrip()
                 print(_line.decode("latin"))
 
