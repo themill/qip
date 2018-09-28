@@ -68,12 +68,16 @@ def install(
             continue
 
         # Install package to destination.
-        copy_to_destination(
+        installation_path = copy_to_destination(
             package_mapping,
             temporary_path,
             output_path,
             overwrite_packages
         )
+
+        # Extract a wiz definition if possible within the same path.
+        if installation_path is not None:
+            export_package_definition(package_mapping, installation_path)
 
         package_identifiers.add(package_mapping["identifier"])
 
@@ -97,6 +101,8 @@ def copy_to_destination(
     package_mapping, source_path, destination_path, overwrite_packages=False
 ):
     """Copy package from *source_path* to *destination_path*.
+
+    Return the path to the installed package.
 
     * *package_mapping* should be a mapping of the python package built.
     * *source_path* should be the path where the package was built
@@ -144,9 +150,10 @@ def copy_to_destination(
 
     qip.filesystem.ensure_directory(target)
     shutil.copytree(source_path, full_target)
-    logger.debug("Source copied in '{}'".format(full_target))
+    logger.debug("Source copied to '{}'".format(full_target))
 
     logger.info("Installed {}.".format(folder_identifier))
+    return full_target
 
 
 def fetch_environ(mapping=None):
@@ -165,5 +172,63 @@ def fetch_environ(mapping=None):
 
     context = wiz.resolve_context(["python==2.7.*"], environ_mapping=mapping)
 
-    # Extract environment mapping from context
     return context["environ"]
+
+
+def export_package_definition(mapping, path):
+    """Export :term:`Wiz` definition for package *mapping* to *path*.
+
+    Return full path of the definition
+
+    *path* should be the installation path of the package.
+
+    """
+    definition_data = {
+        "identifier": mapping["key"],
+        "version": mapping["version"],
+        # TODO: Implement 'installation_path' keyword in Wiz
+        # "installation_path": path
+    }
+
+    if "description" in mapping.keys():
+        definition_data["description"] = mapping["description"]
+
+    if "system" in mapping.keys():
+        major_version = mapping["system"]["os"]["major_version"]
+
+        definition_data["system"] = {
+            "platform": mapping["system"]["platform"],
+            "arch": mapping["system"]["arch"],
+            "os": (
+                "{name} >= {min_version}, <{max_version}".format(
+                    name=mapping["system"]["os"]["name"],
+                    min_version=major_version,
+                    max_version=major_version + 1,
+                )
+            )
+        }
+
+    if "requirements" in mapping.keys():
+        definition_data["requirements"] = [
+            _mapping["request"] for _mapping in mapping["requirements"]
+        ]
+
+    lib_path = os.path.join(path, "lib", "python2.7", "site-packages")
+    if os.path.isdir(lib_path):
+        definition_data.setdefault("environ", {})
+        definition_data["environ"]["PYTHONPATH"] = (
+            "{}:${{PYTHONPATH}}".format(
+                os.path.join(
+                    "${installation_path}", "lib", "python2.7", "site-packages"
+                )
+            )
+        )
+
+    bin_path = os.path.join(path, "bin")
+    if os.path.isdir(bin_path):
+        definition_data.setdefault("environ", {})
+        definition_data["environ"]["PATH"] = (
+            "{}:${{PATH}}".format(os.path.join("${installation_path}", "bin"))
+        )
+
+    return wiz.export_definition(path, definition_data)
