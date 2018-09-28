@@ -197,11 +197,12 @@ def extract_metadata_mapping(name, environ_mapping):
     # Find out if the package is platform specific from the classifiers
     # (https://pypi.org/classifiers/)
     os_classifiers = re.findall("Operating System :: .*", result)
-    if (
-        len(os_classifiers) > 1 and
-        os_classifiers[0] != "Operating System :: OS Independent"
-    ):
-        mapping["system"] = qip.system.query()
+    if len(os_classifiers) > 0:
+        if not (
+            len(os_classifiers) == 1 and
+            os_classifiers[0] == "Operating System :: OS Independent"
+        ):
+            mapping["system"] = qip.system.query()
 
     return mapping
 
