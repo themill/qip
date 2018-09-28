@@ -75,20 +75,18 @@ def install(
             overwrite_packages
         )
 
-        package_identifiers.add(package_mapping["package"]["identifier"])
+        package_identifiers.add(package_mapping["identifier"])
 
         # Fill up queue with requirements extracted from package dependencies.
         if not no_dependencies:
-            for mapping in package_mapping.get("dependencies", []):
-                identifier = qip.package.extract_identifier(mapping)
-                if identifier in package_identifiers:
+            for mapping in package_mapping.get("requirements", []):
+                if mapping["identifier"] in package_identifiers:
                     continue
 
-                request = qip.package.extract_request(mapping)
-                _requirement = Requirement(request)
+                _requirement = Requirement(mapping["request"])
                 queue.put(_requirement)
 
-                package_identifiers.add(identifier)
+                package_identifiers.add(mapping["identifier"])
 
         # Clean up for next installation.
         logger.debug("Clean up directory content")
@@ -110,8 +108,8 @@ def copy_to_destination(
     """
     logger = mlog.Logger(__name__ + ".copy_to_destination")
 
-    name = package_mapping["package"]["package_name"]
-    identifier = package_mapping["package"]["identifier"]
+    name = package_mapping["name"]
+    identifier = package_mapping["identifier"]
 
     target = os.path.join(destination_path, name)
     full_target = os.path.join(target, identifier)
