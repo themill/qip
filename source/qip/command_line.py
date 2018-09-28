@@ -16,7 +16,7 @@ from qip import __version__
     default="info"
 )
 def main(verbosity):
-    """Qip command line interface."""
+    """Quarantine Installer for Python."""
     mlog.configure()
     mlog.root.handlers["stderr"].filterer.filterers[0].min = verbosity
 
@@ -46,5 +46,11 @@ def main(verbosity):
 )
 @click.argument("requests", nargs=-1)
 def install(requests, output, overwrite_installed, no_dependencies):
-    """Qip install command line interface."""
+    """Install a package.
+
+      Command example::
+
+          qip install sphinx --output .
+
+    """
     qip.install(requests, output, overwrite_installed, no_dependencies)
