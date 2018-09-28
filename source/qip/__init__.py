@@ -13,7 +13,6 @@ except ImportError:
 import wiz
 import click
 import mlog
-from packaging.requirements import Requirement
 
 import qip.package
 import qip.filesystem
@@ -27,6 +26,16 @@ def install(
     """Install packages to *output_path* from *requests*.
 
     * *requests* should be a list of packages that should be installed.
+
+    A request can be one of::
+
+        foo
+        "foo==0.1.0"
+        "foo >= 7, < 8"
+        "git@gitlab:rnd/foo.git"
+        "git@gitlab:rnd/foo.git@0.1.0"
+        "git@gitlab:rnd/foo.git@dev"
+
     * *output_path* should be the destination installation path.
     * *overwrite_packages* should indicate whether packages already installed
     should be overwritten. If None, a user confirmation will be prompted.
@@ -54,14 +63,14 @@ def install(
     # Fill up queue with requirements extracted from requests.
     queue = _queue.Queue()
     for request in requests:
-        queue.put(Requirement(request))
+        queue.put(request)
 
     while not queue.empty():
-        requirement = queue.get()
+        request = queue.get()
 
         try:
             package_mapping = qip.package.install(
-                requirement, temporary_path, environ_mapping
+                request, temporary_path, environ_mapping
             )
         except RuntimeError as error:
             logger.error(error)
@@ -87,9 +96,7 @@ def install(
                 if mapping["identifier"] in package_identifiers:
                     continue
 
-                _requirement = Requirement(mapping["request"])
-                queue.put(_requirement)
-
+                queue.put(mapping["request"])
                 package_identifiers.add(mapping["identifier"])
 
         # Clean up for next installation.
@@ -108,8 +115,8 @@ def copy_to_destination(
     * *source_path* should be the path where the package was built
     * *destination_path* should be the installation path
     * *overwrite_packages* should indicate whether packages already installed
-    should be overwritten. If None, a user confirmation will be prompted.
-    Default is False.
+      should be overwritten. If None, a user confirmation will be prompted.
+      Default is False.
 
     """
     logger = mlog.Logger(__name__ + ".copy_to_destination")
@@ -160,7 +167,7 @@ def fetch_environ(mapping=None):
     """Fetch mapping with all environment variables needed.
 
     * *mapping* can be a custom environment mapping which will be added to
-    the initial environment.
+      the initial environment.
 
     """
     logger = mlog.Logger(__name__ + ".fetch")
@@ -180,7 +187,7 @@ def export_package_definition(mapping, path):
 
     Return full path of the definition
 
-    *path* should be the installation path of the package.
+    * *path* should be the installation path of the package.
 
     """
     definition_data = {
@@ -219,7 +226,7 @@ def export_package_definition(mapping, path):
         definition_data["environ"]["PYTHONPATH"] = (
             "{}:${{PYTHONPATH}}".format(
                 os.path.join(
-                    "${installation_path}", "lib", "python2.7", "site-packages"
+                    "${INSTALL_LOCATION}", "lib", "python2.7", "site-packages"
                 )
             )
         )
@@ -228,7 +235,7 @@ def export_package_definition(mapping, path):
     if os.path.isdir(bin_path):
         definition_data.setdefault("environ", {})
         definition_data["environ"]["PATH"] = (
-            "{}:${{PATH}}".format(os.path.join("${installation_path}", "bin"))
+            "{}:${{PATH}}".format(os.path.join("${INSTALL_LOCATION}", "bin"))
         )
 
     return wiz.export_definition(path, definition_data)

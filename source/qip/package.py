@@ -5,29 +5,44 @@ import re
 import json
 
 import mlog
+from packaging.requirements import Requirement
 
 import qip.command
 import qip.system
 
 
-def install(requirement, destination, environ_mapping):
+def install(request, destination, environ_mapping):
     """Install package in *destination* from *requirement*.
 
     Return a mapping with information about the package, as returned by
     :func:`fetch_mapping_from_environ`.
 
-    * *requirement* is an instance of
-    :class:`packaging.requirements.Requirement`.
+    * *request* should be a package that should be installed.
+
+    A request can be one of::
+
+        foo
+        "foo==0.1.0"
+        "foo >= 7, < 8"
+        "git@gitlab:rnd/foo.git"
+        "git@gitlab:rnd/foo.git@0.1.0"
+        "git@gitlab:rnd/foo.git@dev"
+
     * *destination* should be a valid path in which all packages will be
     installed.
     * *environ_mapping* should be a mapping with all environment variables
     needed.
 
+    Raise :exc:`ValueError` if the package name can not be extracted from
+    the request.
+
     """
     logger = mlog.Logger(__name__ + ".install")
 
-    logger.info("Installing {}...".format(requirement))
-    qip.command.execute(
+    request = sanitise_request(request)
+
+    logger.info("Installing {}...".format(request))
+    result = qip.command.execute(
         "pip install "
         "--ignore-installed "
         "--no-deps "
@@ -37,12 +52,27 @@ def install(requirement, destination, environ_mapping):
         "--no-cache-dir "
         "'{requirement}'".format(
             destination=destination,
-            requirement=requirement,
+            requirement=request,
         ),
         environ_mapping
     )
 
-    return fetch_mapping_from_environ(requirement.name, environ_mapping)
+    match_name = re.search("(?<=Successfully installed ).*", result)
+    if match_name is None:
+        raise ValueError(
+            "Package name could not be extracted from '{}'.".format(request)
+        )
+    name = match_name.group().strip()
+
+    return fetch_mapping_from_environ(name, environ_mapping)
+
+
+def sanitise_request(request):
+    """Replace the gitlab copied prefix with the one for pip"""
+    if request.startswith("git@gitlab:"):
+        return "git+ssh://" + request.replace(":", "/")
+
+    return Requirement(request)
 
 
 def fetch_mapping_from_environ(name, environ_mapping):
