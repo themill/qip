@@ -65,6 +65,7 @@ def install(
     for request in requests:
         queue.put(request)
 
+    installed_packages = []
     while not queue.empty():
         request = queue.get()
 
@@ -83,6 +84,7 @@ def install(
             output_path,
             overwrite_packages
         )
+        installed_packages.append(os.path.abspath(installation_path))
 
         # Extract a wiz definition if possible within the same path.
         if installation_path is not None:
@@ -102,6 +104,11 @@ def install(
         # Clean up for next installation.
         logger.debug("Clean up directory content")
         qip.filesystem.remove_directory_content(temporary_path)
+
+    packages_file = export_packages_file(output_path, installed_packages)
+    logger.info(
+        "Exported installed packages log file: {!r}".format(packages_file)
+    )
 
 
 def copy_to_destination(
@@ -239,3 +246,19 @@ def export_package_definition(mapping, path):
         )
 
     return wiz.export_definition(path, definition_data)
+
+
+def export_packages_file(path, dependencies):
+    """Export a file listing the installed packages.
+
+    Return full path to a file.
+
+    * *path* should be the output path for the file.
+
+    """
+    path = os.path.join(path, "packages.txt")
+
+    with open(path, "w") as outfile:
+        outfile.write("\n".join(dependencies))
+
+    return path
