@@ -99,7 +99,6 @@ def install(
                     continue
 
                 queue.put(mapping["request"])
-                package_identifiers.add(mapping["identifier"])
 
         # Clean up for next installation.
         logger.debug("Clean up directory content")
