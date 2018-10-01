@@ -189,3 +189,9 @@ def test_query_windows(
     mocked_platform_win32.return_value = win32_ver
     mocked_platform_machine.return_value = architecture
     assert qip.system.query_windows() == expected
+
+
+def test_extract_major_version():
+    """Extract major version of operating system request for *version*."""
+    major_version = qip.system._extract_major_version("10.5.0")
+    assert major_version == 10
