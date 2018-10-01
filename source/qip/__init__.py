@@ -159,7 +159,7 @@ def copy_to_destination(
                     folder_identifier
                 )
             )
-            return
+            return full_target
 
     qip.filesystem.ensure_directory(target)
     shutil.copytree(source_path, full_target)
