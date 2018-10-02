@@ -11,7 +11,7 @@ import qip.package
 
 @pytest.fixture()
 def mocked_command(mocker):
-    """Return mocked 'run_pip' command."""
+    """Return mocked command execute."""
     _mocked_command = mocker.patch.object(qip.command, "execute", autospec=True)
     return _mocked_command
 
