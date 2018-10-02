@@ -44,7 +44,11 @@ def main(verbosity):
     is_flag=True,
     default=False
 )
-@click.argument("requests", nargs=-1)
+@click.argument(
+    "requests",
+    nargs=-1,
+    required=True
+)
 def install(requests, output, overwrite_installed, no_dependencies):
     """Install a package.
 
