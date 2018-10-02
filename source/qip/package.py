@@ -76,10 +76,9 @@ def sanitise_request(request):
 
 
 def fetch_mapping_from_environ(name, environ_mapping):
-    """Return package *name* from current environment.
+    """Return a mapping with information about the package *name*.
 
-    Return a mapping with information about the package. The mapping should be
-    in the form of::
+    The mapping should be in the form of::
 
         {
             "identifier": "Foo-0.1.0",
