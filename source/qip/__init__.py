@@ -199,8 +199,7 @@ def export_package_definition(mapping, path):
     definition_data = {
         "identifier": mapping["key"],
         "version": mapping["version"],
-        # TODO: Implement 'installation_path' keyword in Wiz
-        # "installation_path": path
+        "install-location": path
     }
 
     if "description" in mapping.keys():
