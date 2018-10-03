@@ -12,6 +12,36 @@ from mock import mock_open
 import qip
 
 
+@pytest.fixture()
+def mocked_package_mapping(mocker):
+    """Return mocked example package mapping."""
+    return {
+        "identifier": "Foo-0.1.0",
+        "name": "Foo",
+        "key": "foo",
+        "version": "0.1.0",
+        "description": "This is a Python package",
+        "system": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "os": {
+                "name": "centos",
+                "major_version": 7
+            }
+        },
+        "requirements": [
+            {
+                "identifier": "Bar-0.1.0",
+                "request": "bar",
+            },
+            {
+                "identifier": "Bim-2.3.1",
+                "request": "bim >= 2, <3",
+            }
+        ]
+    }
+
+
 @pytest.mark.parametrize("packages, mappings, installation_paths", [
     (
         ["foo"],
@@ -173,52 +203,104 @@ def test_fetch_environ(mocker, mapping, expected):
     assert result == expected
 
 
-def test_export_package_definition(mocker):
+@pytest.mark.parametrize("lib_exists, bin_exists, expected", [
+    (
+        False, False,
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+            "description": "This is a Python package",
+            "system": {
+                "platform": "linux",
+                "arch": "x86_64",
+                "os": "centos >= 7, <8"
+            },
+            "requirements": [
+                "bar",
+                "bim >= 2, <3"
+            ],
+            "install-location": "/path"
+        }
+    ),
+    (
+        True, False,
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+            "description": "This is a Python package",
+            "system": {
+                "platform": "linux",
+                "arch": "x86_64",
+                "os": "centos >= 7, <8"
+            },
+            "environ": {
+                "PYTHONPATH": "${INSTALL_LOCATION}/lib/python2.7/site-packages:${PYTHONPATH}"
+            },
+            "requirements": [
+                "bar",
+                "bim >= 2, <3"
+            ],
+            "install-location": "/path"
+        }
+    ),
+    (
+        False, True,
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+            "description": "This is a Python package",
+            "system": {
+                "platform": "linux",
+                "arch": "x86_64",
+                "os": "centos >= 7, <8"
+            },
+            "environ": {
+                "PATH": "${INSTALL_LOCATION}/bin:${PATH}"
+            },
+            "requirements": [
+                "bar",
+                "bim >= 2, <3"
+            ],
+            "install-location": "/path"
+        }
+    ),
+    (
+        True, True,
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+            "description": "This is a Python package",
+            "system": {
+                "platform": "linux",
+                "arch": "x86_64",
+                "os": "centos >= 7, <8"
+            },
+            "environ": {
+                "PATH": "${INSTALL_LOCATION}/bin:${PATH}",
+                "PYTHONPATH": "${INSTALL_LOCATION}/lib/python2.7/site-packages:${PYTHONPATH}"
+            },
+            "requirements": [
+                "bar",
+                "bim >= 2, <3"
+            ],
+            "install-location": "/path"
+        }
+    )
+], ids=[
+    "no_environ",
+    "add_lib",
+    "add_bin",
+    "add_lib_and_bin"
+])
+def test_export_package_definition(
+    mocker, mocked_package_mapping, lib_exists, bin_exists, expected
+):
     """Export Wiz definition for package."""
     mocked_export = mocker.patch.object(wiz, "export_definition")
+    mocked_isdir = mocker.patch.object(os.path, "isdir")
+    mocked_isdir.side_effect = [lib_exists, bin_exists]
 
-    mapping = {
-        "identifier": "Foo-0.1.0",
-        "name": "Foo",
-        "key": "foo",
-        "version": "0.1.0",
-        "description": "This is a Python package",
-        "system": {
-            "platform": "linux",
-            "arch": "x86_64",
-            "os": {
-                "name": "centos",
-                "major_version": 7
-            }
-        },
-        "requirements": [
-            {
-                "identifier": "Bar-0.1.0",
-                "request": "bar",
-            },
-            {
-                "identifier": "Bim-2.3.1",
-                "request": "bim >= 2, <3",
-            }
-        ]
-    }
-    expected = {
-        "identifier": "foo",
-        "version": "0.1.0",
-        "description": "This is a Python package",
-        "system": {
-            "platform": "linux",
-            "arch": "x86_64",
-            "os": "centos >= 7, <8"
-        },
-        "requirements": [
-            "bar",
-            "bim >= 2, <3"
-        ],
-        "install-location": "/path"
-    }
-
-    qip.export_package_definition(mapping, "/path")
+    qip.export_package_definition(mocked_package_mapping, "/path")
 
     mocked_export.assert_called_once_with("/path", expected)
 
