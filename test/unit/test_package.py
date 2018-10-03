@@ -151,8 +151,12 @@ def test_sanitise_request(package, expected):
             "description": "This is a Python package",
             "system": {
                 "platform": "linux",
-                "os": "el >= 6, <7"
-            }
+                "arch": "x86_64",
+                "os": {
+                    "name": "centos",
+                    "major_version": 7
+                }
+            },
         },
         {
             "identifier": "Foo-0.1.0",
@@ -162,7 +166,11 @@ def test_sanitise_request(package, expected):
             "description": "This is a Python package",
             "system": {
                 "platform": "linux",
-                "os": "el >= 6, <7"
+                "arch": "x86_64",
+                "os": {
+                    "name": "centos",
+                    "major_version": 7
+                }
             },
             "requirements": [
                 {
