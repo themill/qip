@@ -55,6 +55,7 @@ def install(requests, output, overwrite_installed, no_dependencies):
       Command example::
 
           qip install foo --output .
+          qip install foo bar --output .
           qip install "foo==0.1.0" --output .
           qip install "foo >= 7, < 8" --output .
           qip install "git@gitlab:rnd/foo.git" --output .
