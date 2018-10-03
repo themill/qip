@@ -13,7 +13,4 @@ qip
     :maxdepth: 1
     :glob:
 
-    core
-    command_line
-
-
+    *

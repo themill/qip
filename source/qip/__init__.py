@@ -25,23 +25,23 @@ def install(
 ):
     """Install packages to *output_path* from *requests*.
 
-    * *requests* should be a list of packages that should be installed.
+    :param requests: list of packages to be installed
 
-    A request can be one of::
+        A request can be one of::
 
-        foo
-        "foo==0.1.0"
-        "foo >= 7, < 8"
-        "git@gitlab:rnd/foo.git"
-        "git@gitlab:rnd/foo.git@0.1.0"
-        "git@gitlab:rnd/foo.git@dev"
+            "foo"
+            "foo==0.1.0"
+            "foo >= 7, < 8"
+            "git@gitlab:rnd/foo.git"
+            "git@gitlab:rnd/foo.git@0.1.0"
+            "git@gitlab:rnd/foo.git@dev"
 
-    * *output_path* should be the destination installation path.
-    * *overwrite_packages* should indicate whether packages already installed
-    should be overwritten. If None, a user confirmation will be prompted.
-    Default is False.
-    * *no_dependencies* should indicate whether package dependencies should be
-    skipped. Default is False.
+    :param output_path: destination installation path
+    :param overwrite_packages: indicate whether packages already installed
+        should be overwritten. If None, a user confirmation will be prompted.
+        Default is False.
+    :param no_dependencies: indicate whether package dependencies should be
+        skipped. Default is False.
 
     """
     logger = mlog.Logger(__name__ + ".install")
@@ -126,12 +126,12 @@ def copy_to_destination(
 
     Return the path to the installed package.
 
-    * *package_mapping* should be a mapping of the python package built.
-    * *source_path* should be the path where the package was built
-    * *destination_path* should be the installation path
-    * *overwrite_packages* should indicate whether packages already installed
-      should be overwritten. If None, a user confirmation will be prompted.
-      Default is False.
+    :param package_mapping: mapping of the python package built
+    :param source_path: path where the package was built
+    :param destination_path: path to install to
+    :param overwrite_packages: indicate whether packages already installed
+        should be overwritten. If None, a user confirmation will be prompted.
+        Default is False.
 
     """
     logger = mlog.Logger(__name__ + ".copy_to_destination")
@@ -181,8 +181,8 @@ def copy_to_destination(
 def fetch_environ(mapping=None):
     """Fetch mapping with all environment variables needed.
 
-    * *mapping* can be a custom environment mapping which will be added to
-      the initial environment.
+    :param mapping: optional custom environment mapping to be added to initial
+        environment.
 
     """
     logger = mlog.Logger(__name__ + ".fetch")
@@ -200,9 +200,8 @@ def fetch_environ(mapping=None):
 def export_package_definition(mapping, path):
     """Export :term:`Wiz` definition for package *mapping* to *path*.
 
-    Return full path of the definition
-
-    * *path* should be the installation path of the package.
+    :param path: path to install the package definition to
+    :returns: full path to exported definition file
 
     """
     definition_data = {
@@ -258,9 +257,8 @@ def export_package_definition(mapping, path):
 def export_packages_file(path, dependencies):
     """Export a file listing the installed packages.
 
-    Return full path to a file.
-
-    * *path* should be the output path for the file.
+    :param path: should be the output path for the file.
+    :returns: full path to exported package file.
 
     """
     path = os.path.join(path, "packages.txt")

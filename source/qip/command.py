@@ -10,13 +10,17 @@ import mlog
 def execute(command, environ_mapping, quiet=False):
     """Execute *command* within *environ_mapping*.
 
-    * *command* should be in the form of::
+    :param command: command to execute
 
-        "pip install foo"
+        The command should be in the form of::
 
-    * *environ_mapping* should be a mapping with all environment variables which
-      must be set for the *command* to run properly.
-    * *quiet* indicate whether output lines should be hidden. Default is False.
+            "pip install foo"
+
+    :param environ_mapping: mapping with all environment variables that
+        must be set for the *command* to run properly.
+    :param quiet: indicate whether output lines should be hidden.
+        Default is False.
+    :raises RuntimeError: if command execution fails
 
     """
     logger = mlog.Logger(__name__ + ".execute")

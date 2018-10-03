@@ -14,29 +14,25 @@ import qip.system
 def install(request, destination, environ_mapping):
     """Install package in *destination* from *requirement*.
 
-    Return a mapping with information about the package, as returned by
-    :func:`fetch_mapping_from_environ`.
+    :param request: package to be installed
 
-    * *request* should be a package that should be installed.
+        A request can be one of::
 
-    A request can be one of::
+            "foo"
+            "foo==0.1.0"
+            "foo >= 7, < 8"
+            "git@gitlab:rnd/foo.git"
+            "git@gitlab:rnd/foo.git@0.1.0"
+            "git@gitlab:rnd/foo.git@dev"
 
-        foo
-        "foo==0.1.0"
-        "foo >= 7, < 8"
-        "git@gitlab:rnd/foo.git"
-        "git@gitlab:rnd/foo.git@0.1.0"
-        "git@gitlab:rnd/foo.git@dev"
+    :param destination: valid path to install all packages to
+    :param environ_mapping: mapping of environment variables
 
-    * *destination* should be a valid path in which all packages will be
-    installed.
-    * *environ_mapping* should be a mapping with all environment variables
-    needed.
-
-    Raise :exc:`RuntimeError` if pip fails.
-
-    Raise :exc:`ValueError` if the package name can not be extracted from
-    the request.
+    :raises RuntimeError: if pip fails to install
+    :raises ValueError: if the package name can not be extracted from the
+        request.
+    :returns: mapping with information about the package, as returned by
+        :func:`fetch_mapping_from_environ`.
 
     """
     logger = mlog.Logger(__name__ + ".install")
@@ -80,36 +76,38 @@ def sanitise_request(request):
 def fetch_mapping_from_environ(name, environ_mapping):
     """Return a mapping with information about the package *name*.
 
-    The mapping should be in the form of::
+    :param name: package name
+    :param environ_mapping: should be a mapping of environment variables
 
-        {
-            "identifier": "Foo-0.1.0",
-            "name": "Foo",
-            "key": "foo",
-            "version": "0.1.0",
-            "description": "This is a Python package",
-            "system": {
-                "platform": "linux",
-                "arch": "x86_64",
-                "os": {
-                    "name": "centos",
-                    "major_version": 7
-                }
-            },
-            "requirements": [
-                {
-                    "identifier": "Bar-0.1.0",
-                    "request": "bar",
+        The mapping should be in the form of::
+
+            {
+                "identifier": "Foo-0.1.0",
+                "name": "Foo",
+                "key": "foo",
+                "version": "0.1.0",
+                "description": "This is a Python package",
+                "system": {
+                    "platform": "linux",
+                    "arch": "x86_64",
+                    "os": {
+                        "name": "centos",
+                        "major_version": 7
+                    }
                 },
-                {
-                    "identifier": "Bim-2.3.1",
-                    "request": "bim >= 2, <3",
-                }
-            ]
-        }
-
-    * *environ_mapping* should be a mapping with all environment variables
-    needed.
+                "requirements": [
+                    {
+                        "identifier": "Bar-0.1.0",
+                        "request": "bar",
+                    },
+                    {
+                        "identifier": "Bim-2.3.1",
+                        "request": "bim >= 2, <3",
+                    }
+                ]
+            }
+    :returns: mapping with information about the package gathered from the
+        environment
 
     """
     logger = mlog.Logger(__name__ + ".fetch_package_from_environ")
@@ -142,34 +140,34 @@ def fetch_mapping_from_environ(name, environ_mapping):
 def extract_dependency_mapping(name, environ_mapping):
     """Return package mapping for *name* from dependency mapping.
 
-    Return None if the package *name* cannot be found in dependency mapping.
+    :param environ_mapping: mapping of environment variables
 
-    A valid mapping should be in the form of::
+        A valid mapping should be in the form of::
 
-        {
-            "package": {
-                "key": "foo",
-                "package_name": "Foo",
-                "installed_version": "0.1.0",
-            },
-            "dependencies": [
-                {
-                    "key": "bar",
-                    "package_name": "Bar",
+            {
+                "package": {
+                    "key": "foo",
+                    "package_name": "Foo",
                     "installed_version": "0.1.0",
-                    "required_version": None
                 },
-                {
-                    "key": "bim",
-                    "package_name": "Bim",
-                    "installed_version": "2.3.1",
-                    "required_version": ">= 2, <3"
-                }
-            ]
-        }
+                "dependencies": [
+                    {
+                        "key": "bar",
+                        "package_name": "Bar",
+                        "installed_version": "0.1.0",
+                        "required_version": None
+                    },
+                    {
+                        "key": "bim",
+                        "package_name": "Bim",
+                        "installed_version": "2.3.1",
+                        "required_version": ">= 2, <3"
+                    }
+                ]
+            }
 
-    * *environ_mapping* should be a mapping with all environment variables
-    needed.
+    :returns: None if the package *name* cannot be found in dependency mapping,
+        otherwise return dependency mapping.
 
     """
     result = qip.command.execute(
@@ -201,18 +199,20 @@ def extract_dependency_mapping(name, environ_mapping):
 def extract_metadata_mapping(name, environ_mapping):
     """Return package mapping for *name* from available metadata.
 
-    The mapping returned should be in the form of::
+    :param environ_mapping: mapping of environment variables
 
-        {
-            "description": "This is a Python package.",
-            "system": {
-                "platform": "linux",
-                "os": "el >= 6, <7"
+        The mapping returned should be in the form of::
+
+            {
+                "description": "This is a Python package.",
+                "system": {
+                    "platform": "linux",
+                    "os": "el >= 6, <7"
+                }
             }
-        }
 
-    * *environ_mapping* should be a mapping with all environment variables
-    needed.
+    :returns: mapping with information about the package gathered from the
+        environment (system and descriptiption)
 
     """
     result = qip.command.execute(
@@ -241,15 +241,17 @@ def extract_metadata_mapping(name, environ_mapping):
 def extract_identifier(mapping):
     """Return corresponding identifier from package *mapping*.
 
-    *mapping* must be in the form of::
+    :param mapping: package mapping.
 
-        {
-            "key": "foo",
-            "package_name": "Foo",
-            "installed_version": "1.11",
-        }
+        The package mapping must be in the form of::
 
-    Corresponding identifier would be "Foo-1.11"
+            {
+                "key": "foo",
+                "package_name": "Foo",
+                "installed_version": "1.11",
+            }
+
+    :returns: Corresponding identifier (ie. "Foo-1.11")
 
     """
     return qip.filesystem.sanitise_value(
@@ -263,16 +265,18 @@ def extract_identifier(mapping):
 def extract_request(mapping):
     """Return corresponding requirement request from package *mapping*.
 
-    *mapping* must be in the form of::
+    :param mapping: package mapping
 
-        {
-            "key": "foo",
-            "package_name": "Foo",
-            "installed_version": "1.11",
-            "required_version": ">=1.5",
-        }
+         The package mapping must be in the form of::
 
-    Corresponding request would be "foo >=1.5"
+            {
+                "key": "foo",
+                "package_name": "Foo",
+                "installed_version": "1.11",
+                "required_version": ">=1.5",
+            }
+
+    :returns: Corresponding request (ie. "foo >=1.5")
 
     """
     return "{name} {specifier}".format(

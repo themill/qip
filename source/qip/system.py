@@ -8,18 +8,20 @@ from packaging.version import Version, InvalidVersion
 def query():
     """Return system mapping.
 
-    The mapping should be in the form of::
+    :returns: A system mapping
 
-        {
-            "platform": "linux",
-            "arch": "x86_64",
-            "os": {
-                "name": "centos",
-                "major_version": 7
+        The mapping will be in the form of::
+
+            {
+                "platform": "linux",
+                "arch": "x86_64",
+                "os": {
+                    "name": "centos",
+                    "major_version": 7
+                }
             }
-        }
 
-    Raise :exc:`RuntimeError` if platform is not supported.
+    :raises RuntimeError: if platform is not supported.
 
     """
     name = _platform.system().lower()
