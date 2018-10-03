@@ -5,32 +5,32 @@ Tutorial
 ********
 
 Installing a package
---------------------
+====================
 
-To install a package simply issue the `qip` command and specify
+To install a package simply issue the `qip install` command and specify
 an output directory with `-o` or `--outdir`
 
 For example:
 
 .. code-block:: bash
 
-    $> qip -o /tmp/my_installs flask
+    $> qip install -o /tmp/my_installs flask
 
-qip will then proceed to resolve dependencies and install the packages as required.
+Qip will then proceed to resolve dependencies and install the packages as
+required.
 
 If you want to install a single package without any of its dependencies, you
-can pass the `--nodeps` argument to the install command
+can pass the `--no-dependencies` argument to the install command.
 
 .. code-block:: bash
 
-    $> qip -o /tmp/my_installs --nodeps flask
+    $> qip install -o /tmp/my_installs --no-dependencies flask
 
-If you are installing a package that already exists, then you will asked if you
-want to overwrite it. You can skip these prompts and assume "yes" with the `-y`
-option.
+If you are installing a package that already exists, then you will be asked if
+you want to overwrite it.
 
-The various packages will be installed into the output directory inside a package
-directory and finally into a version subdirectory. For example:
+The various packages will be installed into the output directory inside a
+package directory and finally into a version subdirectory. For example:
 
 .. code::
 
@@ -45,49 +45,44 @@ directory and finally into a version subdirectory. For example:
 	│                   │   └── json
 	│                   └── Flask-1.0.2.dist-info
 
-Along with the install, a requirements file will be written that details the
-dependencies of the package. This will be written into the versioned directory
-and called `requirements.json`. Its format will be something like this:
+Definition
+----------
 
-.. code:: json
+Along with the install, a :term:`Wiz` :ref:`Package Definition <wiz:definition>`
+file will be exported, which details information and dependencies of the
+package. It is exported into the versioned directory and called after the
+package, ie. `foo-0.1.0.json`.
 
-            [
-                {
-                    "MarkupSafe": "/tmp/installs/MarkupSafe/MarkupSafe-1.0"
-                }
-            ]
+To make a package installed with Qip usable inside of :term:`Wiz`, it has to be
+installed into a :term:`Wiz` :ref:`Registry <wiz:registry>`.
 
-Wiz can make use of these files to generate its own config files.
+To ease a possible batch install of a package with its requirements, Qip exports
+a `package.txt` file alongside all the new pacakges. It is exported into the
+output directory.
 
-Using qip as an API
--------------------
+Its format is in the form of::
 
-qip can be used as an API by importing the `core API
-<api_reference/core.html#core>`__ module. For example to install a package
+    "/tmp/foo/foo-0.1.0"
+    "/tmp/bar/bar-2.3.0"
 
-.. code:: python
+:term:`Wiz` can make use of these files to install all definitions behind these
+paths to a selected registry.
 
-    from core import Qip
+Using the API
+=============
 
-    qip = Qip("/install/directory", logger=mloginstance)
-    qip.install_package("flask", ">=0.1.0", True)
+qip can be used as an API by importing the `qip <api_reference/index.html>`__
+module. For example to install a package::
 
-This will only install the given package without its dependencies. In order
-to fetch the dependencies you should first call ``fetch_dependencies`` and then
-install each package separately.
+    import qip
 
-An install will also populate
-`Qip.dependency_tracker <api_reference/core.html#qip.core.Qip.dependency_tracker>`__
+    qip.install(["foo"], "/path")
 
-.. code:: python
+This will install the given package with its dependencies.
 
-    from core import Qip
+In order to install a package without its dependencies you should first call the
+command with the `no_dependencies`::
 
-    qip = Qip("/install/directory", logger=mloginstance)
-    deps = {}
-    qip.fetch_dependencies("flask==0.4.0", deps)
+    import qip
 
-    for package, specs in deps.iteritems():
-        specs = ",".join((x[0]+x[1] for x in specs))
-        output, ret_code = qip.install_package(package, specs, kwargs["y"])
-
+    qip.install(["foo"], "/path", no_dependencies=True)
