@@ -54,61 +54,69 @@ def install(
         temporary_path, "lib", "python2.7", "site-packages"
     )
 
-    # Update environment mapping.
-    environ_mapping = fetch_environ(mapping={"PYTHONPATH": install_path})
+    try:
+        # Update environment mapping.
+        environ_mapping = fetch_environ(mapping={"PYTHONPATH": install_path})
 
-    # Record package identifiers to prevent duplication
-    package_identifiers = set()
+        # Record package identifiers to prevent duplication
+        package_identifiers = set()
 
-    # Fill up queue with requirements extracted from requests.
-    queue = _queue.Queue()
-    for request in requests:
-        queue.put(request)
+        # Fill up queue with requirements extracted from requests.
+        queue = _queue.Queue()
+        for request in requests:
+            queue.put(request)
 
-    installed_packages = []
-    while not queue.empty():
-        request = queue.get()
+        installed_packages = []
+        while not queue.empty():
+            request = queue.get()
 
-        try:
-            package_mapping = qip.package.install(
-                request, temporary_path, environ_mapping
+            try:
+                package_mapping = qip.package.install(
+                    request, temporary_path, environ_mapping
+                )
+            except RuntimeError as error:
+                logger.error(error)
+                continue
+
+            # Install package to destination.
+            installation_path = copy_to_destination(
+                package_mapping,
+                temporary_path,
+                output_path,
+                overwrite_packages
             )
-        except RuntimeError as error:
-            logger.error(error)
-            continue
+            installed_packages.append(os.path.abspath(installation_path))
 
-        # Install package to destination.
-        installation_path = copy_to_destination(
-            package_mapping,
-            temporary_path,
-            output_path,
-            overwrite_packages
-        )
-        installed_packages.append(os.path.abspath(installation_path))
+            # Extract a wiz definition if possible within the same path.
+            if installation_path is not None:
+                export_package_definition(package_mapping, installation_path)
 
-        # Extract a wiz definition if possible within the same path.
-        if installation_path is not None:
-            export_package_definition(package_mapping, installation_path)
+            package_identifiers.add(package_mapping["identifier"])
 
-        package_identifiers.add(package_mapping["identifier"])
+            # Fill up queue with requirements extracted from package
+            # dependencies.
+            if not no_dependencies:
+                for mapping in package_mapping.get("requirements", []):
+                    if mapping["identifier"] in package_identifiers:
+                        continue
 
-        # Fill up queue with requirements extracted from package dependencies.
-        if not no_dependencies:
-            for mapping in package_mapping.get("requirements", []):
-                if mapping["identifier"] in package_identifiers:
-                    continue
+                    queue.put(mapping["request"])
 
-                queue.put(mapping["request"])
+            # Clean up for next installation.
+            logger.debug("Clean up directory content")
+            qip.filesystem.remove_directory_content(temporary_path)
 
-        # Clean up for next installation.
-        logger.debug("Clean up directory content")
-        qip.filesystem.remove_directory_content(temporary_path)
+        if len(installed_packages):
+            packages_file = export_packages_file(
+                output_path, installed_packages
+            )
+            logger.info(
+                "Exported installed packages log file: {!r}".format(
+                    packages_file
+                ))
 
-    if len(installed_packages):
-        packages_file = export_packages_file(output_path, installed_packages)
-        logger.info(
-            "Exported installed packages log file: {!r}".format(packages_file)
-        )
+    finally:
+        shutil.rmtree(temporary_path)
 
 
 def copy_to_destination(

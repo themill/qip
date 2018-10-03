@@ -56,8 +56,7 @@ def mocked_package_mapping(mocker):
         [{
             "identifier": "Foo-0.1.0",
             "name": "Foo"
-        },
-        {
+        }, {
             "identifier": "Bar-2.3.0",
             "name": "Bar"
         }],
@@ -79,6 +78,7 @@ def test_install(mocker, packages, mappings, installation_paths):
     mocked_definition = mocker.patch.object(qip, "export_package_definition")
     mocked_rm = mocker.patch.object(qip.filesystem, "remove_directory_content")
     mocked_export_file = mocker.patch.object(qip, "export_packages_file")
+    mocked_rm_tree = mocker.patch.object(shutil, "rmtree")
 
     output_path = "/path"
     qip.install(packages, output_path)
@@ -93,6 +93,7 @@ def test_install(mocker, packages, mappings, installation_paths):
     mocked_definition.assert_called()
     mocked_rm.assert_called_with("/tmp")
     mocked_export_file.assert_called_once_with("/path", installation_paths)
+    mocked_rm_tree.assert_called_with("/tmp")
 
 
 def test_install_fail(mocker):
@@ -106,12 +107,14 @@ def test_install_fail(mocker):
     mocked_definition = mocker.patch.object(qip, "export_package_definition")
     mocked_rm = mocker.patch.object(qip.filesystem, "remove_directory_content")
     mocked_export_file = mocker.patch.object(qip, "export_packages_file")
+    mocked_rm_tree = mocker.patch.object(shutil, "rmtree")
 
     qip.install(["foo"], "/path")
     assert mocked_copy.call_count == 0
     assert mocked_definition.call_count == 0
     assert mocked_rm.call_count == 0
     assert mocked_export_file.call_count == 0
+    mocked_rm_tree.assert_called_with("/tmp")
 
 
 @pytest.mark.parametrize("overwrite", [
