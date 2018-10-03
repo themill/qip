@@ -33,6 +33,8 @@ def install(request, destination, environ_mapping):
     * *environ_mapping* should be a mapping with all environment variables
     needed.
 
+    Raise :exc:`RuntimeError` if pip fails.
+
     Raise :exc:`ValueError` if the package name can not be extracted from
     the request.
 
