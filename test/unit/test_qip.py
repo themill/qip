@@ -65,6 +65,25 @@ def test_install(mocker, packages, mappings, installation_paths):
     mocked_export_file.assert_called_once_with("/path", installation_paths)
 
 
+def test_install_fail(mocker):
+    """Install packages fails on pip install."""
+    mocker.patch.object(qip.filesystem, "ensure_directory")
+    mocker.patch.object(tempfile, "mkdtemp", return_value="/tmp")
+    mocker.patch.object(qip, "fetch_environ")
+    mocked_install = mocker.patch.object(qip.package, "install")
+    mocked_install.side_effect = RuntimeError()
+    mocked_copy = mocker.patch.object(qip, "copy_to_destination")
+    mocked_definition = mocker.patch.object(qip, "export_package_definition")
+    mocked_rm = mocker.patch.object(qip.filesystem, "remove_directory_content")
+    mocked_export_file = mocker.patch.object(qip, "export_packages_file")
+
+    qip.install(["foo"], "/path")
+    assert mocked_copy.call_count == 0
+    assert mocked_definition.call_count == 0
+    assert mocked_rm.call_count == 0
+    assert mocked_export_file.call_count == 0
+
+
 @pytest.mark.parametrize("overwrite", [
     True, False, None
 ], ids=[
