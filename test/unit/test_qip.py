@@ -7,6 +7,25 @@ import wiz
 import qip
 
 
+@pytest.mark.parametrize("mapping, expected", [
+    ({}, {}),
+    (None, {})
+], ids=[
+    "mapping",
+    "none"
+])
+def test_fetch_environ(mocker, mapping, expected):
+    """Fetch mapping with all environment variables needed."""
+    mocked_resolve = mocker.patch.object(
+        wiz, "resolve_context", return_value={"environ": {}}
+    )
+    result = qip.fetch_environ(mapping)
+    mocked_resolve.assert_called_once_with(
+        ['python==2.7.*'], environ_mapping=expected
+    )
+    assert result == expected
+
+
 def test_export_package_definition(mocker):
     """Export Wiz definition for package."""
     mocked_export = mocker.patch.object(wiz, "export_definition")
