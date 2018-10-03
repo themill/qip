@@ -104,10 +104,11 @@ def install(
         logger.debug("Clean up directory content")
         qip.filesystem.remove_directory_content(temporary_path)
 
-    packages_file = export_packages_file(output_path, installed_packages)
-    logger.info(
-        "Exported installed packages log file: {!r}".format(packages_file)
-    )
+    if len(installed_packages):
+        packages_file = export_packages_file(output_path, installed_packages)
+        logger.info(
+            "Exported installed packages log file: {!r}".format(packages_file)
+        )
 
 
 def copy_to_destination(
