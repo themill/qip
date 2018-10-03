@@ -1,10 +1,138 @@
 # :coding: utf-8
 
-import pytest
-from mock import mock_open
+import os
+import click
+import shutil
+import tempfile
 import wiz
 
+import pytest
+from mock import mock_open
+
 import qip
+
+
+@pytest.mark.parametrize("packages, mappings, installation_paths", [
+    (
+        ["foo"],
+        [{
+            "identifier": "Foo-0.1.0",
+            "name": "Foo"
+        }],
+        ["/installation_path"]
+    ),
+    (
+        ["foo", "bar"],
+        [{
+            "identifier": "Foo-0.1.0",
+            "name": "Foo"
+        },
+        {
+            "identifier": "Bar-2.3.0",
+            "name": "Bar"
+        }],
+        ["/foo_installation_path", "/bar_installation_path"]
+    )
+], ids=[
+    "foo",
+    "foo, bar"
+])
+def test_install(mocker, packages, mappings, installation_paths):
+    """Install packages to output_path from requests."""
+    mocked_ensure_dir = mocker.patch.object(qip.filesystem, "ensure_directory")
+    mocked_mkd = mocker.patch.object(tempfile, "mkdtemp", return_value="/tmp")
+    mocked_fetch_environ = mocker.patch.object(qip, "fetch_environ")
+    mocked_install = mocker.patch.object(qip.package, "install")
+    mocked_install.side_effect = mappings
+    mocked_copy = mocker.patch.object(qip, "copy_to_destination")
+    mocked_copy.side_effect = installation_paths
+    mocked_definition = mocker.patch.object(qip, "export_package_definition")
+    mocked_rm = mocker.patch.object(qip.filesystem, "remove_directory_content")
+    mocked_export_file = mocker.patch.object(qip, "export_packages_file")
+
+    output_path = "/path"
+    qip.install(packages, output_path)
+
+    mocked_ensure_dir.assert_called_once()
+    mocked_mkd.assert_called_once()
+    mocked_fetch_environ.assert_called_once_with(
+        mapping={'PYTHONPATH': '/tmp/lib/python2.7/site-packages'}
+    )
+    mocked_install.assert_called()
+    mocked_copy.assert_called()
+    mocked_definition.assert_called()
+    mocked_rm.assert_called_with("/tmp")
+    mocked_export_file.assert_called_once_with("/path", installation_paths)
+
+
+@pytest.mark.parametrize("overwrite", [
+    True, False, None
+], ids=[
+    "true", "false", "none"
+])
+def test_copy_to_destination_overwrite(mocker, overwrite):
+    """Overwrite during copy package."""
+    mocker.patch.object(qip.filesystem, "ensure_directory")
+    mocker.patch.object(shutil, "copytree")
+    mocker.patch.object(os.path, "isdir", return_value=True)
+    mocked_click = mocker.patch.object(click, "confirm")
+    mocked_rm = mocker.patch.object(shutil, "rmtree")
+
+    mapping = {
+        "identifier": "Foo-0.1.0",
+        "name": "Foo"
+    }
+
+    source = "/source"
+    destination = "/destination"
+    result = qip.copy_to_destination(mapping, source, destination, overwrite)
+
+    if overwrite is None:
+        mocked_click.assert_called_once()
+    if overwrite:
+        mocked_rm.assert_called_once_with("/destination/Foo/Foo-0.1.0")
+    assert result == "/destination/Foo/Foo-0.1.0"
+
+
+@pytest.mark.parametrize("mapping, expected", [
+    (
+        {
+            "identifier": "Foo-0.1.0",
+            "name": "Foo"
+        },
+        "/destination/Foo/Foo-0.1.0"
+    ),
+    (
+        {
+            "identifier": "Foo-0.1.0",
+            "name": "Foo",
+            "system": {
+                "os": {
+                    "name": "centos",
+                    "major_version": 7
+                }
+            }
+        },
+        "/destination/Foo/Foo-0.1.0-centos7"
+    )
+], ids=[
+    "os-independent",
+    "os-dependent"
+])
+def test_copy_to_destination(mocker, mapping, expected):
+    """Copy package."""
+    mocked_directory = mocker.patch.object(qip.filesystem, "ensure_directory")
+    mocked_copy = mocker.patch.object(shutil, "copytree")
+
+    source = "/source"
+    destination = "/destination"
+    result = qip.copy_to_destination(mapping, source, destination)
+
+    mocked_directory.assert_called_once_with("/destination/Foo")
+    mocked_copy.assert_called_once_with(
+        "/source", expected
+    )
+    assert result == expected
 
 
 @pytest.mark.parametrize("mapping, expected", [
@@ -84,160 +212,3 @@ def test_export_package_file(mocker):
 
     mocked_open.assert_called_once_with("/tmp/packages.txt", "w")
     mocked_open().write.assert_called_once_with("")
-
-
-'''
-from qip.core import Qip, has_git_version
-import tempfile
-import uuid
-
-
-@pytest.fixture()
-def mocked_run_pip(mocker):
-    """Return mocked 'run_pip' command."""
-    mocked_run_pip = mocker.patch.object(Qip, "run_pip", autospec=True)
-    return mocked_run_pip
-
-
-@pytest.fixture()
-def mocked_uuid(mocker):
-    """Return a predictable uuid for tmp directory"""
-    mock_uuid = mocker.patch.object(uuid, 'uuid4', autospec=True)
-    mock_uuid.return_value = uuid.UUID(hex='5ecd5827b6ef4067b5ac3ceac07dde9f')
-    return mock_uuid
-
-
-def test_has_git_version():
-    """Check the git version from requirement."""
-    assert has_git_version("test.git") is False
-    assert has_git_version("test.git@") is False
-    assert has_git_version("test.git@1.90") is True
-    assert has_git_version("test.git@master") is True
-
-
-def test_get_name_and_specs_no_spec(logger, mocked_run_pip, tmpdir):
-    """Parse requirement with no specifier supplied.
-    """
-    mocked_run_pip.return_value = (
-        "",
-        (
-            "Collecting foo==\n"
-            "  Could not find a version that satisfies the requirement foo== "
-            "(from versions: 0.1.0, 0.2.0, 0.3.0, 0.5.0)\n"
-            "No matching distribution found for foo==\n"
-        ),
-        ""
-    )
-
-    _qip = Qip(tmpdir, logger)
-    name, specs = _qip.get_name_and_specs("foo")
-    mocked_run_pip.assert_called_once_with(
-        _qip,
-        "pip install --ignore-installed 'foo'=="
-    )
-
-    assert name == "foo"
-    assert specs == [('==', '0.5.0')]
-
-
-def test_get_name_and_specs_spec(logger, tmpdir):
-    """Parse requirement with specifier supplied.
-    """
-    _qip = Qip(tmpdir, logger)
-    name, specs = _qip.get_name_and_specs("foo==0.1.0")
-    assert name == "foo"
-    assert specs == [('==', '0.1.0')]
-
-    name, specs = _qip.get_name_and_specs("foo<1.0")
-    assert name == "foo"
-    assert specs == [('<', '1.0')]
-
-
-def test_install_package(logger, mocked_run_pip, mocked_uuid, mocker, tmpdir):
-    """Install package in directory with correct version.
-    """
-    mkdtemp = mocker.patch.object(tempfile, 'mkdtemp')
-    mkdtemp.return_value = "/tmp/testing"
-    mocked_run_pip.return_value = (
-        (
-            "Installing collected packages: bar, bim, bam, foo\n"
-            "Successfully installed bar-2.10 bim-1.0 bam-0.14.1 foo-0.1.0\n"
-        ),
-        "", 0
-    )
-
-    _qip = Qip('/tmp/testing', logger)
-    _qip.install_package("foo", "==0.1.0", True)
-
-    mocked_run_pip.assert_called_once_with(
-        _qip,
-        "install --ignore-installed --no-deps "
-        "--prefix /tmp/tmp5ecd5827b6ef4067b5ac3ceac07dde9f"
-        " --no-cache-dir  'foo==0.1.0'"
-    )
-
-
-deps = {"'foo'": (
-                    "Collecting foo\n"
-                    "Collecting bar>=2.10 (from foo)\n"
-                    "Collecting bim==1.0 (from foo)\n"
-                    "Collecting bam>=0.14.1 (from foo)", "", 0
-               ),
-        "'bar'": ("Collecting bar>=2.10 (from foo)\n", "", 0),
-        "'bar>=2.10'": ("Collecting bar>=2.10 (from foo)\n", "", 0),
-        "'bim'": ("Collecting bim==1.0 (from foo)\n", "", 0),
-        "'bim==1.0'": ("Collecting bim==1.0 (from foo)\n", "", 0),
-        "'bam'": ("Collecting bam>=0.14.1 (from foo))\n", "", 0),
-        "'bam>=0.14.1'": ("Collecting bam>=0.14.1 (from foo))\n", "", 0),
-        }
-
-
-def dep_side_effect(package, *args, **kwargs):
-    p = args[0].split()[3]
-    print p, deps[p]
-    return deps[p]
-
-
-def test_fetch_dependencies(logger, mocked_run_pip, mocker, tmpdir):
-    """Fetch dependencies for requirement package."""
-    mocked_run_pip = mocker.patch.object(Qip, "run_pip", autospec=True)
-    #mocked_run_pip.return_value = (
-    #    "Collecting bar>=2.10 (from foo)\n"
-    #    "Collecting bim==1.0 (from foo)\n"
-    #    "Collecting bam>=0.14.1 (from foo)", "", 0
-    #)
-    mocked_run_pip.side_effect = dep_side_effect
-
-    expected_deps = {}
-    _qip = Qip(tmpdir, logger)
-    _qip.fetch_dependencies("foo", expected_deps)
-
-    assert expected_deps == {
-        "bar": [(">=", "2.10")],
-        "bim": [("==", "1.0")],
-        "bam": [(">=", "0.14.1")],
-    }
-
-    assert mocked_run_pip.call_count == 4
-    mocked_run_pip.assert_any_call(
-        _qip,
-        "download --exists-action w 'foo' "
-        "-d /tmp --no-binary :all: --no-cache"
-
-    )
-    mocked_run_pip.assert_any_call(
-        _qip,
-        "download --exists-action w 'bar>=2.10' "
-        "-d /tmp --no-binary :all: --no-cache"
-    )
-    mocked_run_pip.assert_any_call(
-        _qip,
-        "download --exists-action w 'bim==1.0' "
-        "-d /tmp --no-binary :all: --no-cache"
-    )
-    mocked_run_pip.assert_any_call(
-        _qip,
-        "download --exists-action w 'bam>=0.14.1' "
-        "-d /tmp --no-binary :all: --no-cache"
-    )
-'''
