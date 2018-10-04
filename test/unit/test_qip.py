@@ -42,14 +42,15 @@ def mocked_package_mapping(mocker):
     }
 
 
-@pytest.mark.parametrize("packages, mappings, installation_paths", [
+@pytest.mark.parametrize("packages, mappings, installation_paths, expected", [
     (
         ["foo"],
         [{
             "identifier": "Foo-0.1.0",
             "name": "Foo"
         }],
-        ["/installation_path"]
+        ["/foo_path"],
+        ["/foo_path"]
     ),
     (
         ["foo", "bar"],
@@ -60,13 +61,35 @@ def mocked_package_mapping(mocker):
             "identifier": "Bar-2.3.0",
             "name": "Bar"
         }],
-        ["/foo_installation_path", "/bar_installation_path"]
+        ["/foo_path", "/bar_path"],
+        ["/foo_path", "/bar_path"]
+    ),
+    (
+        ["foo", "bar"],
+        [{
+            "identifier": "Foo-1.1.0",
+            "name": "Foo"
+        }, {
+
+            "identifier": "bar-2.3.0",
+            "name": "Bar",
+            "requirements": [{
+                "identifier": "Foo",
+                "request": "foo >=1,<2"
+            }]
+        }, {
+            "identifier": "Foo-1.1.0",
+            "name": "Foo"
+        }],
+        ["/foo_path", "/bar_path", "/foo_path"],
+        ["/foo_path", "/bar_path"]
     )
 ], ids=[
     "foo",
-    "foo, bar"
+    "foo, bar",
+    "foo recusive"
 ])
-def test_install(mocker, packages, mappings, installation_paths):
+def test_install(mocker, packages, mappings, installation_paths, expected):
     """Install packages to output_path from requests."""
     mocked_ensure_dir = mocker.patch.object(qip.filesystem, "ensure_directory")
     mocked_mkd = mocker.patch.object(tempfile, "mkdtemp", return_value="/tmp")
@@ -92,7 +115,7 @@ def test_install(mocker, packages, mappings, installation_paths):
     mocked_copy.assert_called()
     mocked_definition.assert_called()
     mocked_rm.assert_called_with("/tmp")
-    mocked_export_file.assert_called_once_with("/path", installation_paths)
+    mocked_export_file.assert_called_once_with("/path", expected)
     mocked_rm_tree.assert_called_with("/tmp")
 
 

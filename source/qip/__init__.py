@@ -78,6 +78,9 @@ def install(
                 logger.error(error)
                 continue
 
+            if package_mapping["identifier"] in package_identifiers:
+                continue
+
             # Install package to destination.
             installation_path = copy_to_destination(
                 package_mapping,
