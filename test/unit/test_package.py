@@ -37,7 +37,7 @@ def test_install(mocker, mocked_command, package):
         qip.package, "fetch_mapping_from_environ"
     )
     mocked_fetch_mapping_from_environ.return_value = "__VALUE__"
-    mocked_command.return_value = "Successfully installed foo"
+    mocked_command.return_value = "Installing collected packages: foo"
 
     result = qip.package.install(package, "/path", {})
     mocked_fetch_mapping_from_environ.assert_called_once_with("foo", {})

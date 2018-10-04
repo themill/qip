@@ -55,7 +55,7 @@ def install(request, destination, environ_mapping):
         environ_mapping
     )
 
-    match_name = re.search("(?<=Successfully installed ).*", result)
+    match_name = re.search("(?<=Installing collected packages: ).*", result)
     if match_name is None:
         raise ValueError(
             "Package name could not be extracted from '{}'.".format(request)
