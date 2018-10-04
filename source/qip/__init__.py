@@ -85,11 +85,13 @@ def install(
                 output_path,
                 overwrite_packages
             )
+            if installation_path is None:
+                continue
+
             installed_packages.append(os.path.abspath(installation_path))
 
-            # Extract a wiz definition if possible within the same path.
-            if installation_path is not None:
-                export_package_definition(package_mapping, installation_path)
+            # Extract a wiz definition within the same path.
+            export_package_definition(package_mapping, installation_path)
 
             package_identifiers.add(package_mapping["identifier"])
 
@@ -168,7 +170,7 @@ def copy_to_destination(
                     folder_identifier
                 )
             )
-            return full_target
+            return None
 
     qip.filesystem.ensure_directory(target)
     shutil.copytree(source_path, full_target)

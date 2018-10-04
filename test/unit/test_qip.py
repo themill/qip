@@ -143,7 +143,9 @@ def test_copy_to_destination_overwrite(mocker, overwrite):
         mocked_click.assert_called_once()
     if overwrite:
         mocked_rm.assert_called_once_with("/destination/Foo/Foo-0.1.0")
-    assert result == "/destination/Foo/Foo-0.1.0"
+        assert result == "/destination/Foo/Foo-0.1.0"
+    if overwrite is False:
+        assert result is None
 
 
 @pytest.mark.parametrize("mapping, expected", [
