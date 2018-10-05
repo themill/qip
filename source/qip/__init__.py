@@ -268,7 +268,7 @@ def retrieve_definition(mapping, path):
 
     :param mapping: mapping of the python package built
     :param path: path where the package was temporarily installed to
-    :return:
+    :return: None if no definition was found, otherwise the definition
     """
 
     definition_path = os.path.join(
