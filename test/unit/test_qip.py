@@ -12,37 +12,17 @@ from mock import mock_open
 import qip
 
 
-@pytest.fixture()
-def mocked_package_mapping(mocker):
-    """Return mocked example package mapping."""
-    return {
-        "identifier": "Foo-0.1.0",
-        "name": "Foo",
-        "key": "foo",
-        "version": "0.1.0",
-        "description": "This is a Python package",
-        "system": {
-            "platform": "linux",
-            "arch": "x86_64",
-            "os": {
-                "name": "centos",
-                "major_version": 7
-            }
-        },
-        "requirements": [
-            {
-                "identifier": "Bar-0.1.0",
-                "request": "bar",
-            },
-            {
-                "identifier": "Bim-2.3.1",
-                "request": "bim >= 2, <3",
-            }
-        ]
-    }
-
-
-@pytest.mark.parametrize("packages, mappings, installation_paths, expected", [
+@pytest.mark.parametrize(
+    "definition_exists",
+[
+    True, None
+], ids=[
+    "true",
+    "false"
+])
+@pytest.mark.parametrize(
+    "packages, mappings, installation_paths, expected",
+[
     (
         ["foo"],
         [{
@@ -89,7 +69,9 @@ def mocked_package_mapping(mocker):
     "foo, bar",
     "foo recusive"
 ])
-def test_install(mocker, packages, mappings, installation_paths, expected):
+def test_install(
+    mocker, packages, mappings, definition_exists, installation_paths, expected
+):
     """Install packages to output_path from requests."""
     mocked_ensure_dir = mocker.patch.object(qip.filesystem, "ensure_directory")
     mocked_mkd = mocker.patch.object(tempfile, "mkdtemp", return_value="/tmp")
@@ -98,7 +80,11 @@ def test_install(mocker, packages, mappings, installation_paths, expected):
     mocked_install.side_effect = mappings
     mocked_copy = mocker.patch.object(qip, "copy_to_destination")
     mocked_copy.side_effect = installation_paths
-    mocked_definition = mocker.patch.object(qip, "export_package_definition")
+    mocked_definition_retrieve = mocker.patch.object(
+        qip.definition, "retrieve", return_value=definition_exists
+    )
+    mocked_definition_create = mocker.patch.object(qip.definition, "create")
+    mocked_wiz_export = mocker.patch.object(wiz, "export_definition")
     mocked_rm = mocker.patch.object(qip.filesystem, "remove_directory_content")
     mocked_export_file = mocker.patch.object(qip, "export_packages_file")
     mocked_rm_tree = mocker.patch.object(shutil, "rmtree")
@@ -113,7 +99,10 @@ def test_install(mocker, packages, mappings, installation_paths, expected):
     )
     mocked_install.assert_called()
     mocked_copy.assert_called()
-    mocked_definition.assert_called()
+    mocked_definition_retrieve.assert_called()
+    if not definition_exists:
+        mocked_definition_create.assert_called()
+    mocked_wiz_export.assert_called()
     mocked_rm.assert_called_with("/tmp")
     mocked_export_file.assert_called_once_with("/path", expected)
     mocked_rm_tree.assert_called_with("/tmp")
@@ -127,14 +116,16 @@ def test_install_fail(mocker):
     mocked_install = mocker.patch.object(qip.package, "install")
     mocked_install.side_effect = RuntimeError()
     mocked_copy = mocker.patch.object(qip, "copy_to_destination")
-    mocked_definition = mocker.patch.object(qip, "export_package_definition")
+    mocked_definition_create = mocker.patch.object(qip.definition, "create")
+    mocked_definition_retrieve = mocker.patch.object(qip.definition, "retrieve")
     mocked_rm = mocker.patch.object(qip.filesystem, "remove_directory_content")
     mocked_export_file = mocker.patch.object(qip, "export_packages_file")
     mocked_rm_tree = mocker.patch.object(shutil, "rmtree")
 
     qip.install(["foo"], "/path")
     assert mocked_copy.call_count == 0
-    assert mocked_definition.call_count == 0
+    assert mocked_definition_create.call_count == 0
+    assert mocked_definition_retrieve.call_count == 0
     assert mocked_rm.call_count == 0
     assert mocked_export_file.call_count == 0
     mocked_rm_tree.assert_called_with("/tmp")
@@ -229,108 +220,6 @@ def test_fetch_environ(mocker, mapping, expected):
         ['python==2.7.*'], environ_mapping=expected
     )
     assert result == expected
-
-
-@pytest.mark.parametrize("lib_exists, bin_exists, expected", [
-    (
-        False, False,
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a Python package",
-            "system": {
-                "platform": "linux",
-                "arch": "x86_64",
-                "os": "centos >= 7, <8"
-            },
-            "requirements": [
-                "bar",
-                "bim >= 2, <3"
-            ],
-            "install-location": "/path"
-        }
-    ),
-    (
-        True, False,
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a Python package",
-            "system": {
-                "platform": "linux",
-                "arch": "x86_64",
-                "os": "centos >= 7, <8"
-            },
-            "environ": {
-                "PYTHONPATH": "${INSTALL_LOCATION}/lib/python2.7/site-packages:${PYTHONPATH}"
-            },
-            "requirements": [
-                "bar",
-                "bim >= 2, <3"
-            ],
-            "install-location": "/path"
-        }
-    ),
-    (
-        False, True,
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a Python package",
-            "system": {
-                "platform": "linux",
-                "arch": "x86_64",
-                "os": "centos >= 7, <8"
-            },
-            "environ": {
-                "PATH": "${INSTALL_LOCATION}/bin:${PATH}"
-            },
-            "requirements": [
-                "bar",
-                "bim >= 2, <3"
-            ],
-            "install-location": "/path"
-        }
-    ),
-    (
-        True, True,
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a Python package",
-            "system": {
-                "platform": "linux",
-                "arch": "x86_64",
-                "os": "centos >= 7, <8"
-            },
-            "environ": {
-                "PATH": "${INSTALL_LOCATION}/bin:${PATH}",
-                "PYTHONPATH": "${INSTALL_LOCATION}/lib/python2.7/site-packages:${PYTHONPATH}"
-            },
-            "requirements": [
-                "bar",
-                "bim >= 2, <3"
-            ],
-            "install-location": "/path"
-        }
-    )
-], ids=[
-    "no_environ",
-    "add_lib",
-    "add_bin",
-    "add_lib_and_bin"
-])
-def test_export_package_definition(
-    mocker, mocked_package_mapping, lib_exists, bin_exists, expected
-):
-    """Export Wiz definition for package."""
-    mocked_export = mocker.patch.object(wiz, "export_definition")
-    mocked_isdir = mocker.patch.object(os.path, "isdir")
-    mocked_isdir.side_effect = [lib_exists, bin_exists]
-
-    qip.export_package_definition(mocked_package_mapping, "/path")
-
-    mocked_export.assert_called_once_with("/path", expected)
 
 
 def test_export_package_file(mocker):
