@@ -94,7 +94,10 @@ def install(
             installed_packages.append(os.path.abspath(installation_path))
 
             # Extract a wiz definition within the same path.
-            export_package_definition(package_mapping, installation_path)
+            definition = retrieve_definition(package_mapping, temporary_path)
+            if definition is None:
+                create_package_definition(package_mapping, installation_path)
+            wiz.export_definition(installation_path, definition)
 
             package_identifiers.add(package_mapping["identifier"])
 
@@ -202,11 +205,12 @@ def fetch_environ(mapping=None):
     return context["environ"]
 
 
-def export_package_definition(mapping, path):
-    """Export :term:`Wiz` definition for package *mapping* to *path*.
+def create_package_definition(mapping, path):
+    """Create :term:`Wiz` definition for package *mapping*.
 
+    :param mapping: mapping of the python package built
     :param path: path to install the package definition to
-    :returns: full path to exported definition file
+    :returns: definition data
 
     """
     definition_data = {
@@ -256,7 +260,26 @@ def export_package_definition(mapping, path):
             "{}:${{PATH}}".format(os.path.join("${INSTALL_LOCATION}", "bin"))
         )
 
-    return wiz.export_definition(path, definition_data)
+    return definition_data
+
+
+def retrieve_definition(mapping, path):
+    """Retrieve :term:`Wiz` definition from package install.
+
+    :param mapping: mapping of the python package built
+    :param path: path where the package was temporarily installed to
+    :return:
+    """
+
+    definition_path = os.path.join(
+        path, "share", "wiz", mapping["name"], "wiz.json"
+    )
+    if not os.path.exists(definition_path):
+        return None
+
+    definition = wiz.load_definition(definition_path)
+
+    return definition
 
 
 def export_packages_file(path, dependencies):
