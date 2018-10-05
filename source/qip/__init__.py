@@ -268,7 +268,13 @@ def export_packages_file(path, dependencies):
     """
     path = os.path.join(path, "packages.txt")
 
+    _dependencies = []
+    for _dependency in dependencies:
+        _dependencies.append(
+            os.path.join(_dependency, os.path.basename(_dependency) + ".json")
+        )
+
     with open(path, "w") as outfile:
-        outfile.write("\n".join(dependencies))
+        outfile.write("\n".join(_dependencies))
 
     return path
