@@ -139,7 +139,7 @@ def test_create(
     assert result == expected
 
 
-def test_retrieve_no_exist(mocker, mocked_package_mapping):
+def test_retrieve_does_not_exist(mocker, mocked_package_mapping):
     """Fail to retrieve definition from package install as it does not exist."""
     mocker.patch.object(os.path, "exists", return_value=False)
 
@@ -153,8 +153,14 @@ def test_retrieve_no_exist(mocker, mocked_package_mapping):
             "identifier": "foo",
             "version": "0.1.0",
             "description": "This is a Python package",
-            "install-location": "${INSTALL_LOCATION}"
         },
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+            "description": "This is a Python package"
+        }
+    ),
+    (
         {
             "identifier": "foo",
             "version": "0.1.0",
@@ -169,17 +175,6 @@ def test_retrieve_no_exist(mocker, mocked_package_mapping):
                 "bim >=2, <3"
             ],
             "install-location": "${INSTALL_LOCATION}"
-        }
-    ),
-    (
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a Python package",
-            "install-location": "${INSTALL_LOCATION}",
-            "requirements": [
-                "baz"
-            ],
         },
         {
             "identifier": "foo",
@@ -189,30 +184,6 @@ def test_retrieve_no_exist(mocker, mocked_package_mapping):
                 "platform": "linux",
                 "arch": "x86_64",
                 "os": "centos >= 7, <8"
-            },
-            "requirements": [
-                "bar",
-                "bim >=2, <3"
-            ],
-            "install-location": "${INSTALL_LOCATION}"
-        }
-    ),
-    (
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a Python package",
-            "install-location": "${INSTALL_LOCATION}",
-            "system": {
-                "platform": "other"
-            }
-        },
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a Python package",
-            "system": {
-                "platform": "other"
             },
             "requirements": [
                 "bar",
@@ -222,9 +193,8 @@ def test_retrieve_no_exist(mocker, mocked_package_mapping):
         }
     )
 ], ids=[
-    "default",
-    "overwrite requirements",
-    "keep system"
+    "example 1",
+    "example 2"
 ])
 def test_retrieve(mocker, mocked_package_mapping, original, expected):
     """Retrieve and update definition from package install."""
@@ -236,21 +206,3 @@ def test_retrieve(mocker, mocked_package_mapping, original, expected):
     result = qip.definition.retrieve(mocked_package_mapping, "/path")
 
     assert result.to_dict(serialize_content=True) == expected
-
-
-def test_get_requirements(mocked_package_mapping):
-    """Extract the requirements information from package mapping."""
-    result = qip.definition.get_requirements(mocked_package_mapping)
-
-    assert result == ['bar', 'bim >= 2, <3']
-
-
-def test_get_system(mocked_package_mapping):
-    """Extract the system information from package mapping."""
-    result = qip.definition.get_system(mocked_package_mapping)
-
-    assert result == {
-        "platform": "linux",
-        "arch": "x86_64",
-        "os": "centos >= 7, <8"
-    }

@@ -21,10 +21,23 @@ def create(mapping, path):
         definition_data["description"] = mapping["description"]
 
     if "system" in mapping.keys():
-        definition_data["system"] = get_system(mapping)
+        major_version = mapping["system"]["os"]["major_version"]
+        definition_data["system"] = {
+            "platform": mapping["system"]["platform"],
+            "arch": mapping["system"]["arch"],
+            "os": (
+                "{name} >= {min_version}, <{max_version}".format(
+                    name=mapping["system"]["os"]["name"],
+                    min_version=major_version,
+                    max_version=major_version + 1,
+                )
+            )
+        }
 
     if "requirements" in mapping.keys():
-        definition_data["requirements"] = get_requirements(mapping)
+        definition_data["requirements"] = [
+            _mapping["request"] for _mapping in mapping["requirements"]
+        ]
 
     lib_path = os.path.join(path, "lib", "python2.7", "site-packages")
     if os.path.isdir(lib_path):
@@ -64,43 +77,4 @@ def retrieve(mapping, path):
     if not os.path.exists(definition_path):
         return None
 
-    definition = wiz.load_definition(definition_path)
-
-    if "requirements" in mapping.keys():
-        definition = definition.set("requirements", get_requirements(mapping))
-
-    if not definition.to_dict().get("system", False) and "system" in mapping.keys():
-        definition = definition.set("system", get_system(mapping))
-
-    return definition
-
-
-def get_requirements(mapping):
-    """Extract the requirements information from package *mapping*.
-
-    :param mapping: mapping of the python package built
-    :return: requirement data extracted from package mapping
-    """
-    return [
-        _mapping["request"] for _mapping in mapping["requirements"]
-    ]
-
-
-def get_system(mapping):
-    """Extract the system information from package *mapping*.
-
-    :param mapping: mapping of the python package built
-    :return: system data extracted from package mapping
-    """
-    major_version = mapping["system"]["os"]["major_version"]
-    return {
-        "platform": mapping["system"]["platform"],
-        "arch": mapping["system"]["arch"],
-        "os": (
-            "{name} >= {min_version}, <{max_version}".format(
-                name=mapping["system"]["os"]["name"],
-                min_version=major_version,
-                max_version=major_version + 1,
-            )
-        )
-    }
+    return wiz.load_definition(definition_path)
