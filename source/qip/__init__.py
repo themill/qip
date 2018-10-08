@@ -99,7 +99,9 @@ def install(
                 package_mapping, temporary_path
             )
             if definition_data is None:
-                qip.definition.create(package_mapping, installation_path)
+                definition_data = qip.definition.create(
+                    package_mapping, installation_path
+                )
             wiz.export_definition(installation_path, definition_data)
 
             package_identifiers.add(package_mapping["identifier"])
