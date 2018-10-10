@@ -86,7 +86,6 @@ def test_install(
     mocked_definition_create = mocker.patch.object(qip.definition, "create")
     mocked_wiz_export = mocker.patch.object(wiz, "export_definition")
     mocked_rm = mocker.patch.object(qip.filesystem, "remove_directory_content")
-    mocked_export_file = mocker.patch.object(qip, "export_packages_file")
     mocked_rm_tree = mocker.patch.object(shutil, "rmtree")
 
     output_path = "/path"
@@ -104,7 +103,6 @@ def test_install(
         mocked_definition_create.assert_called()
     mocked_wiz_export.assert_called()
     mocked_rm.assert_called_with("/tmp")
-    mocked_export_file.assert_called_once_with("/path", expected)
     mocked_rm_tree.assert_called_with("/tmp")
 
 
@@ -119,7 +117,6 @@ def test_install_fail(mocker):
     mocked_definition_create = mocker.patch.object(qip.definition, "create")
     mocked_definition_retrieve = mocker.patch.object(qip.definition, "retrieve")
     mocked_rm = mocker.patch.object(qip.filesystem, "remove_directory_content")
-    mocked_export_file = mocker.patch.object(qip, "export_packages_file")
     mocked_rm_tree = mocker.patch.object(shutil, "rmtree")
 
     qip.install(["foo"], "/path")
@@ -127,7 +124,6 @@ def test_install_fail(mocker):
     assert mocked_definition_create.call_count == 0
     assert mocked_definition_retrieve.call_count == 0
     assert mocked_rm.call_count == 0
-    assert mocked_export_file.call_count == 0
     mocked_rm_tree.assert_called_with("/tmp")
 
 
@@ -220,13 +216,3 @@ def test_fetch_environ(mocker, mapping, expected):
         ['python==2.7.*'], environ_mapping=expected
     )
     assert result == expected
-
-
-def test_export_package_file(mocker):
-    """Export a file listing the installed packages."""
-    mocked_open = mock_open(mock=mocker.MagicMock())
-    with mocker.patch('qip.open', mocked_open):
-        qip.export_packages_file("/tmp", "")
-
-    mocked_open.assert_called_once_with("/tmp/packages.txt", "w")
-    mocked_open().write.assert_called_once_with("")

@@ -119,15 +119,6 @@ def install(
             logger.debug("Clean up directory content")
             qip.filesystem.remove_directory_content(temporary_path)
 
-        if len(installed_packages):
-            packages_file = export_packages_file(
-                output_path, installed_packages
-            )
-            logger.info(
-                "Exported installed packages log file: {!r}".format(
-                    packages_file
-                ))
-
     finally:
         shutil.rmtree(temporary_path)
 
@@ -208,24 +199,3 @@ def fetch_environ(mapping=None):
     context = wiz.resolve_context(["python==2.7.*"], environ_mapping=mapping)
 
     return context["environ"]
-
-
-def export_packages_file(path, dependencies):
-    """Export a file listing the installed packages.
-
-    :param path: should be the output path for the file.
-    :returns: full path to exported package file.
-
-    """
-    path = os.path.join(path, "packages.txt")
-
-    _dependencies = []
-    for _dependency in dependencies:
-        _dependencies.append(
-            os.path.join(_dependency, os.path.basename(_dependency) + ".json")
-        )
-
-    with open(path, "w") as outfile:
-        outfile.write("\n".join(_dependencies))
-
-    return path
