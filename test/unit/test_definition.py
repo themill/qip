@@ -54,8 +54,7 @@ def mocked_package_mapping(mocker):
             "requirements": [
                 "bar",
                 "bim >= 2, <3"
-            ],
-            "install-location": "${INSTALL_LOCATION}"
+            ]
         }
     ),
     (
@@ -75,8 +74,7 @@ def mocked_package_mapping(mocker):
             "requirements": [
                 "bar",
                 "bim >= 2, <3"
-            ],
-            "install-location": "${INSTALL_LOCATION}"
+            ]
         }
     ),
     (
@@ -96,8 +94,7 @@ def mocked_package_mapping(mocker):
             "requirements": [
                 "bar",
                 "bim >= 2, <3"
-            ],
-            "install-location": "${INSTALL_LOCATION}"
+            ]
         }
     ),
     (
@@ -118,8 +115,7 @@ def mocked_package_mapping(mocker):
             "requirements": [
                 "bar",
                 "bim >= 2, <3"
-            ],
-            "install-location": "${INSTALL_LOCATION}"
+            ]
         }
     )
 ], ids=[
@@ -173,8 +169,7 @@ def test_retrieve_does_not_exist(mocker, mocked_package_mapping):
             "requirements": [
                 "bar",
                 "bim >=2, <3"
-            ],
-            "install-location": "${INSTALL_LOCATION}"
+            ]
         },
         {
             "identifier": "foo",
@@ -188,8 +183,7 @@ def test_retrieve_does_not_exist(mocker, mocked_package_mapping):
             "requirements": [
                 "bar",
                 "bim >=2, <3"
-            ],
-            "install-location": "${INSTALL_LOCATION}"
+            ]
         }
     )
 ], ids=[

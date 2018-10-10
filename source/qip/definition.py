@@ -13,8 +13,7 @@ def create(mapping, path):
     """
     definition_data = {
         "identifier": mapping["key"],
-        "version": mapping["version"],
-        "install-location": "${INSTALL_LOCATION}"
+        "version": mapping["version"]
     }
 
     if "description" in mapping.keys():
