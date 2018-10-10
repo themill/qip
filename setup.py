@@ -27,7 +27,6 @@ INSTALL_REQUIRES = [
     "pipdeptree >= 0.13.0, < 1",
     "packaging >= 17.1, < 18",
     "pip >= 10, < 19",
-    # TODO: update wiz version to a minimum that has the 'install-location'
     "wiz >= 1.0.0, < 2",
     "mlog >= 0.0.6, < 1",
     "click >= 6.7"
