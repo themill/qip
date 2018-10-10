@@ -4,6 +4,15 @@ Glossary
 
 .. glossary::
 
+    devpi
+        A powerful :term:`PyPI`-compatible server and a complimentary command
+        line tool to drive packaging, testing and release activities with
+        :term:`Python`.
+
+        .. seealso::
+
+            * `Official devpi documentation <http://doc.devpi.net/>`__
+
     Pip
         A recommended tool for installing :term:`Python` packages.
 

@@ -8,17 +8,17 @@ Release Notes
 
     .. change:: new
 
-        Write out a `packages.txt` file to the output path, which contains a
-        list of packages installed by the last run.
+        Retrieve a :term:`Wiz` definition from an installed package, if there
+        was one bundled with it.
 
-        This file is a temporary file to assist batch installing the packages
-        into a :term:`Wiz` registry without having to manually keep track of
-        which dependencies got installed.
+        Any python package exporting a `wiz.json` to a shared location
+        `/share/package-name/` on install, will cause Qip to _not_ create a new
+        :term:`Wiz` definition from scratch. Instead the bundled definition
+        will be renamed (ie. `foo-0.1.0.json`) and copied to the install location.
 
-        The format is::
-
-            "/tmp/foo/foo-0.1.0"
-            "/tmp/bar/bar-2.3.0"
+        There are no changes made to a retrieved :term:`Wiz` definition.
+        Any dependencies or system information will have to be correct when
+        the package gets bundled and uploaded to :term:`devpi`.
 
     .. change:: new
 
