@@ -29,19 +29,19 @@ cloning the public repository::
 Then you can build and install the package into your current Python
 environment::
 
-    python ./setup.py install
+    pip install .
 
 If actively developing, you can perform an editable install that will link to
 the project source and reflect any local changes made instantly::
 
-    python ./setup.py develop
+    pip install -e .
 
 .. note::
 
     If you plan on building documentation and running tests, run the following
     command instead to install required extra packages for development::
 
-        python ./setup.py develop ".[dev]"
+        pip install -e ".[dev]"
 
 Alternatively, just build locally and manage yourself::
 
@@ -53,7 +53,7 @@ Building documentation from source
 Ensure you have installed the 'extra' packages required for building the
 documentation::
 
-    python setup.py develop ".[doc]"
+    pip install -e ".[doc]"
 
 Then you can build the documentation with the command::
 
@@ -68,7 +68,7 @@ Running tests against the source
 
 Ensure you have installed the 'extra' packages required for running the tests::
 
-    python setup.py develop ".[test]"
+    pip install -e ".[test]"
 
 Then run the tests as follows::
 
