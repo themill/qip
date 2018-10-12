@@ -60,14 +60,12 @@ def create(mapping, path):
 
 
 def retrieve(mapping, path):
-    """Retrieve and update :term:`Wiz` definition from package install.
-
-    Update the definition with `requirements` and if not otherwise included 
-    already, add `system`.
+    """Retrieve :term:`Wiz` definition from package installed.
 
     :param mapping: mapping of the python package built
-    :param path: path where the package was temporarily installed to
+    :param path: path where the package was installed to
     :return: None if no definition was found, otherwise return the definition
+
     """
 
     definition_path = os.path.join(
