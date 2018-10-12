@@ -214,7 +214,7 @@ def extract_metadata_mapping(name, environ_mapping):
             }
 
     :returns: mapping with information about the package gathered from the
-        environment (system and descriptiption)
+        environment (system and description)
 
     """
     result = qip.command.execute(
