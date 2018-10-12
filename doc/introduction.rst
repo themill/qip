@@ -22,14 +22,14 @@ A package installation result will for example look like this:
 
 .. code::
 
-	<output directory>
-	├── flask
-	│   └── flask-1.0.2
-	│       ├── bin
-	│       └── lib
-	│           └── python2.7
-	│               └── site-packages
-	│                   ├── flask
-	│                   │   └── json
-	│                   └── Flask-1.0.2.dist-info
+    <output directory>
+    ├── flask
+    │   └── flask-1.0.2
+    │       ├── bin
+    │       └── lib
+    │           └── python2.7
+    │               └── site-packages
+    │                   ├── flask
+    │                   │   └── json
+    │                   └── Flask-1.0.2.dist-info
 
