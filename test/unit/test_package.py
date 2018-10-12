@@ -39,7 +39,7 @@ def test_install(mocker, mocked_command, package):
     mocked_fetch_mapping_from_environ.return_value = "__VALUE__"
     mocked_command.return_value = "Installing collected packages: foo"
 
-    result = qip.package.install(package, "/path", {})
+    result = qip.package.install(package, "/path", {}, "/cache")
     mocked_fetch_mapping_from_environ.assert_called_once_with("foo", {})
     assert result == "__VALUE__"
 
@@ -49,7 +49,7 @@ def test_install_fail(mocked_command):
     mocked_command.return_value = "__FAIL__"
 
     with pytest.raises(ValueError) as error:
-        qip.package.install("foo", "/path", {})
+        qip.package.install("foo", "/path", {}, "/cache")
     assert str(error.value) == "Package name could not be extracted from 'foo'."
 
 

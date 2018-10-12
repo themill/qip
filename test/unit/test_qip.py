@@ -92,7 +92,7 @@ def test_install(
     qip.install(packages, output_path)
 
     mocked_ensure_dir.assert_called_once()
-    mocked_mkd.assert_called_once()
+    assert mocked_mkd.call_count == 2
     mocked_fetch_environ.assert_called_once_with(
         mapping={'PYTHONPATH': '/tmp/lib/python2.7/site-packages'}
     )
