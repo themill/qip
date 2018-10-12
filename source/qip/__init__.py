@@ -60,8 +60,9 @@ def install(
         # Update environment mapping.
         environ_mapping = fetch_environ(mapping={"PYTHONPATH": install_path})
 
-        # Record package identifiers to prevent duplication
-        package_identifiers = set()
+        # Record requests and package identifiers to prevent duplication
+        installed_packages = set()
+        installed_requests = set()
 
         # Fill up queue with requirements extracted from requests.
         queue = _queue.Queue()
@@ -71,6 +72,9 @@ def install(
         while not queue.empty():
             request = queue.get()
 
+            if request in installed_requests:
+                continue
+
             try:
                 package_mapping = qip.package.install(
                     request, temporary_path, environ_mapping, cache_dir
@@ -79,7 +83,7 @@ def install(
                 logger.error(error)
                 continue
 
-            if package_mapping["identifier"] in package_identifiers:
+            if package_mapping["identifier"] in installed_packages:
                 continue
 
             # Install package to destination.
@@ -102,13 +106,14 @@ def install(
                 )
             wiz.export_definition(installation_path, definition_data)
 
-            package_identifiers.add(package_mapping["identifier"])
+            installed_packages.add(package_mapping["identifier"])
+            installed_requests.add(request)
 
             # Fill up queue with requirements extracted from package
             # dependencies.
             if not no_dependencies:
                 for mapping in package_mapping.get("requirements", []):
-                    if mapping["identifier"] in package_identifiers:
+                    if mapping["identifier"] in installed_packages:
                         continue
 
                     queue.put(mapping["request"])
