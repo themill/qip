@@ -47,12 +47,12 @@ def install(request, destination, environ_mapping):
         "--prefix {destination} "
         "--no-warn-script-location "
         "--disable-pip-version-check "
-        "--no-cache-dir "
         "'{requirement}'".format(
             destination=destination,
             requirement=request,
         ),
-        environ_mapping
+        environ_mapping,
+        quiet=True
     )
 
     match_name = re.search("(?<=Installing collected packages: ).*", result)
