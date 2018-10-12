@@ -67,7 +67,6 @@ def install(
         for request in requests:
             queue.put(request)
 
-        installed_packages = []
         while not queue.empty():
             request = queue.get()
 
@@ -91,8 +90,6 @@ def install(
             )
             if installation_path is None:
                 continue
-
-            installed_packages.append(os.path.abspath(installation_path))
 
             # Extract a wiz definition within the same path.
             definition_data = qip.definition.retrieve(
