@@ -11,7 +11,7 @@ import qip.command
 import qip.system
 
 
-def install(request, destination, environ_mapping):
+def install(request, destination, environ_mapping, cache_dir):
     """Install package in *destination* from *requirement*.
 
     :param request: package to be installed
@@ -27,6 +27,7 @@ def install(request, destination, environ_mapping):
 
     :param destination: valid path to install all packages to
     :param environ_mapping: mapping of environment variables
+    :param cache_dir: Temporary directory for the pip cache
 
     :raises RuntimeError: if pip fails to install
     :raises ValueError: if the package name can not be extracted from the
@@ -47,9 +48,11 @@ def install(request, destination, environ_mapping):
         "--prefix {destination} "
         "--no-warn-script-location "
         "--disable-pip-version-check "
+        "--cache-dir {cache_dir} "
         "'{requirement}'".format(
             destination=destination,
             requirement=request,
+            cache_dir=cache_dir
         ),
         environ_mapping,
         quiet=True

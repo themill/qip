@@ -50,6 +50,7 @@ def install(
     qip.filesystem.ensure_directory(output_path)
 
     # Setup temporary folder for package installation.
+    cache_dir = tempfile.mkdtemp()
     temporary_path = tempfile.mkdtemp()
     install_path = os.path.join(
         temporary_path, "lib", "python2.7", "site-packages"
@@ -72,7 +73,7 @@ def install(
 
             try:
                 package_mapping = qip.package.install(
-                    request, temporary_path, environ_mapping
+                    request, temporary_path, environ_mapping, cache_dir
                 )
             except RuntimeError as error:
                 logger.error(error)
@@ -118,6 +119,7 @@ def install(
 
     finally:
         shutil.rmtree(temporary_path)
+        shutil.rmtree(cache_dir)
 
 
 def copy_to_destination(
