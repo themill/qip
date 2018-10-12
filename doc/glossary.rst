@@ -24,6 +24,12 @@ Glossary
 
         .. seealso:: https://www.python.org/
 
+    Pypi
+        The Python Package Index (PyPI) is a repository of software for the
+        Python programming language.
+
+        .. seealso:: https://pypi.org/
+
     Virtualenv
         A tool to create isolated Python environments.
 
