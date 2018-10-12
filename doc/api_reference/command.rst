@@ -1,9 +1,5 @@
-*******
-command
-*******
-
-.. toctree::
-   :maxdepth: 2
+***********
+qip.command
+***********
 
 .. automodule:: qip.command
-   :members:

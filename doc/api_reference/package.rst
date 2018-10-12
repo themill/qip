@@ -1,9 +1,5 @@
-*******
-package
-*******
-
-.. toctree::
-   :maxdepth: 2
+***********
+qip.package
+***********
 
 .. automodule:: qip.package
-   :members:

@@ -1,9 +1,5 @@
-**********
-filesystem
-**********
-
-.. toctree::
-   :maxdepth: 2
+**************
+qip.filesystem
+**************
 
 .. automodule:: qip.filesystem
-   :members:
