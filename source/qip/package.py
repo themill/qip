@@ -54,8 +54,7 @@ def install(request, destination, environ_mapping, cache_dir):
             requirement=request,
             cache_dir=cache_dir
         ),
-        environ_mapping,
-        quiet=True
+        environ_mapping
     )
 
     match_name = re.search("(?<=Installing collected packages: ).*", result)
