@@ -140,6 +140,7 @@ def fetch_mapping_from_environ(name, environ_mapping):
 def extract_dependency_mapping(name, environ_mapping):
     """Return package mapping for *name* from dependency mapping.
 
+    :param name: Name of the package to extract.
     :param environ_mapping: mapping of environment variables
 
         A valid mapping should be in the form of::
