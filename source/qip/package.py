@@ -66,7 +66,7 @@ def install(request, destination, environ_mapping):
 
 
 def sanitise_request(request):
-    """Replace the gitlab copied prefix with the one for pip"""
+    """Sanitize *request* if it is a git repository address."""
     if request.startswith("git@gitlab:"):
         return "git+ssh://" + request.replace(":", "/")
 
@@ -78,8 +78,8 @@ def fetch_mapping_from_environ(name, environ_mapping):
 
     :param name: package name
     :param environ_mapping: should be a mapping of environment variables
-
-        The mapping should be in the form of::
+    :returns: mapping with information about the package gathered from the
+        environment. It should be in the form of::
 
             {
                 "identifier": "Foo-0.1.0",
@@ -106,8 +106,6 @@ def fetch_mapping_from_environ(name, environ_mapping):
                     }
                 ]
             }
-    :returns: mapping with information about the package gathered from the
-        environment
 
     """
     logger = mlog.Logger(__name__ + ".fetch_package_from_environ")
@@ -142,8 +140,9 @@ def extract_dependency_mapping(name, environ_mapping):
 
     :param name: package name
     :param environ_mapping: mapping of environment variables
-
-        A valid mapping should be in the form of::
+    :returns: None if the package *name* cannot be found in dependency mapping,
+        otherwise return dependency mapping. A valid mapping should be in the
+        form of::
 
             {
                 "package": {
@@ -167,8 +166,6 @@ def extract_dependency_mapping(name, environ_mapping):
                 ]
             }
 
-    :returns: None if the package *name* cannot be found in dependency mapping,
-        otherwise return dependency mapping.
 
     """
     result = qip.command.execute(
@@ -202,8 +199,8 @@ def extract_metadata_mapping(name, environ_mapping):
 
     :param name: package name
     :param environ_mapping: mapping of environment variables
-
-        The mapping returned should be in the form of::
+    :returns: mapping with information about the package gathered from the
+        environment (system and description). It should be in the form of::
 
             {
                 "description": "This is a Python package.",
@@ -212,9 +209,6 @@ def extract_metadata_mapping(name, environ_mapping):
                     "os": "el >= 6, <7"
                 }
             }
-
-    :returns: mapping with information about the package gathered from the
-        environment (system and description)
 
     """
     result = qip.command.execute(
