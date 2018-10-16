@@ -36,7 +36,6 @@ Release Notes
 
         Rewrite of qip functionality. Only installs packages locally.
 
-
 .. release:: 0.1.0
 
     .. change:: new
