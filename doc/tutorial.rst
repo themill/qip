@@ -56,18 +56,6 @@ package, ie. `foo-0.1.0.json`.
 To make a package installed with Qip usable inside of :term:`Wiz`, it has to be
 installed into a :term:`Wiz` :ref:`Registry <wiz:registry>`.
 
-To ease a possible batch install of a package with its requirements, Qip exports
-a `package.txt` file alongside all the new pacakges. It is exported into the
-output directory.
-
-Its format is in the form of::
-
-    "/tmp/foo/foo-0.1.0"
-    "/tmp/bar/bar-2.3.0"
-
-:term:`Wiz` can make use of these files to install all definitions behind these
-paths to a selected registry.
-
 Using the API
 =============
 
