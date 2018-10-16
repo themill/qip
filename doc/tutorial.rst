@@ -4,56 +4,85 @@
 Tutorial
 ********
 
-Downloading a package
----------------------
-
-To download a package use the download command
-
-.. code-block:: bash
-
-    $> qip download flask
-
-This command takes no options. In this case it will locate the latest version of flask and
-download it to the configured package index. If you want a specific version specify it as
-per Python standards, for example
-
-.. code-block:: bash
-
-   $> qip download flask==1.2.0
-
-If you want to download something for the Gitlab repo, use the repos SSH URL
-
-.. code-block:: bash
-
-    $> qip download git@gitlab:production-technology/shadow.git@3.4.0
-
-
 Installing a package
---------------------
+====================
 
-A downloaded package is easily installed with
+To install a package simply issue the `qip install` command and specify
+an output directory with `-o` or `--outdir`
 
-.. code-block:: bash
-
-    $> qip install shadow==3.4.0
-
-This will start resolving dependencies and offer to download and install these too. If you
-want to automatically download dependencies, without any interaction, use the --download options
+For example:
 
 .. code-block:: bash
 
-    $> qip install shadow==3.4.0 --download
+    $> qip install -o /tmp/my_installs flask
 
-If on the other hand you want to only install the specified package, use the --nodeps flag
+Qip will then proceed to resolve dependencies and install the packages as
+required.
+
+If you want to install a single package without any of its dependencies, you
+can pass the `--no-dependencies` argument to the install command.
 
 .. code-block:: bash
 
-    $> qip install shadow==3.4.0 --nodeps
+    $> qip install -o /tmp/my_installs --no-dependencies flask
 
-You will notice that you are prompted to enter a target. Currently these are ``Centos72``,
-``Centos65``, adn ``localhost``. Localhost is used for CI deployment only as it will
-run the qip commands on the local machine as admin3d, and most machines are not setup
-with passwordless admin3d sudo.
+If you are installing a package that already exists, then you will be asked if
+you want to overwrite it.
 
-If you select one of the other machines, you will be prompted to enter your user password
-before the installation/download will begin.
+The various packages will be installed into the output directory inside a
+package directory and finally into a version subdirectory. For example:
+
+.. code::
+
+    <output directory>
+    ├── flask
+    │   └── flask-1.0.2
+    │       ├── bin
+    │       └── lib
+    │           └── python2.7
+    │               └── site-packages
+    │                   ├── flask
+    │                   │   └── json
+    │                   └── Flask-1.0.2.dist-info
+
+Definition
+----------
+
+Along with the install, a :term:`Wiz` :ref:`Package Definition <wiz:definition>`
+file will be exported, which details information and dependencies of the
+package. It is exported into the versioned directory and called after the
+package, ie. `foo-0.1.0.json`.
+
+To make a package installed with Qip usable inside of :term:`Wiz`, it has to be
+installed into a :term:`Wiz` :ref:`Registry <wiz:registry>`.
+
+To ease a possible batch install of a package with its requirements, Qip exports
+a `package.txt` file alongside all the new pacakges. It is exported into the
+output directory.
+
+Its format is in the form of::
+
+    "/tmp/foo/foo-0.1.0"
+    "/tmp/bar/bar-2.3.0"
+
+:term:`Wiz` can make use of these files to install all definitions behind these
+paths to a selected registry.
+
+Using the API
+=============
+
+qip can be used as an API by importing the `qip <api_reference/index.html>`__
+module. For example to install a package::
+
+    import qip
+
+    qip.install(["foo"], "/path")
+
+This will install the given package with its dependencies.
+
+In order to install a package without its dependencies you should first call the
+command with the `no_dependencies`::
+
+    import qip
+
+    qip.install(["foo"], "/path", no_dependencies=True)
