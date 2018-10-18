@@ -32,7 +32,7 @@ def create(mapping, path):
             "platform": mapping["system"]["platform"],
             "arch": mapping["system"]["arch"],
             "os": (
-                "{name} >= {min_version}, <{max_version}".format(
+                "{name} >= {min_version}, < {max_version}".format(
                     name=mapping["system"]["os"]["name"],
                     min_version=major_version,
                     max_version=major_version + 1,
@@ -67,7 +67,7 @@ def create(mapping, path):
         )
 
     logger.info(
-        "Wiz definition created for '{}'".format(mapping["identifier"])
+        "Wiz definition created for '{}'.".format(mapping["identifier"])
     )
     return definition_data
 
@@ -89,6 +89,6 @@ def retrieve(mapping, path):
         return None
 
     logger.info(
-        "Wiz definition extracted for '{}'".format(mapping["identifier"])
+        "Wiz definition extracted from '{}'.".format(mapping["identifier"])
     )
     return wiz.load_definition(definition_path)

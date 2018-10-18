@@ -1,7 +1,6 @@
 # :coding: utf-8
 
 import os
-import re
 
 import pytest
 import wiz
@@ -10,14 +9,60 @@ import qip.definition
 
 
 @pytest.fixture()
-def mocked_package_mapping(mocker):
-    """Return mocked example package mapping."""
-    return {
-        "identifier": "Foo-0.1.0",
+def mocked_wiz_load_definition(mocker):
+    """Return mocked 'wiz.load_definition' function"""
+    return mocker.patch.object(wiz, "load_definition")
+
+
+def test_create(logger):
+    """Create a definition from package mapping."""
+    mapping = {
+        "identifier": "Foo-0.2.3",
         "name": "Foo",
         "key": "foo",
-        "version": "0.1.0",
-        "description": "This is a Python package",
+        "version": "0.2.3",
+    }
+
+    result = qip.definition.create(mapping, "/path/to/installed/package")
+    assert result == {
+        "identifier": "foo",
+        "version": "0.2.3",
+    }
+
+    logger.info.assert_called_once_with(
+        "Wiz definition created for 'Foo-0.2.3'."
+    )
+
+
+def test_create_with_description(logger):
+    """Create a definition from package mapping with description."""
+    mapping = {
+        "identifier": "Foo-0.2.3",
+        "name": "Foo",
+        "key": "foo",
+        "version": "0.2.3",
+        "description": "This is a package"
+    }
+
+    result = qip.definition.create(mapping, "/path/to/installed/package")
+    assert result == {
+        "identifier": "foo",
+        "version": "0.2.3",
+        "description": "This is a package"
+    }
+
+    logger.info.assert_called_once_with(
+        "Wiz definition created for 'Foo-0.2.3'."
+    )
+
+
+def test_create_with_system(logger):
+    """Create a definition from package mapping with system."""
+    mapping = {
+        "identifier": "Foo-0.2.3",
+        "name": "Foo",
+        "key": "foo",
+        "version": "0.2.3",
         "system": {
             "platform": "linux",
             "arch": "x86_64",
@@ -25,178 +70,148 @@ def mocked_package_mapping(mocker):
                 "name": "centos",
                 "major_version": 7
             }
-        },
+        }
+    }
+
+    result = qip.definition.create(mapping, "/path/to/installed/package")
+    assert result == {
+        "identifier": "foo",
+        "version": "0.2.3",
+        "system": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "os": "centos >= 7, < 8"
+        }
+    }
+
+    logger.info.assert_called_once_with(
+        "Wiz definition created for 'Foo-0.2.3'."
+    )
+
+
+def test_create_with_requirements(logger):
+    """Create a definition from package mapping with requirements."""
+    mapping = {
+        "identifier": "Foo-0.2.3",
+        "name": "Foo",
+        "key": "foo",
+        "version": "0.2.3",
         "requirements": [
             {
-                "identifier": "Bar-0.1.0",
-                "request": "bar",
+                "identifier": "?",
+                "request": "bim >= 3, < 4",
             },
             {
-                "identifier": "Bim-2.3.1",
-                "request": "bim >= 2, <3",
+                "identifier": "?",
+                "request": "bar",
             }
         ]
     }
 
+    result = qip.definition.create(mapping, "/path/to/installed/package")
+    assert result == {
+        "identifier": "foo",
+        "version": "0.2.3",
+        "requirements": [
+            "bim >= 3, < 4",
+            "bar"
+        ]
+    }
 
-@pytest.mark.parametrize("lib_exists, bin_exists, expected", [
-    (
-        False, False,
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a Python package",
-            "system": {
-                "platform": "linux",
-                "arch": "x86_64",
-                "os": "centos >= 7, <8"
-            },
-            "requirements": [
-                "bar",
-                "bim >= 2, <3"
-            ]
-        }
-    ),
-    (
-        True, False,
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a Python package",
-            "system": {
-                "platform": "linux",
-                "arch": "x86_64",
-                "os": "centos >= 7, <8"
-            },
-            "environ": {
-                "PYTHONPATH": "${INSTALL_LOCATION}/lib/python2.7/site-packages:${PYTHONPATH}"
-            },
-            "requirements": [
-                "bar",
-                "bim >= 2, <3"
-            ]
-        }
-    ),
-    (
-        False, True,
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a Python package",
-            "system": {
-                "platform": "linux",
-                "arch": "x86_64",
-                "os": "centos >= 7, <8"
-            },
-            "environ": {
-                "PATH": "${INSTALL_LOCATION}/bin:${PATH}"
-            },
-            "requirements": [
-                "bar",
-                "bim >= 2, <3"
-            ]
-        }
-    ),
-    (
-        True, True,
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a Python package",
-            "system": {
-                "platform": "linux",
-                "arch": "x86_64",
-                "os": "centos >= 7, <8"
-            },
-            "environ": {
-                "PATH": "${INSTALL_LOCATION}/bin:${PATH}",
-                "PYTHONPATH": "${INSTALL_LOCATION}/lib/python2.7/site-packages:${PYTHONPATH}"
-            },
-            "requirements": [
-                "bar",
-                "bim >= 2, <3"
-            ]
-        }
+    logger.info.assert_called_once_with(
+        "Wiz definition created for 'Foo-0.2.3'."
     )
-], ids=[
-    "no_environ",
-    "add_lib",
-    "add_bin",
-    "add_lib_and_bin"
-])
-def test_create(
-    mocker, mocked_package_mapping, lib_exists, bin_exists, expected
-):
-    """Export Wiz definition for package."""
-    mocked_isdir = mocker.patch.object(os.path, "isdir")
-    mocked_isdir.side_effect = [lib_exists, bin_exists]
-
-    result = qip.definition.create(mocked_package_mapping, "/path")
-    assert result == expected
 
 
-def test_retrieve_does_not_exist(mocker, mocked_package_mapping):
-    """Fail to retrieve definition from package install as it does not exist."""
-    mocker.patch.object(os.path, "exists", return_value=False)
+def test_create_with_existing_lib(temporary_directory, logger):
+    """Create a definition from package mapping."""
+    os.makedirs(
+        os.path.join(temporary_directory, "lib", "python2.7", "site-packages")
+    )
 
-    result = qip.definition.retrieve(mocked_package_mapping, "/path")
+    mapping = {
+        "identifier": "Foo-0.2.3",
+        "name": "Foo",
+        "key": "foo",
+        "version": "0.2.3"
+    }
+
+    result = qip.definition.create(mapping, temporary_directory)
+    assert result == {
+        "identifier": "foo",
+        "version": "0.2.3",
+        "environ": {
+            "PYTHONPATH": (
+                "${INSTALL_LOCATION}/Foo/Foo-0.2.3/lib/python2.7/site-packages:"
+                "${PYTHONPATH}"
+            )
+        }
+    }
+
+    logger.info.assert_called_once_with(
+        "Wiz definition created for 'Foo-0.2.3'."
+    )
+
+
+def test_create_with_existing_bin(temporary_directory, logger):
+    """Create a definition from package mapping."""
+    os.makedirs(os.path.join(temporary_directory, "bin"))
+
+    mapping = {
+        "identifier": "Foo-0.2.3",
+        "name": "Foo",
+        "key": "foo",
+        "version": "0.2.3"
+    }
+
+    result = qip.definition.create(mapping, temporary_directory)
+    assert result == {
+        "identifier": "foo",
+        "version": "0.2.3",
+        "environ": {
+            "PATH": "${INSTALL_LOCATION}/Foo/Foo-0.2.3/bin:${PATH}"
+        }
+    }
+
+    logger.info.assert_called_once_with(
+        "Wiz definition created for 'Foo-0.2.3'."
+    )
+
+
+def test_retrieve_non_existing(mocked_wiz_load_definition, logger):
+    """Fail to retrieve non existing definition from package mapping."""
+    mapping = {
+        "identifier": "Foo-0.2.3",
+        "name": "Foo"
+    }
+
+    result = qip.definition.retrieve(mapping, "/path/to/installed/package")
     assert result is None
 
+    mocked_wiz_load_definition.assert_not_called()
+    logger.info.assert_not_called()
 
-@pytest.mark.parametrize("original, expected", [
-    (
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a Python package",
-        },
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a Python package"
-        }
-    ),
-    (
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a Python package",
-            "system": {
-                "platform": "linux",
-                "arch": "x86_64",
-                "os": "centos >= 7, <8"
-            },
-            "requirements": [
-                "bar",
-                "bim >=2, <3"
-            ]
-        },
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a Python package",
-            "system": {
-                "platform": "linux",
-                "arch": "x86_64",
-                "os": "centos >= 7, <8"
-            },
-            "requirements": [
-                "bar",
-                "bim >=2, <3"
-            ]
-        }
+
+def test_retrieve(temporary_directory, mocked_wiz_load_definition, logger):
+    """Retrieve existing definition from package mapping."""
+    path = os.path.join(temporary_directory, "share", "wiz", "Foo")
+    os.makedirs(path)
+    with open(os.path.join(path, "wiz.json"), "w") as stream:
+        stream.write("")
+
+    mocked_wiz_load_definition.return_value = "__DEFINITION__"
+
+    mapping = {
+        "identifier": "Foo-0.2.3",
+        "name": "Foo"
+    }
+
+    result = qip.definition.retrieve(mapping, temporary_directory)
+    assert result == "__DEFINITION__"
+
+    mocked_wiz_load_definition.assert_called_once_with(
+        os.path.join(path, "wiz.json")
     )
-], ids=[
-    "example 1",
-    "example 2"
-])
-def test_retrieve(mocker, mocked_package_mapping, original, expected):
-    """Retrieve and update definition from package install."""
-    mocker.patch.object(os.path, "exists", return_value=True)
-    mocker.patch.object(wiz, "load_definition",
-        return_value=wiz.definition.Definition(original)
+    logger.info.assert_called_once_with(
+        "Wiz definition extracted from 'Foo-0.2.3'."
     )
-
-    result = qip.definition.retrieve(mocked_package_mapping, "/path")
-
-    assert result.to_dict(serialize_content=True) == expected
