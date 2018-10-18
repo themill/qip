@@ -24,13 +24,16 @@ def main(verbosity):
 @main.command()
 @click.option(
     "-o", "--output-path",
-    help="Destination for the installation",
+    help="Destination for the package installation data.",
     type=click.Path(),
     required=True
 )
 @click.option(
     "-d", "--definition-path",
-    help="Destination for the Wiz definitions extracted",
+    help=(
+        "Destination for the Wiz definitions extracted. No definitions will be "
+        "extracted by default."
+    ),
     type=click.Path(),
 )
 @click.option(
@@ -53,7 +56,7 @@ def main(verbosity):
     "-e", "--editable",
     help=(
         "Install a project in editable mode (i.e. setuptools \"develop mode\") "
-        "from a local project path or a VCS url"
+        "from a local project path or a VCS url."
     ),
     is_flag=True,
     default=False
