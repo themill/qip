@@ -8,14 +8,15 @@ Release Notes
 
     .. change:: new
 
-        Added :option:`--editable <qip --editable>` to install local projects or
-        :term:`VCS` projects in :ref:`editable mode <editable-installs>`.
+        Added :option:`qip install --editable` to install local
+        projects or :term:`VCS` projects in :ref:`editable mode
+        <editable-installs>`.
 
     .. change:: new
 
-        Added :option:`--definition-path <qip --definition-path>` to define a
-        destination path for the :term:`Wiz` definitions created. No definitions
-        are extracted if this option is missing.
+        Added :option:`qip install --definition-path` to
+        define a destination path for the :term:`Wiz` definitions created. No
+        definitions are extracted if this option is missing.
 
     .. change:: new
 
@@ -23,8 +24,8 @@ Release Notes
 
     .. change:: changed
 
-        Renamed :option:`--output <qip --output-path>` to
-        :option:`--output-path <qip --definition-path>` for consistency.
+        Renamed :option:`qip install --output <qip install --output-path>` to
+        :option:`qip install --output-path` for consistency.
 
     .. change:: changed
 
