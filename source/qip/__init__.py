@@ -17,6 +17,7 @@ import mlog
 import qip.definition
 import qip.package
 import qip.filesystem
+import qip.symbol
 
 from ._version import __version__
 
@@ -57,9 +58,7 @@ def install(
     # Setup temporary folder for package installation.
     cache_dir = tempfile.mkdtemp()
     temporary_path = tempfile.mkdtemp()
-    install_path = os.path.join(
-        temporary_path, "lib", "python2.7", "site-packages"
-    )
+    install_path = os.path.join(temporary_path, qip.symbol.P27_LIB_DESTINATION)
 
     # Needed for the editable mode.
     qip.filesystem.ensure_directory(install_path)
@@ -214,6 +213,8 @@ def fetch_environ(mapping=None):
     if mapping is None:
         mapping = {}
 
-    context = wiz.resolve_context(["python==2.7.*"], environ_mapping=mapping)
+    context = wiz.resolve_context(
+        [qip.symbol.P27_REQUEST], environ_mapping=mapping
+    )
 
     return context["environ"]

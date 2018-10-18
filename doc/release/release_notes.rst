@@ -17,6 +17,10 @@ Release Notes
         destination path for the :term:`Wiz` definitions created. No definitions
         are extracted if this option is missing.
 
+    .. change:: new
+
+        Added :mod:`qip.symbol` to regroup common symbols.
+
     .. change:: changed
 
         Renamed :option:`--output <qip --output-path>` to

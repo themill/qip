@@ -1,6 +1,10 @@
+# :coding: utf-8
+
 import os
 
 import wiz
+
+import qip.symbol
 
 
 def create(mapping, path):
@@ -38,22 +42,25 @@ def create(mapping, path):
             _mapping["request"] for _mapping in mapping["requirements"]
         ]
 
-    lib_path = os.path.join(path, "lib", "python2.7", "site-packages")
-    if os.path.isdir(lib_path):
+    # Compute relative installation path.
+    installation_path = os.path.join(
+        qip.symbol.INSTALL_LOCATION, mapping["name"], mapping["identifier"]
+    )
+
+    if os.path.isdir(os.path.join(path, qip.symbol.P27_LIB_DESTINATION)):
         definition_data.setdefault("environ", {})
         definition_data["environ"]["PYTHONPATH"] = (
             "{}:${{PYTHONPATH}}".format(
-                os.path.join(
-                    "${INSTALL_LOCATION}", "lib", "python2.7", "site-packages"
-                )
+                os.path.join(installation_path, qip.symbol.P27_LIB_DESTINATION)
             )
         )
 
-    bin_path = os.path.join(path, "bin")
-    if os.path.isdir(bin_path):
+    if os.path.isdir(os.path.join(path, qip.symbol.BIN_DESTINATION)):
         definition_data.setdefault("environ", {})
         definition_data["environ"]["PATH"] = (
-            "{}:${{PATH}}".format(os.path.join("${INSTALL_LOCATION}", "bin"))
+            "{}:${{PATH}}".format(
+                os.path.join(installation_path, qip.symbol.BIN_DESTINATION)
+            )
         )
 
     return definition_data
