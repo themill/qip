@@ -42,6 +42,12 @@ Release Notes
         Updated :func:`qip.package.install` to add a 'editable_mode' argument
         which installs the package in :ref:`editable mode <editable-installs>`.
 
+    .. change:: changed
+
+        Changed :func:`qip.definition.create` to modify the installation prefix
+        from :file:`${INSTALL_LOCATION}` to
+        :file:`${INSTALL_LOCATION}/<package_name>/{package_identifier}`
+
     .. change:: fixed
 
         Fixed :func:`qip.install` to record package identifiers and requests
