@@ -32,14 +32,14 @@ def install(
 
         A request can be one of::
 
-            "/path/to/foo/"
-            "."
-            "foo"
-            "foo==0.1.0"
-            "foo >= 7, < 8"
-            "git@gitlab:rnd/foo.git"
-            "git@gitlab:rnd/foo.git@0.1.0"
-            "git@gitlab:rnd/foo.git@dev"
+            ["."]
+            ["/path/to/foo/"]
+            ["foo", "bar"]
+            ["foo==0.1.0"]
+            ["foo >= 7, < 8"]
+            ["git@gitlab:rnd/foo.git"]
+            ["git@gitlab:rnd/foo.git@0.1.0"]
+            ["git@gitlab:rnd/foo.git@dev"]
 
     :param output_path: data install path.
     :param definition_path: :term:`Wiz` definition install path. Default is

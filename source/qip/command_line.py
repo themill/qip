@@ -74,14 +74,15 @@ def install(
 
       Command example::
 
-          qip install . --output .
-          qip install foo --output .
-          qip install foo bar --output .
-          qip install "foo==0.1.0" --output .
-          qip install "foo >= 7, < 8" --output .
-          qip install "git@gitlab:rnd/foo.git" --output .
-          qip install "git@gitlab:rnd/foo.git@0.1.0" --output .
-          qip install "git@gitlab:rnd/foo.git@dev" --output .
+          qip install . --output-path .
+          qip install /path/to/foo/ --output-path .
+          qip install foo --output-path .
+          qip install foo bar --output-path .
+          qip install "foo==0.1.0" --output-path .
+          qip install "foo >= 7, < 8" --output-path .
+          qip install "git@gitlab:rnd/foo.git" --output-path .
+          qip install "git@gitlab:rnd/foo.git@0.1.0" --output-path .
+          qip install "git@gitlab:rnd/foo.git@dev" --output-path .
 
     """
     qip.install(
