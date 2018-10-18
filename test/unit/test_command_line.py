@@ -36,8 +36,10 @@ def test_install_no_arguments():
 def test_missing_output():
     """Error when user does not specify and output directory"""
     runner = CliRunner()
-    expected = ("Usage: install [OPTIONS] REQUESTS...\n\n"
-                "Error: Missing option \"-o\" / \"--output\".\n")
+    expected = (
+        "Usage: install [OPTIONS] REQUESTS...\n\n"
+        "Error: Missing option \"-o\" / \"--output-path\".\n"
+    )
 
     result = runner.invoke(qip.command_line.install, ["test"])
     assert result.exit_code == 2
@@ -66,11 +68,15 @@ def test_install(mocked_install, packages):
     """Error when user does not specify and output directory"""
     runner = CliRunner()
     result = runner.invoke(
-        qip.command_line.install, list(packages) + ["--output", "/path"]
+        qip.command_line.install, list(packages) + ["--output-path", "/path"]
     )
     assert result.exit_code == 0
     assert not result.exception
 
     mocked_install.assert_called_once_with(
-        packages, "/path", None, False
+        packages, "/path",
+        definition_path=None,
+        editable_mode=False,
+        no_dependencies=False,
+        overwrite_packages=None
     )
