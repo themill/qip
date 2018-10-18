@@ -46,8 +46,8 @@ Release Notes
     .. change:: changed
 
         Changed :func:`qip.definition.create` to modify the installation prefix
-        from :file:`${INSTALL_LOCATION}` to
-        :file:`${INSTALL_LOCATION}/<package_name>/{package_identifier}`
+        from ``${INSTALL_LOCATION}`` to
+        ``${INSTALL_LOCATION}/<package_name>/<package_identifier>``
 
     .. change:: fixed
 
