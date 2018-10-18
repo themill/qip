@@ -47,7 +47,7 @@ def install(
 
     request = sanitise_request(request)
 
-    logger.info("Installing {}...".format(request))
+    logger.info("Installing '{}'...".format(request))
     result = qip.command.execute(
         "pip install "
         "--ignore-installed "
@@ -145,7 +145,7 @@ def fetch_mapping_from_environ(name, environ_mapping):
             for _dependency_mapping in dependency_mapping["dependencies"]
         ]
 
-    logger.info("Fetched {}.".format(mapping["identifier"]))
+    logger.info("Fetched '{}'.".format(mapping["identifier"]))
     return mapping
 
 

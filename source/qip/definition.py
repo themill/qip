@@ -2,6 +2,7 @@
 
 import os
 
+import mlog
 import wiz
 
 import qip.symbol
@@ -15,6 +16,8 @@ def create(mapping, path):
     :returns: definition data
 
     """
+    logger = mlog.Logger(__name__ + ".create")
+
     definition_data = {
         "identifier": mapping["key"],
         "version": mapping["version"]
@@ -63,6 +66,9 @@ def create(mapping, path):
             )
         )
 
+    logger.info(
+        "Wiz definition created for '{}'".format(mapping["identifier"])
+    )
     return definition_data
 
 
@@ -74,6 +80,7 @@ def retrieve(mapping, path):
     :return: None if no definition was found, otherwise return the definition
 
     """
+    logger = mlog.Logger(__name__ + ".retrieve")
 
     definition_path = os.path.join(
         path, "share", "wiz", mapping["name"], "wiz.json"
@@ -81,4 +88,7 @@ def retrieve(mapping, path):
     if not os.path.exists(definition_path):
         return None
 
+    logger.info(
+        "Wiz definition extracted for '{}'".format(mapping["identifier"])
+    )
     return wiz.load_definition(definition_path)

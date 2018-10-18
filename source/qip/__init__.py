@@ -195,7 +195,7 @@ def copy_to_destination(
     shutil.copytree(source_path, full_target)
     logger.debug("Source copied to '{}'".format(full_target))
 
-    logger.info("Installed {}.".format(folder_identifier))
+    logger.info("Installed '{}'.".format(folder_identifier))
     return full_target
 
 
@@ -207,7 +207,6 @@ def fetch_environ(mapping=None):
 
     """
     logger = mlog.Logger(__name__ + ".fetch")
-
     logger.debug("initial environment: {}".format(mapping))
 
     if mapping is None:
