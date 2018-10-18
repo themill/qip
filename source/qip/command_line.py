@@ -54,6 +54,7 @@ def install(requests, output, overwrite_installed, no_dependencies):
 
       Command example::
 
+          qip install . --output .
           qip install foo --output .
           qip install foo bar --output .
           qip install "foo==0.1.0" --output .

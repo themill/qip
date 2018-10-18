@@ -3,6 +3,7 @@
 from __future__ import print_function
 import re
 import json
+import os
 
 import mlog
 from packaging.requirements import Requirement
@@ -71,6 +72,9 @@ def sanitise_request(request):
     """Sanitize *request* if it is a git repository address."""
     if request.startswith("git@gitlab:"):
         return "git+ssh://" + request.replace(":", "/")
+
+    if os.path.isdir(request):
+        return os.path.abspath(request)
 
     return Requirement(request)
 
