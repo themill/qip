@@ -72,17 +72,18 @@ def install(
 ):
     """Install a package.
 
-      Command example::
+    Command example::
 
-          qip install . --output-path .
-          qip install /path/to/foo/ --output-path .
-          qip install foo --output-path .
-          qip install foo bar --output-path .
-          qip install "foo==0.1.0" --output-path .
-          qip install "foo >= 7, < 8" --output-path .
-          qip install "git@gitlab:rnd/foo.git" --output-path .
-          qip install "git@gitlab:rnd/foo.git@0.1.0" --output-path .
-          qip install "git@gitlab:rnd/foo.git@dev" --output-path .
+        \b
+        qip install . --output-path .
+        qip install /path/to/foo/ --output-path .
+        qip install foo --output-path .
+        qip install foo bar --output-path .
+        qip install "foo==0.1.0" --output-path .
+        qip install "foo >= 7, < 8" --output-path .
+        qip install "git@gitlab:rnd/foo.git" --output-path .
+        qip install "git@gitlab:rnd/foo.git@0.1.0" --output-path .
+        qip install "git@gitlab:rnd/foo.git@dev" --output-path .
 
     """
     qip.install(
