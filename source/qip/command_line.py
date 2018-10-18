@@ -29,6 +29,15 @@ def main(verbosity):
     required=True
 )
 @click.option(
+    "-e", "--editable",
+    help=(
+        "Install a project in editable mode (i.e. setuptools \"develop mode\") "
+        "from a local project path or a VCS url"
+    ),
+    is_flag=True,
+    default=False
+)
+@click.option(
     "--overwrite-installed/--skip-installed",
     help=(
          "Indicate whether packages already installed should be overwritten "
@@ -49,7 +58,7 @@ def main(verbosity):
     nargs=-1,
     required=True
 )
-def install(requests, output, overwrite_installed, no_dependencies):
+def install(requests, output, editable, overwrite_installed, no_dependencies):
     """Install a package.
 
       Command example::
@@ -64,4 +73,9 @@ def install(requests, output, overwrite_installed, no_dependencies):
           qip install "git@gitlab:rnd/foo.git@dev" --output .
 
     """
-    qip.install(requests, output, overwrite_installed, no_dependencies)
+    qip.install(
+        requests, output,
+        editable_mode=editable,
+        overwrite_packages=overwrite_installed,
+        no_dependencies=no_dependencies
+    )

@@ -9,10 +9,13 @@ import mlog
 from packaging.requirements import Requirement
 
 import qip.command
+import qip.filesystem
 import qip.system
 
 
-def install(request, destination, environ_mapping, cache_dir):
+def install(
+    request, destination, environ_mapping, cache_dir, editable_mode=False
+):
     """Install package in *destination* from *requirement*.
 
     :param request: package to be installed
@@ -29,6 +32,7 @@ def install(request, destination, environ_mapping, cache_dir):
     :param destination: valid path to install all packages to
     :param environ_mapping: mapping of environment variables
     :param cache_dir: Temporary directory for the pip cache
+    :param editable_mode: install in editable mode
 
     :raises RuntimeError: if pip fails to install
     :raises ValueError: if the package name can not be extracted from the
@@ -41,6 +45,11 @@ def install(request, destination, environ_mapping, cache_dir):
 
     request = sanitise_request(request)
 
+    # Needed for the development mode.
+    qip.filesystem.ensure_directory(
+        os.path.join(destination, "lib", "python2.7", "site-packages")
+    )
+
     logger.info("Installing {}...".format(request))
     result = qip.command.execute(
         "pip install "
@@ -50,7 +59,9 @@ def install(request, destination, environ_mapping, cache_dir):
         "--no-warn-script-location "
         "--disable-pip-version-check "
         "--cache-dir {cache_dir} "
+        "{editable_mode} " 
         "'{requirement}'".format(
+            editable_mode="-e" if editable_mode else "",
             destination=destination,
             requirement=request,
             cache_dir=cache_dir

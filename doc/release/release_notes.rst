@@ -4,6 +4,13 @@
 Release Notes
 *************
 
+.. release:: Upcoming
+
+    .. change:: new
+
+        Added :option:`--editable <qip --editable>` to install a package in
+        editable mode.
+
 .. release:: 1.0.0
     :date: 2018-10-16
 

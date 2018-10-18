@@ -22,7 +22,8 @@ from ._version import __version__
 
 
 def install(
-    requests, output_path, overwrite_packages=False, no_dependencies=False
+    requests, output_path, editable_mode=False, overwrite_packages=False,
+    no_dependencies=False
 ):
     """Install packages to *output_path* from *requests*.
 
@@ -38,6 +39,7 @@ def install(
             "git@gitlab:rnd/foo.git@dev"
 
     :param output_path: destination installation path
+    :param editable_mode: install in editable mode
     :param overwrite_packages: indicate whether packages already installed
         should be overwritten. If None, a user confirmation will be prompted.
         Default is False.
@@ -77,7 +79,8 @@ def install(
 
             try:
                 package_mapping = qip.package.install(
-                    request, temporary_path, environ_mapping, cache_dir
+                    request, temporary_path, environ_mapping, cache_dir,
+                    editable_mode=editable_mode
                 )
             except RuntimeError as error:
                 logger.error(error)
@@ -85,6 +88,9 @@ def install(
 
             if package_mapping["identifier"] in installed_packages:
                 continue
+
+            # Reset editable mode to False for requirements.
+            editable_mode = False
 
             # Install package to destination.
             installation_path = copy_to_destination(
