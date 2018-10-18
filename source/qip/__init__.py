@@ -104,13 +104,13 @@ def install(
             editable_mode = False
 
             # Install package to destination.
-            installation_path = copy_to_destination(
+            success = copy_to_destination(
                 package_mapping,
                 temporary_path,
                 output_path,
                 overwrite_packages=overwrite_packages
             )
-            if installation_path is None:
+            if not success:
                 continue
 
             # Extract a wiz definition is requested.
@@ -120,7 +120,7 @@ def install(
                 )
                 if definition_data is None:
                     definition_data = qip.definition.create(
-                        package_mapping, installation_path
+                        package_mapping, output_path,
                     )
 
                 wiz.export_definition(definition_path, definition_data)
@@ -148,7 +148,7 @@ def copy_to_destination(
 ):
     """Copy package from *source_path* to *destination_path*.
 
-    Return the path to the installed package.
+    Return a boolean value indicating whether the copy has been done.
 
     :param package_mapping: mapping of the python package built.
     :param source_path: path where the package was built.
@@ -192,14 +192,14 @@ def copy_to_destination(
                     folder_identifier
                 )
             )
-            return None
+            return False
 
     qip.filesystem.ensure_directory(target)
     shutil.copytree(source_path, full_target)
     logger.debug("Source copied to '{}'".format(full_target))
 
     logger.info("Installed '{}'.".format(folder_identifier))
-    return full_target
+    return True
 
 
 def fetch_environ(mapping=None):

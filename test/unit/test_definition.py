@@ -27,6 +27,7 @@ def test_create(logger):
     assert result == {
         "identifier": "foo",
         "version": "0.2.3",
+        "install-location": "/path/to/installed/package"
     }
 
     logger.info.assert_called_once_with(
@@ -48,7 +49,8 @@ def test_create_with_description(logger):
     assert result == {
         "identifier": "foo",
         "version": "0.2.3",
-        "description": "This is a package"
+        "description": "This is a package",
+        "install-location": "/path/to/installed/package"
     }
 
     logger.info.assert_called_once_with(
@@ -81,7 +83,8 @@ def test_create_with_system(logger):
             "platform": "linux",
             "arch": "x86_64",
             "os": "centos >= 7, < 8"
-        }
+        },
+        "install-location": "/path/to/installed/package"
     }
 
     logger.info.assert_called_once_with(
@@ -112,6 +115,7 @@ def test_create_with_requirements(logger):
     assert result == {
         "identifier": "foo",
         "version": "0.2.3",
+        "install-location": "/path/to/installed/package",
         "requirements": [
             "bim >= 3, < 4",
             "bar"
@@ -126,7 +130,10 @@ def test_create_with_requirements(logger):
 def test_create_with_existing_lib(temporary_directory, logger):
     """Create a definition from package mapping."""
     os.makedirs(
-        os.path.join(temporary_directory, "lib", "python2.7", "site-packages")
+        os.path.join(
+            temporary_directory, "Foo", "Foo-0.2.3", "lib", "python2.7",
+            "site-packages"
+        )
     )
 
     mapping = {
@@ -140,6 +147,7 @@ def test_create_with_existing_lib(temporary_directory, logger):
     assert result == {
         "identifier": "foo",
         "version": "0.2.3",
+        "install-location": temporary_directory,
         "environ": {
             "PYTHONPATH": (
                 "${INSTALL_LOCATION}/Foo/Foo-0.2.3/lib/python2.7/site-packages:"
@@ -155,7 +163,7 @@ def test_create_with_existing_lib(temporary_directory, logger):
 
 def test_create_with_existing_bin(temporary_directory, logger):
     """Create a definition from package mapping."""
-    os.makedirs(os.path.join(temporary_directory, "bin"))
+    os.makedirs(os.path.join(temporary_directory, "Foo", "Foo-0.2.3", "bin"))
 
     mapping = {
         "identifier": "Foo-0.2.3",
@@ -168,6 +176,7 @@ def test_create_with_existing_bin(temporary_directory, logger):
     assert result == {
         "identifier": "foo",
         "version": "0.2.3",
+        "install-location": temporary_directory,
         "environ": {
             "PATH": "${INSTALL_LOCATION}/Foo/Foo-0.2.3/bin:${PATH}"
         }

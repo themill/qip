@@ -11,16 +11,17 @@ import qip.symbol
 def create(mapping, path):
     """Create :term:`Wiz` definition for package *mapping*.
 
-    :param mapping: mapping of the python package built
-    :param path: path to install the package definition to
-    :returns: definition data
+    :param mapping: mapping of the python package built.
+    :param path: installation path of all python packages.
+    :returns: definition data.
 
     """
     logger = mlog.Logger(__name__ + ".create")
 
     definition_data = {
         "identifier": mapping["key"],
-        "version": mapping["version"]
+        "version": mapping["version"],
+        "install-location": path
     }
 
     if "description" in mapping.keys():
@@ -50,7 +51,13 @@ def create(mapping, path):
         qip.symbol.INSTALL_LOCATION, mapping["name"], mapping["identifier"]
     )
 
-    if os.path.isdir(os.path.join(path, qip.symbol.P27_LIB_DESTINATION)):
+    # Identify if a library is installed.
+    lib_path = os.path.join(
+        path, mapping["name"], mapping["identifier"],
+        qip.symbol.P27_LIB_DESTINATION
+    )
+
+    if os.path.isdir(lib_path):
         definition_data.setdefault("environ", {})
         definition_data["environ"]["PYTHONPATH"] = (
             "{}:${{PYTHONPATH}}".format(
@@ -58,7 +65,13 @@ def create(mapping, path):
             )
         )
 
-    if os.path.isdir(os.path.join(path, qip.symbol.BIN_DESTINATION)):
+    # Identify if an executable is installed.
+    bin_path = os.path.join(
+        path, mapping["name"], mapping["identifier"],
+        qip.symbol.BIN_DESTINATION
+    )
+
+    if os.path.isdir(bin_path):
         definition_data.setdefault("environ", {})
         definition_data["environ"]["PATH"] = (
             "{}:${{PATH}}".format(
@@ -75,9 +88,9 @@ def create(mapping, path):
 def retrieve(mapping, path):
     """Retrieve :term:`Wiz` definition from package installed.
 
-    :param mapping: mapping of the python package built
-    :param path: path where the package was installed to
-    :return: None if no definition was found, otherwise return the definition
+    :param mapping: mapping of the python package built.
+    :param path: path where the package was installed to.
+    :returns: None if no definition was found, otherwise return the definition.
 
     """
     logger = mlog.Logger(__name__ + ".retrieve")

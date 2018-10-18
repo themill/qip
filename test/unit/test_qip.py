@@ -156,11 +156,7 @@ def test_install(
     mocked_fetch_environ.return_value = "__ENVIRON__"
     mocked_package_install.side_effect = packages
 
-    mocked_copy_to_destination.side_effect = [
-        "/path/to/Foo-0.2.3",
-        "/path/to/Bar-22.3",
-        "/path/to/Bim-3.2.1",
-    ]
+    mocked_copy_to_destination.side_effect = [True, True, True]
 
     qip.install(["foo", "bar"], "/path/to/install", **options)
 
@@ -269,18 +265,9 @@ def test_install_with_definition_path(
     mocked_fetch_environ.return_value = "__ENVIRON__"
     mocked_package_install.side_effect = packages
 
-    mocked_copy_to_destination.side_effect = [
-        "/path/to/Foo-0.2.3",
-        "/path/to/Bar-22.3",
-        "/path/to/Bim-3.2.1",
-    ]
-
-    mocked_definition_retrieve.side_effect = [
-        "__DATA1__", None, None
-    ]
-    mocked_definition_create.side_effect = [
-        "__DATA2__", "__DATA3__"
-    ]
+    mocked_copy_to_destination.side_effect = [True, True, True]
+    mocked_definition_retrieve.side_effect = ["__DATA1__", None, None]
+    mocked_definition_create.side_effect = ["__DATA2__", "__DATA3__"]
 
     qip.install(
         ["foo", "bar"], "/path/to/install",
@@ -335,8 +322,8 @@ def test_install_with_definition_path(
     mocked_definition_retrieve.assert_any_call(packages[2], "/tmp2")
 
     assert mocked_definition_create.call_count == 2
-    mocked_definition_create.assert_any_call(packages[1], "/path/to/Bar-22.3")
-    mocked_definition_create.assert_any_call(packages[2], "/path/to/Bim-3.2.1")
+    mocked_definition_create.assert_any_call(packages[1], "/path/to/install")
+    mocked_definition_create.assert_any_call(packages[2], "/path/to/install")
 
     assert mocked_wiz_export_definition.call_count == 3
     mocked_wiz_export_definition.assert_any_call(
@@ -403,10 +390,7 @@ def test_install_without_dependencies(
     mocked_fetch_environ.return_value = "__ENVIRON__"
     mocked_package_install.side_effect = packages
 
-    mocked_copy_to_destination.side_effect = [
-        "/path/to/Foo-0.2.3",
-        "/path/to/Bar-22.3",
-    ]
+    mocked_copy_to_destination.side_effect = [True, True]
 
     qip.install(
         ["foo", "bar"], "/path/to/install", no_dependencies=True, **options
@@ -493,7 +477,7 @@ def test_install_with_package_skipped(
     mocked_fetch_environ.return_value = "__ENVIRON__"
     mocked_package_install.side_effect = packages
 
-    mocked_copy_to_destination.return_value = None
+    mocked_copy_to_destination.return_value = False
 
     qip.install(["foo"], "/path/to/install", **options)
 
@@ -545,9 +529,7 @@ def test_install_with_package_installation_error(
     mocked_fetch_environ.return_value = "__ENVIRON__"
     mocked_package_install.side_effect = [RuntimeError("Oops"), package]
 
-    mocked_copy_to_destination.side_effect = [
-        "/path/to/Foo-0.2.3"
-    ]
+    mocked_copy_to_destination.return_value = True
 
     qip.install(["foo", "bar"], "/path/to/install")
 
@@ -604,7 +586,7 @@ def test_copy_to_destination(
     result = qip.copy_to_destination(
         mapping, "/path/to/installed/package", "/path/to/destination"
     )
-    assert result == "/path/to/destination/Foo/Foo-0.2.3"
+    assert result is True
 
     mocked_click_confirm.assert_not_called()
     mocked_shutil_rmtree.assert_not_called()
@@ -641,7 +623,7 @@ def test_copy_to_destination_with_system_restriction(
     result = qip.copy_to_destination(
         mapping, "/path/to/installed/package", "/path/to/destination"
     )
-    assert result == "/path/to/destination/Foo/Foo-0.2.3-centos7"
+    assert result is True
 
     mocked_click_confirm.assert_not_called()
     mocked_shutil_rmtree.assert_not_called()
@@ -675,7 +657,7 @@ def test_copy_to_destination_skip_existing(
     result = qip.copy_to_destination(
         mapping, "/path/to/installed/package", temporary_directory
     )
-    assert result is None
+    assert result is False
 
     mocked_click_confirm.assert_not_called()
     mocked_shutil_rmtree.assert_not_called()
@@ -706,7 +688,7 @@ def test_copy_to_destination_overwrite_existing(
         mapping, "/path/to/installed/package", temporary_directory,
         overwrite_packages=True
     )
-    assert result == path
+    assert result is True
 
     mocked_click_confirm.assert_not_called()
 
@@ -746,7 +728,7 @@ def test_copy_to_destination_confirm_overwrite(
         mapping, "/path/to/installed/package", temporary_directory,
         overwrite_packages=None
     )
-    assert result is None
+    assert result is False
 
     mocked_click_confirm.assert_called_once_with(
         "Overwrite 'Foo-0.2.3'?"
