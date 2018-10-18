@@ -53,7 +53,8 @@ def install(
     logger = mlog.Logger(__name__ + ".install")
 
     qip.filesystem.ensure_directory(output_path)
-    qip.filesystem.ensure_directory(definition_path)
+    if definition_path is not None:
+        qip.filesystem.ensure_directory(definition_path)
 
     # Setup temporary folder for package installation.
     cache_dir = tempfile.mkdtemp()
@@ -88,7 +89,7 @@ def install(
                     editable_mode=editable_mode
                 )
             except RuntimeError as error:
-                logger.error(error)
+                logger.error(str(error))
                 continue
 
             if package_mapping["identifier"] in installed_packages:
@@ -105,7 +106,7 @@ def install(
                 package_mapping,
                 temporary_path,
                 output_path,
-                overwrite_packages
+                overwrite_packages=overwrite_packages
             )
             if installation_path is None:
                 continue
