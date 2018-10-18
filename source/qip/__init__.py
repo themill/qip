@@ -89,6 +89,9 @@ def install(
             if package_mapping["identifier"] in installed_packages:
                 continue
 
+            installed_packages.add(package_mapping["identifier"])
+            installed_requests.add(request)
+
             # Reset editable mode to False for requirements.
             editable_mode = False
 
@@ -111,9 +114,6 @@ def install(
                     package_mapping, installation_path
                 )
             wiz.export_definition(installation_path, definition_data)
-
-            installed_packages.add(package_mapping["identifier"])
-            installed_requests.add(request)
 
             # Fill up queue with requirements extracted from package
             # dependencies.

@@ -11,6 +11,12 @@ Release Notes
         Added :option:`--editable <qip --editable>` to install a package in
         editable mode.
 
+    .. change:: fixed
+
+        Fixed :func:`qip.install` to record package identifiers and requests
+        before processing it. It ensures that no package is processed more than
+        once even if the installation process is skipped.
+
 .. release:: 1.0.0
     :date: 2018-10-16
 
