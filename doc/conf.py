@@ -88,6 +88,7 @@ def autodoc_skip(app, what, name, obj, skip, options):
 
 intersphinx_mapping = {
     "python": ("http://docs.python.org/", None),
+    "pip": ("https://pip.pypa.io/en/stable/", None),
     "wiz": ("http://rtd.themill.com/docs/wiz/en/stable/", None)
 }
 

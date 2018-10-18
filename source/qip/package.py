@@ -22,6 +22,8 @@ def install(
 
         A request can be one of::
 
+            "/path/to/foo/"
+            "."
             "foo"
             "foo==0.1.0"
             "foo >= 7, < 8"
@@ -32,7 +34,7 @@ def install(
     :param destination: valid path to install all packages to
     :param environ_mapping: mapping of environment variables
     :param cache_dir: Temporary directory for the pip cache
-    :param editable_mode: install in editable mode
+    :param editable_mode: install in editable mode. Default is False.
 
     :raises RuntimeError: if pip fails to install
     :raises ValueError: if the package name can not be extracted from the
@@ -45,11 +47,6 @@ def install(
 
     request = sanitise_request(request)
 
-    # Needed for the development mode.
-    qip.filesystem.ensure_directory(
-        os.path.join(destination, "lib", "python2.7", "site-packages")
-    )
-
     logger.info("Installing {}...".format(request))
     result = qip.command.execute(
         "pip install "
@@ -59,9 +56,9 @@ def install(
         "--no-warn-script-location "
         "--disable-pip-version-check "
         "--cache-dir {cache_dir} "
-        "{editable_mode} " 
+        "{editable_mode}" 
         "'{requirement}'".format(
-            editable_mode="-e" if editable_mode else "",
+            editable_mode="-e " if editable_mode else "",
             destination=destination,
             requirement=request,
             cache_dir=cache_dir

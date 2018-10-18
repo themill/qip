@@ -22,8 +22,8 @@ from ._version import __version__
 
 
 def install(
-    requests, output_path, editable_mode=False, overwrite_packages=False,
-    no_dependencies=False
+    requests, output_path, definition_path=None, overwrite_packages=False,
+    no_dependencies=False, editable_mode=False
 ):
     """Install packages to *output_path* from *requests*.
 
@@ -39,17 +39,20 @@ def install(
             "git@gitlab:rnd/foo.git@dev"
 
     :param output_path: destination installation path
-    :param editable_mode: install in editable mode
+    :param definition_path: destination for :term:`Wiz` definitions extracted.
+        Default is None, which means that definitions are not extracted.
     :param overwrite_packages: indicate whether packages already installed
         should be overwritten. If None, a user confirmation will be prompted.
         Default is False.
     :param no_dependencies: indicate whether package dependencies should be
         skipped. Default is False.
+    :param editable_mode: install in editable mode. Default is False.
 
     """
     logger = mlog.Logger(__name__ + ".install")
 
     qip.filesystem.ensure_directory(output_path)
+    qip.filesystem.ensure_directory(definition_path)
 
     # Setup temporary folder for package installation.
     cache_dir = tempfile.mkdtemp()
@@ -57,6 +60,9 @@ def install(
     install_path = os.path.join(
         temporary_path, "lib", "python2.7", "site-packages"
     )
+
+    # Needed for the editable mode.
+    qip.filesystem.ensure_directory(install_path)
 
     try:
         # Update environment mapping.
@@ -105,15 +111,17 @@ def install(
             if installation_path is None:
                 continue
 
-            # Extract a wiz definition within the same path.
-            definition_data = qip.definition.retrieve(
-                package_mapping, temporary_path
-            )
-            if definition_data is None:
-                definition_data = qip.definition.create(
-                    package_mapping, installation_path
+            # Extract a wiz definition is requested.
+            if definition_path is not None:
+                definition_data = qip.definition.retrieve(
+                    package_mapping, temporary_path
                 )
-            wiz.export_definition(installation_path, definition_data)
+                if definition_data is None:
+                    definition_data = qip.definition.create(
+                        package_mapping, installation_path
+                    )
+
+                wiz.export_definition(definition_path, definition_data)
 
             # Fill up queue with requirements extracted from package
             # dependencies.
