@@ -32,6 +32,8 @@ def install(
 
         A request can be one of::
 
+            "/path/to/foo/"
+            "."
             "foo"
             "foo==0.1.0"
             "foo >= 7, < 8"
@@ -39,9 +41,9 @@ def install(
             "git@gitlab:rnd/foo.git@0.1.0"
             "git@gitlab:rnd/foo.git@dev"
 
-    :param output_path: destination installation path
-    :param definition_path: destination for :term:`Wiz` definitions extracted.
-        Default is None, which means that definitions are not extracted.
+    :param output_path: data install path.
+    :param definition_path: :term:`Wiz` definition install path. Default is
+        None, which means that :term:`Wiz` definitions are not extracted.
     :param overwrite_packages: indicate whether packages already installed
         should be overwritten. If None, a user confirmation will be prompted.
         Default is False.
@@ -148,9 +150,9 @@ def copy_to_destination(
 
     Return the path to the installed package.
 
-    :param package_mapping: mapping of the python package built
-    :param source_path: path where the package was built
-    :param destination_path: path to install to
+    :param package_mapping: mapping of the python package built.
+    :param source_path: path where the package was built.
+    :param destination_path: path to install to.
     :param overwrite_packages: indicate whether packages already installed
         should be overwritten. If None, a user confirmation will be prompted.
         Default is False.
