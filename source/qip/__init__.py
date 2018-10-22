@@ -163,12 +163,6 @@ def copy_to_destination(
     name = package_mapping["name"]
     folder_identifier = package_mapping["identifier"]
 
-    if package_mapping.get("system"):
-        os_mapping = package_mapping["system"]["os"]
-        folder_identifier += "-{}{}".format(
-            os_mapping["name"], os_mapping["major_version"]
-        )
-
     target = os.path.join(destination_path, name)
     full_target = os.path.join(target, folder_identifier)
 

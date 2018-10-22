@@ -261,15 +261,23 @@ def extract_identifier(mapping):
                 "installed_version": "1.11",
             }
 
-    :returns: Corresponding identifier (ie. "Foo-1.11")
+    :returns: Corresponding identifier (ie. "Foo-1.11", "Bar-centos7")
 
     """
-    return qip.filesystem.sanitise_value(
+    identifier = qip.filesystem.sanitise_value(
         "{name}-{version}".format(
             name=mapping["package_name"],
             version=mapping["installed_version"]
         )
     )
+
+    if mapping.get("system"):
+        os_mapping = mapping["system"]["os"]
+        identifier += "-{}{}".format(
+            os_mapping["name"], os_mapping["major_version"]
+        )
+
+    return identifier
 
 
 def extract_request(mapping):
