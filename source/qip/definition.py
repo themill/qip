@@ -21,7 +21,8 @@ def create(mapping, path):
     definition_data = {
         "identifier": mapping["key"],
         "version": mapping["version"],
-        "install-location": path
+        "install-location": path,
+        "group": "python"
     }
 
     if "description" in mapping.keys():
