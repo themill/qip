@@ -1,6 +1,7 @@
 # :coding: utf-8
 
 import os
+import itertools
 
 import mlog
 import wiz
@@ -102,7 +103,22 @@ def retrieve(mapping, path):
     if not os.path.exists(definition_path):
         return None
 
+    definition = wiz.load_definition(definition_path)
+
+    # Check whether environment needs the installation path.
+    add_install_location = False
+    for value in itertools.chain(
+        definition.environ.values(),
+        *(variant.environ.values() for variant in definition.variants)
+    ):
+        if "${INSTALL_LOCATION}" in value:
+            add_install_location = True
+            break
+
+    if add_install_location:
+        definition = definition.set("install-location", path)
+
     logger.info(
         "Wiz definition extracted from '{}'.".format(mapping["identifier"])
     )
-    return wiz.load_definition(definition_path)
+    return definition

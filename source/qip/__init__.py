@@ -120,7 +120,7 @@ def install(
                 )
                 if definition_data is None:
                     definition_data = qip.definition.create(
-                        package_mapping, output_path,
+                        package_mapping, output_path
                     )
 
                 wiz.export_definition(definition_path, definition_data)
