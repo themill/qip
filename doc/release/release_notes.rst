@@ -8,11 +8,6 @@ Release Notes
 
     .. change:: new
 
-        Added "group" keyword set to "python" when creating new definitions
-        for packages from :term:`Pypi`.
-
-    .. change:: new
-
         Added :option:`qip install --editable` to install local
         projects or :term:`VCS` projects in :ref:`editable mode
         <editable-installs>`.
@@ -26,6 +21,19 @@ Release Notes
     .. change:: new
 
         Added :mod:`qip.symbol` to regroup common symbols.
+
+    .. change:: new
+        :tags: definition
+
+        Added "install-location" keyword when retrieving a definition from a
+        package, if :envvar:`wiz:INSTALL_LOCATION` is used in any occurance of
+        ``environ``.
+
+    .. change:: new
+        :tags: definition
+
+        Added "group" keyword set to "python" when creating new definitions
+        for packages from :term:`Pypi`.
 
     .. change:: changed
 
