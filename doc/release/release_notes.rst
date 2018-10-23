@@ -8,6 +8,16 @@ Release Notes
 
     .. change:: new
 
+        Added :func:`qip.definition._update_install_location` to ensure that
+        when retrieving a definition from a package, any occurance of
+        :envvar:`wiz:INSTALL_LOCATION` in a definition is being replaced with
+        the accurate relative target path (including the identifier, version and
+        potential system information). Without this adjustment, any path in
+        :envvar:`wiz:INSTALL_LOCATION` retrieved from :term:`devpi` would
+        include non existent paths and the link to the data would be lost.
+
+    .. change:: new
+
         Added :option:`qip install --editable` to install local
         projects or :term:`VCS` projects in :ref:`editable mode
         <editable-installs>`.
