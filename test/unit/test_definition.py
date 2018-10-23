@@ -230,3 +230,139 @@ def test_retrieve(temporary_directory, mocked_wiz_load_definition, logger):
     logger.info.assert_called_once_with(
         "Wiz definition extracted from 'Foo-0.2.3'."
     )
+
+
+@pytest.mark.parametrize("definition, expected", [
+    (
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+        },
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+            "install-location": "/tmp/output"
+        }
+    ),
+    (
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+            "environ": {
+                "PYTHONPATH": "${INSTALL_LOCATION}/lib/python2.7/site-packages:${PYTHONPATH}",
+                "TEST": "True"
+            }
+        },
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+            "environ": {
+                "PYTHONPATH": "${INSTALL_LOCATION}/foo/foo-0.1.0/lib/python2.7/site-packages:${PYTHONPATH}",
+                "TEST": "True"
+            },
+            "install-location": "/tmp/output"
+        }
+    ),
+    (
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+            "system": {
+                "os": "el >= 7, < 8",
+                "arch": "x86_64"
+            },
+            "environ": {
+                "PYTHONPATH": "${INSTALL_LOCATION}/lib/python2.7/site-packages:${PYTHONPATH}",
+                "TEST": "True"
+            }
+        },
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+            "system": {
+                "os": "el >= 7, < 8",
+                "arch": "x86_64"
+            },
+            "environ": {
+                "PYTHONPATH": "${INSTALL_LOCATION}/foo/foo-0.1.0/lib/python2.7/site-packages:${PYTHONPATH}",
+                "TEST": "True"
+            },
+            "install-location": "/tmp/output"
+        }
+    ),
+    (
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+            "variants": [
+                {
+                    "identifier": "variant1",
+                    "environ": {
+                        "PATH": "${INSTALL_LOCATION}/bin:${PATH}"
+                    }
+                }
+            ]
+        },
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+            "variants": [
+                {
+                    "identifier": "variant1",
+                    "environ": {
+                        "PATH": "${INSTALL_LOCATION}/foo/foo-0.1.0/bin:${PATH}"
+                    }
+                }
+            ],
+            "install-location": "/tmp/output"
+        }
+    ),
+    (
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+            "environ": {
+                "PYTHONPATH": "${INSTALL_LOCATION}/lib/python2.7/site-packages:${PYTHONPATH}"
+            },
+            "variants": [
+                {
+                    "identifier": "variant1",
+                    "environ": {
+                        "PATH": "${INSTALL_LOCATION}/bin:${PATH}"
+                    }
+                }
+            ]
+        },
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+            "environ": {
+                "PYTHONPATH": "${INSTALL_LOCATION}/foo/foo-0.1.0/lib/python2.7/site-packages:${PYTHONPATH}"
+            },
+            "variants": [
+                {
+                    "identifier": "variant1",
+                    "environ": {
+                        "PATH": "${INSTALL_LOCATION}/foo/foo-0.1.0/bin:${PATH}"
+                    }
+                }
+            ],
+            "install-location": "/tmp/output"
+        }
+    )
+], ids=[
+    "no environ",
+    "only environ",
+    "with system",
+    "with variants",
+    "with environ and variants"
+])
+def test_update_install_location(definition, expected):
+    _definition = wiz.definition.Definition(definition)
+    _expected = wiz.definition.Definition(expected)
+
+    result = qip.definition._update_install_location(
+        _definition, "/tmp/output", "foo/foo-0.1.0"
+    )
+
+    assert result == _expected
