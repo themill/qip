@@ -101,6 +101,7 @@ def fetch_mapping_from_environ(name, environ_mapping):
                 "key": "foo",
                 "version": "0.1.0",
                 "description": "This is a Python package",
+                "target": "Foo/Foo-0.1.0-centos7",
                 "system": {
                     "platform": "linux",
                     "arch": "x86_64",
@@ -144,6 +145,16 @@ def fetch_mapping_from_environ(name, environ_mapping):
             }
             for _dependency_mapping in dependency_mapping["dependencies"]
         ]
+
+    # Add target information to package mapping.
+    mapping["target"] = os.path.join(
+        mapping["name"], mapping["identifier"]
+    )
+    if mapping.get("system"):
+        os_mapping = mapping["system"]["os"]
+        mapping["target"] += "-{}{}".format(
+            os_mapping["name"], os_mapping["major_version"]
+        )
 
     logger.info("Fetched '{}'.".format(mapping["identifier"]))
     return mapping
@@ -261,7 +272,7 @@ def extract_identifier(mapping):
                 "installed_version": "1.11",
             }
 
-    :returns: Corresponding identifier (ie. "Foo-1.11", "Bar-centos7")
+    :returns: Corresponding identifier (ie. "Foo-1.11", "Bar")
 
     """
     identifier = qip.filesystem.sanitise_value(
@@ -270,12 +281,6 @@ def extract_identifier(mapping):
             version=mapping["installed_version"]
         )
     )
-
-    if mapping.get("system"):
-        os_mapping = mapping["system"]["os"]
-        identifier += "-{}{}".format(
-            os_mapping["name"], os_mapping["major_version"]
-        )
 
     return identifier
 

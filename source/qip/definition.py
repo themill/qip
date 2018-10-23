@@ -1,7 +1,7 @@
 # :coding: utf-8
 
 import os
-import itertools
+import re
 
 import mlog
 import wiz
@@ -50,13 +50,12 @@ def create(mapping, path):
 
     # Compute relative installation path.
     installation_path = os.path.join(
-        qip.symbol.INSTALL_LOCATION, mapping["name"], mapping["identifier"]
+        qip.symbol.INSTALL_LOCATION, mapping["target"]
     )
 
     # Identify if a library is installed.
     lib_path = os.path.join(
-        path, mapping["name"], mapping["identifier"],
-        qip.symbol.P27_LIB_DESTINATION
+        path, mapping["target"], qip.symbol.P27_LIB_DESTINATION
     )
 
     if os.path.isdir(lib_path):
@@ -68,11 +67,7 @@ def create(mapping, path):
         )
 
     # Identify if an executable is installed.
-    bin_path = os.path.join(
-        path, mapping["name"], mapping["identifier"],
-        qip.symbol.BIN_DESTINATION
-    )
-
+    bin_path = os.path.join(path, mapping["target"], qip.symbol.BIN_DESTINATION)
     if os.path.isdir(bin_path):
         definition_data.setdefault("environ", {})
         definition_data["environ"]["PATH"] = (
@@ -87,38 +82,62 @@ def create(mapping, path):
     return definition_data
 
 
-def retrieve(mapping, path):
+def retrieve(mapping, temporary_path, output_path):
     """Retrieve :term:`Wiz` definition from package installed.
 
     :param mapping: mapping of the python package built.
-    :param path: path where the package was installed to.
+    :param temporary_path: path where the package was temporarily installed to.
+    :param output_path: path where the package was installed to.
     :returns: None if no definition was found, otherwise return the definition.
 
     """
     logger = mlog.Logger(__name__ + ".retrieve")
 
     definition_path = os.path.join(
-        path, "share", "wiz", mapping["name"], "wiz.json"
+        temporary_path, "share", "wiz", mapping["name"], "wiz.json"
     )
     if not os.path.exists(definition_path):
         return None
 
+    # Update definitions install locations.
     definition = wiz.load_definition(definition_path)
-
-    # Check whether environment needs the installation path.
-    add_install_location = False
-    for value in itertools.chain(
-        definition.environ.values(),
-        *(variant.environ.values() for variant in definition.variants)
-    ):
-        if "${INSTALL_LOCATION}" in value:
-            add_install_location = True
-            break
-
-    if add_install_location:
-        definition = definition.set("install-location", path)
+    definition = _update_install_location(
+        definition, output_path, mapping["target"]
+    )
 
     logger.info(
         "Wiz definition extracted from '{}'.".format(mapping["identifier"])
     )
     return definition
+
+
+def _update_install_location(definition, path, target):
+    """Update a definition with new install paths.
+
+    :param definition: valid :class:`~wiz.definition.Definition` instance.
+    :param path: path where the package was installed to.
+    :param target: relative path to where the package is installed.
+    :returns: a definition where all occurances of ${INSTALL_LOCATION} have been
+    replaced by ${INSTALL_LOCATION}/target and an 'install-location' key has
+    been added.
+
+    """
+    target = os.path.join("${INSTALL_LOCATION}", target)
+
+    new_environ = {}
+    for key, value in definition.environ.items():
+        new_environ[key] = re.sub("\\${INSTALL_LOCATION}", target, value)
+    if len(new_environ):
+        definition = definition.set("environ", new_environ)
+
+    new_variant = []
+    for variant in definition.variants:
+        new_environ = {}
+        for key, value in variant.environ.items():
+            new_environ[key] = re.sub("\\${INSTALL_LOCATION}", target, value)
+        if len(new_environ):
+            new_variant.append(variant.update("environ", new_environ))
+    if len(new_variant):
+        definition = definition.set("variants", new_variant)
+
+    return definition.set("install-location", path)

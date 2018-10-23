@@ -116,14 +116,17 @@ def install(
             # Extract a wiz definition is requested.
             if definition_path is not None:
                 definition_data = qip.definition.retrieve(
-                    package_mapping, temporary_path
+                    package_mapping, temporary_path, output_path
                 )
                 if definition_data is None:
                     definition_data = qip.definition.create(
                         package_mapping, output_path
                     )
 
-                wiz.export_definition(definition_path, definition_data)
+                wiz.export_definition(
+                    definition_path, definition_data,
+                    overwrite=overwrite_packages
+                )
 
             # Fill up queue with requirements extracted from package
             # dependencies.
@@ -160,39 +163,32 @@ def copy_to_destination(
     """
     logger = mlog.Logger(__name__ + ".copy_to_destination")
 
-    name = package_mapping["name"]
-    folder_identifier = package_mapping["identifier"]
+    identifier = package_mapping["identifier"]
+    target = os.path.join(destination_path, package_mapping["target"])
 
-    target = os.path.join(destination_path, name)
-    full_target = os.path.join(target, folder_identifier)
-
-    if os.path.isdir(full_target):
+    if os.path.isdir(target):
         if overwrite_packages is None:
             overwrite_packages = click.confirm(
-                "Overwrite '{}'?".format(folder_identifier)
+                "Overwrite '{}'?".format(identifier)
             )
 
         if overwrite_packages:
             logger.warning(
-                "Overwrite '{}' which is already installed.".format(
-                    folder_identifier
-                )
+                "Overwrite '{}' which is already installed.".format(identifier)
             )
-            shutil.rmtree(full_target)
+            shutil.rmtree(target)
 
         else:
             logger.warning(
-                "Skip '{}' which is already installed.".format(
-                    folder_identifier
-                )
+                "Skip '{}' which is already installed.".format(identifier)
             )
             return False
 
-    qip.filesystem.ensure_directory(target)
-    shutil.copytree(source_path, full_target)
-    logger.debug("Source copied to '{}'".format(full_target))
+    qip.filesystem.ensure_directory(os.path.dirname(target))
+    shutil.copytree(source_path, target)
+    logger.debug("Source copied to '{}'".format(target))
 
-    logger.info("Installed '{}'.".format(folder_identifier))
+    logger.info("Installed '{}'.".format(identifier))
     return True
 
 
