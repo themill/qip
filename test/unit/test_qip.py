@@ -580,7 +580,8 @@ def test_copy_to_destination(
     """Copy package to destination."""
     mapping = {
         "identifier": "Foo-0.2.3",
-        "name": "Foo"
+        "name": "Foo",
+        "target": "Foo/Foo-0.2.3"
     }
 
     result = qip.copy_to_destination(
@@ -617,7 +618,8 @@ def test_copy_to_destination_with_system_restriction(
                 "name": "centos",
                 "major_version": 7
             }
-        }
+        },
+        "target": "Foo/Foo-0.2.3"
     }
 
     result = qip.copy_to_destination(
@@ -651,7 +653,8 @@ def test_copy_to_destination_skip_existing(
 
     mapping = {
         "identifier": "Foo-0.2.3",
-        "name": "Foo"
+        "name": "Foo",
+        "target": "Foo/Foo-0.2.3"
     }
 
     result = qip.copy_to_destination(
@@ -681,7 +684,8 @@ def test_copy_to_destination_overwrite_existing(
 
     mapping = {
         "identifier": "Foo-0.2.3",
-        "name": "Foo"
+        "name": "Foo",
+        "target": "Foo/Foo-0.2.3"
     }
 
     result = qip.copy_to_destination(
@@ -721,7 +725,8 @@ def test_copy_to_destination_confirm_overwrite(
 
     mapping = {
         "identifier": "Foo-0.2.3",
-        "name": "Foo"
+        "name": "Foo",
+        "target": "Foo/Foo-0.2.3"
     }
 
     result = qip.copy_to_destination(
