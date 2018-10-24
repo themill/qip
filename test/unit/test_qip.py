@@ -317,9 +317,15 @@ def test_install_with_definition_path(
     )
 
     assert mocked_definition_retrieve.call_count == 3
-    mocked_definition_retrieve.assert_any_call(packages[0], "/tmp2")
-    mocked_definition_retrieve.assert_any_call(packages[1], "/tmp2")
-    mocked_definition_retrieve.assert_any_call(packages[2], "/tmp2")
+    mocked_definition_retrieve.assert_any_call(
+        packages[0], "/tmp2", "/path/to/install"
+    )
+    mocked_definition_retrieve.assert_any_call(
+        packages[1], "/tmp2", "/path/to/install"
+    )
+    mocked_definition_retrieve.assert_any_call(
+        packages[2], "/tmp2", "/path/to/install"
+    )
 
     assert mocked_definition_create.call_count == 2
     mocked_definition_create.assert_any_call(packages[1], "/path/to/install")
@@ -327,13 +333,13 @@ def test_install_with_definition_path(
 
     assert mocked_wiz_export_definition.call_count == 3
     mocked_wiz_export_definition.assert_any_call(
-        "/path/to/definitions", "__DATA1__"
+        "/path/to/definitions", "__DATA1__", overwrite=overwrite_packages
     )
     mocked_wiz_export_definition.assert_any_call(
-        "/path/to/definitions", "__DATA2__"
+        "/path/to/definitions", "__DATA2__", overwrite=overwrite_packages
     )
     mocked_wiz_export_definition.assert_any_call(
-        "/path/to/definitions", "__DATA3__"
+        "/path/to/definitions", "__DATA3__", overwrite=overwrite_packages
     )
 
     assert mocked_filesystem_remove_directory_content.call_count == 3
@@ -619,7 +625,7 @@ def test_copy_to_destination_with_system_restriction(
                 "major_version": 7
             }
         },
-        "target": "Foo/Foo-0.2.3"
+        "target": "Foo/Foo-0.2.3-centos7"
     }
 
     result = qip.copy_to_destination(
@@ -640,7 +646,7 @@ def test_copy_to_destination_with_system_restriction(
     )
 
     logger.warning.assert_not_called()
-    logger.info.assert_called_once_with("Installed 'Foo-0.2.3-centos7'.")
+    logger.info.assert_called_once_with("Installed 'Foo-0.2.3'.")
 
 
 def test_copy_to_destination_skip_existing(
