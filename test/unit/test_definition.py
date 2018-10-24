@@ -14,6 +14,12 @@ def mocked_wiz_load_definition(mocker):
     return mocker.patch.object(wiz, "load_definition")
 
 
+@pytest.fixture()
+def mocked_update_install_location(mocker):
+    """Return mocked '_update_install_location' function"""
+    return mocker.patch.object(qip.definition, "_update_install_location")
+
+
 def test_create(logger):
     """Create a definition from package mapping."""
     mapping = {
@@ -21,6 +27,7 @@ def test_create(logger):
         "name": "Foo",
         "key": "foo",
         "version": "0.2.3",
+        "target": "Foo/Foo-0.2.3"
     }
 
     result = qip.definition.create(mapping, "/path/to/installed/package")
@@ -43,7 +50,8 @@ def test_create_with_description(logger):
         "name": "Foo",
         "key": "foo",
         "version": "0.2.3",
-        "description": "This is a package"
+        "description": "This is a package",
+        "target": "Foo/Foo-0.2.3"
     }
 
     result = qip.definition.create(mapping, "/path/to/installed/package")
@@ -74,7 +82,8 @@ def test_create_with_system(logger):
                 "name": "centos",
                 "major_version": 7
             }
-        }
+        },
+        "target": "Foo/Foo-0.2.3"
     }
 
     result = qip.definition.create(mapping, "/path/to/installed/package")
@@ -111,7 +120,8 @@ def test_create_with_requirements(logger):
                 "identifier": "?",
                 "request": "bar",
             }
-        ]
+        ],
+        "target": "Foo/Foo-0.2.3"
     }
 
     result = qip.definition.create(mapping, "/path/to/installed/package")
@@ -144,7 +154,8 @@ def test_create_with_existing_lib(temporary_directory, logger):
         "identifier": "Foo-0.2.3",
         "name": "Foo",
         "key": "foo",
-        "version": "0.2.3"
+        "version": "0.2.3",
+        "target": "Foo/Foo-0.2.3"
     }
 
     result = qip.definition.create(mapping, temporary_directory)
@@ -174,7 +185,8 @@ def test_create_with_existing_bin(temporary_directory, logger):
         "identifier": "Foo-0.2.3",
         "name": "Foo",
         "key": "foo",
-        "version": "0.2.3"
+        "version": "0.2.3",
+        "target": "Foo/Foo-0.2.3"
     }
 
     result = qip.definition.create(mapping, temporary_directory)
@@ -197,17 +209,21 @@ def test_retrieve_non_existing(mocked_wiz_load_definition, logger):
     """Fail to retrieve non existing definition from package mapping."""
     mapping = {
         "identifier": "Foo-0.2.3",
-        "name": "Foo"
+        "name": "Foo",
+        "target": "Foo/Foo-0.2.3"
     }
 
-    result = qip.definition.retrieve(mapping, "/path/to/installed/package")
+    result = qip.definition.retrieve(mapping, "/tmp_path", "output_path")
     assert result is None
 
     mocked_wiz_load_definition.assert_not_called()
     logger.info.assert_not_called()
 
 
-def test_retrieve(temporary_directory, mocked_wiz_load_definition, logger):
+def test_retrieve(
+    temporary_directory, mocked_wiz_load_definition,
+    mocked_update_install_location, logger
+):
     """Retrieve existing definition from package mapping."""
     path = os.path.join(temporary_directory, "share", "wiz", "Foo")
     os.makedirs(path)
@@ -215,13 +231,15 @@ def test_retrieve(temporary_directory, mocked_wiz_load_definition, logger):
         stream.write("")
 
     mocked_wiz_load_definition.return_value = "__DEFINITION__"
+    mocked_update_install_location.return_value = "__DEFINITION__"
 
     mapping = {
         "identifier": "Foo-0.2.3",
-        "name": "Foo"
+        "name": "Foo",
+        "target": "Foo/Foo-0.2.3"
     }
 
-    result = qip.definition.retrieve(mapping, temporary_directory)
+    result = qip.definition.retrieve(mapping, temporary_directory, "path")
     assert result == "__DEFINITION__"
 
     mocked_wiz_load_definition.assert_called_once_with(
