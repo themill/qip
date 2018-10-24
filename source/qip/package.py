@@ -3,21 +3,27 @@
 from __future__ import print_function
 import re
 import json
+import os
 
 import mlog
 from packaging.requirements import Requirement
 
 import qip.command
+import qip.filesystem
 import qip.system
 
 
-def install(request, destination, environ_mapping, cache_dir):
+def install(
+    request, destination, environ_mapping, cache_dir, editable_mode=False
+):
     """Install package in *destination* from *requirement*.
 
     :param request: package to be installed
 
         A request can be one of::
 
+            "/path/to/foo/"
+            "."
             "foo"
             "foo==0.1.0"
             "foo >= 7, < 8"
@@ -28,6 +34,7 @@ def install(request, destination, environ_mapping, cache_dir):
     :param destination: valid path to install all packages to
     :param environ_mapping: mapping of environment variables
     :param cache_dir: Temporary directory for the pip cache
+    :param editable_mode: install in editable mode. Default is False.
 
     :raises RuntimeError: if pip fails to install
     :raises ValueError: if the package name can not be extracted from the
@@ -40,7 +47,7 @@ def install(request, destination, environ_mapping, cache_dir):
 
     request = sanitise_request(request)
 
-    logger.info("Installing {}...".format(request))
+    logger.info("Installing '{}'...".format(request))
     result = qip.command.execute(
         "pip install "
         "--ignore-installed "
@@ -49,7 +56,9 @@ def install(request, destination, environ_mapping, cache_dir):
         "--no-warn-script-location "
         "--disable-pip-version-check "
         "--cache-dir {cache_dir} "
+        "{editable_mode}" 
         "'{requirement}'".format(
+            editable_mode="-e " if editable_mode else "",
             destination=destination,
             requirement=request,
             cache_dir=cache_dir
@@ -72,6 +81,9 @@ def sanitise_request(request):
     if request.startswith("git@gitlab:"):
         return "git+ssh://" + request.replace(":", "/")
 
+    if os.path.isdir(request):
+        return os.path.abspath(request)
+
     return Requirement(request)
 
 
@@ -89,6 +101,7 @@ def fetch_mapping_from_environ(name, environ_mapping):
                 "key": "foo",
                 "version": "0.1.0",
                 "description": "This is a Python package",
+                "target": "Foo/Foo-0.1.0-centos7",
                 "system": {
                     "platform": "linux",
                     "arch": "x86_64",
@@ -133,7 +146,17 @@ def fetch_mapping_from_environ(name, environ_mapping):
             for _dependency_mapping in dependency_mapping["dependencies"]
         ]
 
-    logger.info("Fetched {}.".format(mapping["identifier"]))
+    # Add target information to package mapping.
+    mapping["target"] = os.path.join(
+        mapping["name"], mapping["identifier"]
+    )
+    if mapping.get("system"):
+        os_mapping = mapping["system"]["os"]
+        mapping["target"] += "-{}{}".format(
+            os_mapping["name"], os_mapping["major_version"]
+        )
+
+    logger.info("Fetched '{}'.".format(mapping["identifier"]))
     return mapping
 
 
@@ -206,6 +229,7 @@ def extract_metadata_mapping(name, environ_mapping):
 
             {
                 "description": "This is a Python package.",
+                "location": "/path/to/source",
                 "system": {
                     "platform": "linux",
                     "os": "el >= 6, <7"
@@ -222,6 +246,10 @@ def extract_metadata_mapping(name, environ_mapping):
     match_description = re.search("(?<=Summary: ).+", result)
     if match_description is not None:
         mapping["description"] = match_description.group().strip()
+
+    match_location = re.search("(?<=Location: ).+", result)
+    if match_location is not None:
+        mapping["location"] = match_location.group().strip()
 
     # Find out if the package is platform specific from the classifiers
     # (https://pypi.org/classifiers/)
@@ -249,15 +277,17 @@ def extract_identifier(mapping):
                 "installed_version": "1.11",
             }
 
-    :returns: Corresponding identifier (ie. "Foo-1.11")
+    :returns: Corresponding identifier (ie. "Foo-1.11", "Bar")
 
     """
-    return qip.filesystem.sanitise_value(
+    identifier = qip.filesystem.sanitise_value(
         "{name}-{version}".format(
             name=mapping["package_name"],
             version=mapping["installed_version"]
         )
     )
+
+    return identifier
 
 
 def extract_request(mapping):
