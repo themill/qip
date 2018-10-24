@@ -229,6 +229,7 @@ def extract_metadata_mapping(name, environ_mapping):
 
             {
                 "description": "This is a Python package.",
+                "location": "/path/to/source",
                 "system": {
                     "platform": "linux",
                     "os": "el >= 6, <7"
@@ -245,6 +246,10 @@ def extract_metadata_mapping(name, environ_mapping):
     match_description = re.search("(?<=Summary: ).+", result)
     if match_description is not None:
         mapping["description"] = match_description.group().strip()
+
+    match_location = re.search("(?<=Location: ).+", result)
+    if match_location is not None:
+        mapping["location"] = match_location.group().strip()
 
     # Find out if the package is platform specific from the classifiers
     # (https://pypi.org/classifiers/)

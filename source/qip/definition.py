@@ -93,22 +93,32 @@ def retrieve(mapping, temporary_path, output_path):
     """
     logger = mlog.Logger(__name__ + ".retrieve")
 
-    definition_path = os.path.join(
-        temporary_path, "share", "wiz", mapping["name"], "wiz.json"
-    )
-    if not os.path.exists(definition_path):
-        return None
+    definition_paths = [
+        os.path.join(
+            temporary_path, "share", "wiz", mapping["name"], "wiz.json"
+        )
+    ]
 
-    # Update definitions install locations.
-    definition = wiz.load_definition(definition_path)
-    definition = _update_install_location(
-        definition, output_path, mapping["target"]
-    )
+    # Necessary as editable mode does not create the 'share' directory.
+    if mapping.get("location"):
+        definition_paths.append(
+            os.path.join(mapping.get("location"), "..", "wiz.json")
+        )
 
-    logger.info(
-        "Wiz definition extracted from '{}'.".format(mapping["identifier"])
-    )
-    return definition
+    for definition_path in definition_paths:
+        if not os.path.exists(definition_path):
+            continue
+
+        # Update definitions install locations.
+        definition = wiz.load_definition(definition_path)
+        definition = _update_install_location(
+            definition, output_path, mapping["target"]
+        )
+
+        logger.info(
+            "Wiz definition extracted from '{}'.".format(mapping["identifier"])
+        )
+        return definition
 
 
 def _update_install_location(definition, path, target):
