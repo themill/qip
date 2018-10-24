@@ -94,6 +94,7 @@ def test_sanitise_request(package, expected):
             "key": "foo",
             "version": "0.1.0",
             "description": "This is a Python package",
+            "target": "Foo/Foo-0.1.0"
         }
     ),
     (
@@ -109,8 +110,12 @@ def test_sanitise_request(package, expected):
             "description": "This is a Python package",
             "system": {
                 "platform": "linux",
-                "os": "el >= 6, <7"
-            }
+                "arch": "x86_64",
+                "os": {
+                    "name": "centos",
+                    "major_version": 7
+                }
+            },
         },
         {
             "identifier": "Foo-0.1.0",
@@ -120,8 +125,13 @@ def test_sanitise_request(package, expected):
             "description": "This is a Python package",
             "system": {
                 "platform": "linux",
-                "os": "el >= 6, <7"
-            }
+                "arch": "x86_64",
+                "os": {
+                    "name": "centos",
+                    "major_version": 7
+                }
+            },
+            "target": "Foo/Foo-0.1.0-centos7"
         }
     ),
     (
@@ -149,14 +159,7 @@ def test_sanitise_request(package, expected):
         },
         {
             "description": "This is a Python package",
-            "system": {
-                "platform": "linux",
-                "arch": "x86_64",
-                "os": {
-                    "name": "centos",
-                    "major_version": 7
-                }
-            },
+            "target": "Foo/Foo-0.1.0"
         },
         {
             "identifier": "Foo-0.1.0",
@@ -164,14 +167,6 @@ def test_sanitise_request(package, expected):
             "key": "foo",
             "version": "0.1.0",
             "description": "This is a Python package",
-            "system": {
-                "platform": "linux",
-                "arch": "x86_64",
-                "os": {
-                    "name": "centos",
-                    "major_version": 7
-                }
-            },
             "requirements": [
                 {
                     "identifier": "Bar-0.1.0",
@@ -181,7 +176,8 @@ def test_sanitise_request(package, expected):
                     "identifier": "Bim-2.3.1",
                     "request": "bim >= 2, <3",
                 }
-            ]
+            ],
+            "target": "Foo/Foo-0.1.0"
         }
     )
 ], ids=[
@@ -209,21 +205,25 @@ def test_fetch_mapping_from_environ(
 @pytest.mark.parametrize("name, command_result, expected", [
     (
         "foo",
-        [{
-            "package": {"key": "foo"}
-        }],
+        [
+            {
+                "package": {"key": "foo"}
+            }
+        ],
         {
             "package": {"key": "foo"}
         }
     ),
     (
         "foo",
-        [{
-            "package": {"key": "foo"}
-        },
-        {
-            "package": {"key": "bar"}
-        }],
+        [
+            {
+                "package": {"key": "foo"}
+            },
+            {
+                "package": {"key": "bar"}
+            }
+        ],
         {
             "package": {"key": "foo"}
         }
