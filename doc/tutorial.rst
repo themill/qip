@@ -8,7 +8,7 @@ Installing a package
 ====================
 
 To install a package simply issue the `qip install` command and specify
-an output directory with `-o` or `--outdir`
+an output directory with :option:`--output-path <qip install --output-path>`.
 
 For example:
 
@@ -20,7 +20,8 @@ Qip will then proceed to resolve dependencies and install the packages as
 required.
 
 If you want to install a single package without any of its dependencies, you
-can pass the `--no-dependencies` argument to the install command.
+can pass the :option:`--no-dependencies <qip install --no-dependencies>`
+argument to the install command.
 
 .. code-block:: bash
 
@@ -50,8 +51,8 @@ Definition
 
 Along with the install, a :term:`Wiz` :ref:`Package Definition <wiz:definition>`
 file will be exported, which details information and dependencies of the
-package. It is exported into the versioned directory and called after the
-package, ie. `foo-0.1.0.json`.
+package. They are exported into the :option:`--definition-path
+<qip install --definition-path>` and named after the package, ie. `foo-0.1.0.json`.
 
 To make a package installed with Qip usable inside of :term:`Wiz`, it has to be
 installed into a :term:`Wiz` :ref:`Registry <wiz:registry>`.
