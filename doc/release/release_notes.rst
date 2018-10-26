@@ -4,7 +4,8 @@
 Release Notes
 *************
 
-.. release:: Upcoming
+.. release:: 1.1.1
+    :date: 2018-10-25
 
     .. change:: fixed
 
