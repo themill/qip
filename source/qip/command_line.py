@@ -89,7 +89,7 @@ def install(
     qip.install(
         requests, output_path,
         definition_path=definition_path,
-        overwrite_packages=overwrite_installed,
+        overwrite=overwrite_installed,
         no_dependencies=no_dependencies,
         editable_mode=editable
     )

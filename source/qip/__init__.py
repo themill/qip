@@ -23,7 +23,7 @@ from ._version import __version__
 
 
 def install(
-    requests, output_path, definition_path=None, overwrite_packages=False,
+    requests, output_path, definition_path=None, overwrite=False,
     no_dependencies=False, editable_mode=False
 ):
     """Install packages to *output_path* from *requests*.
@@ -44,9 +44,9 @@ def install(
     :param output_path: data install path.
     :param definition_path: :term:`Wiz` definition install path. Default is
         None, which means that :term:`Wiz` definitions are not extracted.
-    :param overwrite_packages: indicate whether packages already installed
-        should be overwritten. If None, a user confirmation will be prompted.
-        Default is False.
+    :param overwrite: indicate whether packages already installed and
+        corresponding :term:`Wiz` definitions should be overwritten. If None, a
+        user confirmation will be prompted. Default is False.
     :param no_dependencies: indicate whether package dependencies should be
         skipped. Default is False.
     :param editable_mode: install in editable mode. Default is False.
@@ -108,7 +108,7 @@ def install(
                 package_mapping,
                 temporary_path,
                 output_path,
-                overwrite_packages=overwrite_packages
+                overwrite=overwrite
             )
             if not success:
                 continue
@@ -124,8 +124,7 @@ def install(
                     )
 
                 wiz.export_definition(
-                    definition_path, definition_data,
-                    overwrite=overwrite_packages
+                    definition_path, definition_data, overwrite=True
                 )
 
             # Fill up queue with requirements extracted from package
@@ -147,7 +146,7 @@ def install(
 
 
 def copy_to_destination(
-    package_mapping, source_path, destination_path, overwrite_packages=False
+    package_mapping, source_path, destination_path, overwrite=False
 ):
     """Copy package from *source_path* to *destination_path*.
 
@@ -156,9 +155,9 @@ def copy_to_destination(
     :param package_mapping: mapping of the python package built.
     :param source_path: path where the package was built.
     :param destination_path: path to install to.
-    :param overwrite_packages: indicate whether packages already installed
-        should be overwritten. If None, a user confirmation will be prompted.
-        Default is False.
+    :param overwrite: indicate whether packages already installed should be
+        overwritten. If None, a user confirmation will be prompted. Default is
+        False.
 
     """
     logger = mlog.Logger(__name__ + ".copy_to_destination")
@@ -167,12 +166,10 @@ def copy_to_destination(
     target = os.path.join(destination_path, package_mapping["target"])
 
     if os.path.isdir(target):
-        if overwrite_packages is None:
-            overwrite_packages = click.confirm(
-                "Overwrite '{}'?".format(identifier)
-            )
+        if overwrite is None:
+            overwrite = click.confirm("Overwrite '{}'?".format(identifier))
 
-        if overwrite_packages:
+        if overwrite:
             logger.warning(
                 "Overwrite '{}' which is already installed.".format(identifier)
             )

@@ -92,9 +92,9 @@ def mocked_wiz_resolve_context(mocker):
     return mocker.patch.object(wiz, "resolve_context")
 
 
-@pytest.mark.parametrize("options, overwrite_packages, editable_mode", [
+@pytest.mark.parametrize("options, overwrite, editable_mode", [
     ({}, False, False),
-    ({"overwrite_packages": True}, True, False),
+    ({"overwrite": True}, True, False),
     ({"editable_mode": True}, False, True),
 ], ids=[
     "no-options",
@@ -106,7 +106,7 @@ def test_install(
     mocked_fetch_environ, mocked_package_install, mocked_copy_to_destination,
     mocked_definition_retrieve, mocked_definition_create,
     mocked_wiz_export_definition, mocked_filesystem_remove_directory_content,
-    mocked_shutil_rmtree, options, overwrite_packages, editable_mode
+    mocked_shutil_rmtree, options, overwrite, editable_mode
 ):
     """Install packages."""
     packages = [
@@ -193,15 +193,15 @@ def test_install(
     assert mocked_copy_to_destination.call_count == 3
     mocked_copy_to_destination.assert_any_call(
         packages[0], "/tmp2", "/path/to/install",
-        overwrite_packages=overwrite_packages
+        overwrite=overwrite
     )
     mocked_copy_to_destination.assert_any_call(
         packages[1], "/tmp2", "/path/to/install",
-        overwrite_packages=overwrite_packages
+        overwrite=overwrite
     )
     mocked_copy_to_destination.assert_any_call(
         packages[2], "/tmp2", "/path/to/install",
-        overwrite_packages=overwrite_packages
+        overwrite=overwrite
     )
 
     mocked_definition_retrieve.assert_not_called()
@@ -216,13 +216,13 @@ def test_install(
     mocked_shutil_rmtree.assert_any_call("/tmp2")
 
 
-@pytest.mark.parametrize("options, overwrite_packages, editable_mode", [
+@pytest.mark.parametrize("options, overwrite, editable_mode", [
     ({}, False, False),
-    ({"overwrite_packages": True}, True, False),
+    ({"overwrite": True}, True, False),
     ({"editable_mode": True}, False, True),
 ], ids=[
     "no-options",
-    "with-overwrite-packages",
+    "with-overwrite",
     "with-editable-mode",
 ])
 def test_install_with_definition_path(
@@ -230,7 +230,7 @@ def test_install_with_definition_path(
     mocked_fetch_environ, mocked_package_install, mocked_copy_to_destination,
     mocked_definition_retrieve, mocked_definition_create,
     mocked_wiz_export_definition, mocked_filesystem_remove_directory_content,
-    mocked_shutil_rmtree, options, overwrite_packages, editable_mode
+    mocked_shutil_rmtree, options, overwrite, editable_mode
 ):
     """Install packages with Wiz definitions."""
     packages = [
@@ -305,15 +305,15 @@ def test_install_with_definition_path(
     assert mocked_copy_to_destination.call_count == 3
     mocked_copy_to_destination.assert_any_call(
         packages[0], "/tmp2", "/path/to/install",
-        overwrite_packages=overwrite_packages
+        overwrite=overwrite
     )
     mocked_copy_to_destination.assert_any_call(
         packages[1], "/tmp2", "/path/to/install",
-        overwrite_packages=overwrite_packages
+        overwrite=overwrite
     )
     mocked_copy_to_destination.assert_any_call(
         packages[2], "/tmp2", "/path/to/install",
-        overwrite_packages=overwrite_packages
+        overwrite=overwrite
     )
 
     assert mocked_definition_retrieve.call_count == 3
@@ -333,13 +333,13 @@ def test_install_with_definition_path(
 
     assert mocked_wiz_export_definition.call_count == 3
     mocked_wiz_export_definition.assert_any_call(
-        "/path/to/definitions", "__DATA1__", overwrite=overwrite_packages
+        "/path/to/definitions", "__DATA1__", overwrite=True
     )
     mocked_wiz_export_definition.assert_any_call(
-        "/path/to/definitions", "__DATA2__", overwrite=overwrite_packages
+        "/path/to/definitions", "__DATA2__", overwrite=True
     )
     mocked_wiz_export_definition.assert_any_call(
-        "/path/to/definitions", "__DATA3__", overwrite=overwrite_packages
+        "/path/to/definitions", "__DATA3__", overwrite=True
     )
 
     assert mocked_filesystem_remove_directory_content.call_count == 3
@@ -350,13 +350,13 @@ def test_install_with_definition_path(
     mocked_shutil_rmtree.assert_any_call("/tmp2")
 
 
-@pytest.mark.parametrize("options, overwrite_packages, editable_mode", [
+@pytest.mark.parametrize("options, overwrite, editable_mode", [
     ({}, False, False),
-    ({"overwrite_packages": True}, True, False),
+    ({"overwrite": True}, True, False),
     ({"editable_mode": True}, False, True),
 ], ids=[
     "no-options",
-    "with-overwrite-packages",
+    "with-overwrite",
     "with-editable-mode",
 ])
 def test_install_without_dependencies(
@@ -364,7 +364,7 @@ def test_install_without_dependencies(
     mocked_fetch_environ, mocked_package_install, mocked_copy_to_destination,
     mocked_definition_retrieve, mocked_definition_create,
     mocked_wiz_export_definition, mocked_filesystem_remove_directory_content,
-    mocked_shutil_rmtree, options, overwrite_packages, editable_mode
+    mocked_shutil_rmtree, options, overwrite, editable_mode
 ):
     """Install packages with dependencies."""
     packages = [
@@ -427,11 +427,11 @@ def test_install_without_dependencies(
     assert mocked_copy_to_destination.call_count == 2
     mocked_copy_to_destination.assert_any_call(
         packages[0], "/tmp2", "/path/to/install",
-        overwrite_packages=overwrite_packages
+        overwrite=overwrite
     )
     mocked_copy_to_destination.assert_any_call(
         packages[1], "/tmp2", "/path/to/install",
-        overwrite_packages=overwrite_packages
+        overwrite=overwrite
     )
 
     mocked_definition_retrieve.assert_not_called()
@@ -446,9 +446,9 @@ def test_install_without_dependencies(
     mocked_shutil_rmtree.assert_any_call("/tmp2")
 
 
-@pytest.mark.parametrize("options, overwrite_packages, editable_mode", [
+@pytest.mark.parametrize("options, overwrite, editable_mode", [
     ({}, False, False),
-    ({"overwrite_packages": True}, True, False),
+    ({"overwrite": True}, True, False),
     ({"editable_mode": True}, False, True),
 ], ids=[
     "no-options",
@@ -460,7 +460,7 @@ def test_install_with_package_skipped(
     mocked_fetch_environ, mocked_package_install, mocked_copy_to_destination,
     mocked_definition_retrieve, mocked_definition_create,
     mocked_wiz_export_definition, mocked_filesystem_remove_directory_content,
-    mocked_shutil_rmtree, options, overwrite_packages, editable_mode
+    mocked_shutil_rmtree, options, overwrite, editable_mode
 ):
     """Install packages with one package copy skipped."""
     packages = [
@@ -508,7 +508,7 @@ def test_install_with_package_skipped(
     assert mocked_copy_to_destination.call_count == 1
     mocked_copy_to_destination.assert_any_call(
         packages[0], "/tmp2", "/path/to/install",
-        overwrite_packages=overwrite_packages
+        overwrite=overwrite
     )
 
     mocked_definition_retrieve.assert_not_called()
@@ -562,7 +562,7 @@ def test_install_with_package_installation_error(
     )
 
     mocked_copy_to_destination.assert_called_once_with(
-        package, "/tmp2", "/path/to/install", overwrite_packages=False
+        package, "/tmp2", "/path/to/install", overwrite=False
     )
 
     mocked_definition_retrieve.assert_not_called()
@@ -696,7 +696,7 @@ def test_copy_to_destination_overwrite_existing(
 
     result = qip.copy_to_destination(
         mapping, "/path/to/installed/package", temporary_directory,
-        overwrite_packages=True
+        overwrite=True
     )
     assert result is True
 
@@ -737,7 +737,7 @@ def test_copy_to_destination_confirm_overwrite(
 
     result = qip.copy_to_destination(
         mapping, "/path/to/installed/package", temporary_directory,
-        overwrite_packages=None
+        overwrite=None
     )
     assert result is False
 
