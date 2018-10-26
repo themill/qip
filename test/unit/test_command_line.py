@@ -78,5 +78,5 @@ def test_install(mocked_install, packages):
         definition_path=None,
         editable_mode=False,
         no_dependencies=False,
-        overwrite_packages=None
+        overwrite=None
     )

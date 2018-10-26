@@ -4,6 +4,13 @@
 Release Notes
 *************
 
+.. release:: Upcoming
+
+    .. change:: fixed
+
+        Fixed :func:`qip.install` to always overwrite the :term:`Wiz` package
+        definition when the package is being overwritten for consistency.
+
 .. release:: 1.1.0
     :date: 2018-10-24
 
