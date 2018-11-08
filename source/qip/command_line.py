@@ -87,11 +87,15 @@ def install(
         qip install "git@gitlab:rnd/foo.git@dev" --output-path .
 
     """
+    logger = mlog.Logger(__name__ + ".install")
+
     if output_path is None:
         output_path = os.path.join(tempfile.gettempdir(), "qip", "packages")
+        logger.info("Output packages to {!r}".format(output_path))
 
     if definition_path is None:
         definition_path = os.path.join(tempfile.gettempdir(), "qip", "definitions")
+        logger.info("Output definitions to {!r}".format(definition_path))
 
     qip.install(
         requests, output_path,
