@@ -6,6 +6,12 @@ Release Notes
 
 .. release:: Upcoming
 
+    .. change:: changed
+
+        Changed :option:`qip install --output-path` and
+        :option:`qip install --definition-path` to default to temporary
+        directories when no input has been specified.
+
     .. change:: fixed
 
         Used the 'package_name' instead of 'key' to match the package when
