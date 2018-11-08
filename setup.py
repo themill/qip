@@ -27,9 +27,9 @@ INSTALL_REQUIRES = [
     "pipdeptree >= 0.13.0, < 1",
     "packaging >= 17.1, < 18",
     "pip >= 10, < 19",
-    "wiz >= 1.0.0, < 2",
+    "wiz >= 1.2.1, < 2",
     "mlog >= 0.0.6, < 1",
-    "click >= 6.7"
+    "click >= 7, < 8",
 ]
 DOC_REQUIRES = [
     "sphinx >= 1.2.2, < 2",
