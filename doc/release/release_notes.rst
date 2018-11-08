@@ -4,6 +4,16 @@
 Release Notes
 *************
 
+.. release:: Upcoming
+
+    .. change:: changed
+
+        Changed prompt if a package should be overwritten to include a
+        'yes to all' / 'no to all' option. Now the user can decide on overwrites
+        the first time an existing package is encountered in addition to using
+        the :option:`qip install --overwrite-installed` and
+        :option:`qip install --skip-installed` options.
+
 .. release:: 1.1.1
     :date: 2018-10-25
 
