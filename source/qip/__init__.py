@@ -22,6 +22,25 @@ import qip.symbol
 from ._version import __version__
 
 
+def yes_or_no_all(question):
+    answer = raw_input(question + "(y[es]/n[o]/a[ll]): ").lower().strip()
+    print("")
+    valid_inputs = "y n yes no yesa noa ya yall na nall yesall noall".split()
+    while not(answer in valid_inputs):
+        print("Invalid response")
+        answer = raw_input(question + "(y[es]/n[o]/a[ll]): ").lower().strip()
+        print("")
+
+    always = False
+    if 'a' in answer:
+        always = True
+
+    if answer[0] == "y":
+        return True, always
+    else:
+        return False, always
+
+
 def install(
     requests, output_path, definition_path=None, overwrite=False,
     no_dependencies=False, editable_mode=False
@@ -103,6 +122,12 @@ def install(
             # Reset editable mode to False for requirements.
             editable_mode = False
 
+            always = False
+            if overwrite is None:
+                identifier = package_mapping["identifier"]
+                overwrite, always = yes_or_no_all("Overwrite '{}'?"
+                                                  .format(identifier))
+
             # Install package to destination.
             success = copy_to_destination(
                 package_mapping,
@@ -110,6 +135,12 @@ def install(
                 output_path,
                 overwrite=overwrite
             )
+
+            if not always:
+                # Need to reset the overwrite to None if user didn't
+                # use the always flag
+                overwrite = None
+
             if not success:
                 continue
 
@@ -166,9 +197,6 @@ def copy_to_destination(
     target = os.path.join(destination_path, package_mapping["target"])
 
     if os.path.isdir(target):
-        if overwrite is None:
-            overwrite = click.confirm("Overwrite '{}'?".format(identifier))
-
         if overwrite:
             logger.warning(
                 "Overwrite '{}' which is already installed.".format(identifier)
