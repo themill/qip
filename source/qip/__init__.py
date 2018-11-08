@@ -23,13 +23,12 @@ from ._version import __version__
 
 
 def yes_or_no_all(question):
-    answer = raw_input(question + "(y[es]/n[o]/a[ll]): ").lower().strip()
-    print("")
-    valid_inputs = "y n yes no yesa noa ya yall na nall yesall noall".split()
-    while not(answer in valid_inputs):
-        print("Invalid response")
-        answer = raw_input(question + "(y[es]/n[o]/a[ll]): ").lower().strip()
-        print("")
+    answer = click.prompt(
+        question + " (y[es], N[o], a[ll])", type=click.Choice([
+            "y", "n", "yes", "no",
+            "ya", "na", "yesa", "noa", "yall", "nall", "yesall", "noall"
+        ]), default="n", show_default=False
+    )
 
     always = False
     if 'a' in answer:
@@ -124,9 +123,9 @@ def install(
 
             always = False
             if overwrite is None:
-                identifier = package_mapping["identifier"]
-                overwrite, always = yes_or_no_all("Overwrite '{}'?"
-                                                  .format(identifier))
+                overwrite, always = yes_or_no_all(
+                    "Overwrite '{}'?".format(package_mapping["identifier"])
+                )
 
             # Install package to destination.
             success = copy_to_destination(
