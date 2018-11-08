@@ -206,7 +206,7 @@ def extract_dependency_mapping(name, environ_mapping):
 
     mapping = None
     for _mapping in environment_packages:
-        _name = _mapping.get("package", {}).get("key")
+        _name = _mapping.get("package", {}).get("package_name")
         if _name == name:
             mapping = _mapping
             break
