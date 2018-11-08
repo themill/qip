@@ -4,6 +4,14 @@
 Release Notes
 *************
 
+.. release:: Upcoming
+
+    .. change:: fixed
+
+        Used the 'package_name' instead of 'key' to match the package when
+        retrieving the package information from 'pipdeptree', to make sure
+        any packages with camelcase or underscores are taken into account.
+
 .. release:: 1.1.1
     :date: 2018-10-25
 
