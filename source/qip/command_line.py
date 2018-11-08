@@ -91,11 +91,9 @@ def install(
 
     if output_path is None:
         output_path = os.path.join(tempfile.gettempdir(), "qip", "packages")
-        logger.info("Output packages to {!r}".format(output_path))
 
     if definition_path is None:
         definition_path = os.path.join(tempfile.gettempdir(), "qip", "definitions")
-        logger.info("Output definitions to {!r}".format(definition_path))
 
     qip.install(
         requests, output_path,
@@ -104,3 +102,6 @@ def install(
         no_dependencies=no_dependencies,
         editable_mode=editable
     )
+
+    logger.info("Package output directory: {!r}".format(output_path))
+    logger.info("Definition output directory: {!r}".format(definition_path))
