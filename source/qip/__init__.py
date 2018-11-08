@@ -121,9 +121,9 @@ def install(
             # Reset editable mode to False for requirements.
             editable_mode = False
 
-            always = False
+            _always = False
             if overwrite is None:
-                overwrite, always = yes_or_no_all(
+                overwrite, _always = yes_or_no_all(
                     "Overwrite '{}'?".format(package_mapping["identifier"])
                 )
 
@@ -135,7 +135,7 @@ def install(
                 overwrite=overwrite
             )
 
-            if not always:
+            if not _always:
                 # Need to reset the overwrite to None if user didn't
                 # use the always flag
                 overwrite = None
