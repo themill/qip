@@ -29,7 +29,7 @@ INSTALL_REQUIRES = [
     "pip >= 10, < 19",
     "wiz >= 1.0.0, < 2",
     "mlog >= 0.0.6, < 1",
-    "click >= 6.7"
+    "click >= 6.7, < 7"
 ]
 DOC_REQUIRES = [
     "sphinx >= 1.2.2, < 2",
