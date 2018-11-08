@@ -1,7 +1,9 @@
 # :coding: utf-8
 
+import os
 import click
 import mlog
+import tempfile
 
 import qip
 from qip import __version__
@@ -25,8 +27,7 @@ def main(verbosity):
 @click.option(
     "-o", "--output-path",
     help="Destination for the package installation data.",
-    type=click.Path(),
-    required=True
+    type=click.Path()
 )
 @click.option(
     "-d", "--definition-path",
@@ -86,6 +87,12 @@ def install(
         qip install "git@gitlab:rnd/foo.git@dev" --output-path .
 
     """
+    if output_path is None:
+        output_path = os.path.join(tempfile.gettempdir(), "qip", "packages")
+
+    if definition_path is None:
+        definition_path = os.path.join(tempfile.gettempdir(), "qip", "definitions")
+
     qip.install(
         requests, output_path,
         definition_path=definition_path,
