@@ -121,24 +121,13 @@ def install(
             # Reset editable mode to False for requirements.
             editable_mode = False
 
-            _always = False
-            if overwrite is None:
-                overwrite, _always = yes_or_no_all(
-                    "Overwrite '{}'?".format(package_mapping["identifier"])
-                )
-
             # Install package to destination.
-            success = copy_to_destination(
+            success, overwrite = copy_to_destination(
                 package_mapping,
                 temporary_path,
                 output_path,
                 overwrite=overwrite
             )
-
-            if not _always:
-                # Need to reset the overwrite to None if user didn't
-                # use the always flag
-                overwrite = None
 
             if not success:
                 continue
@@ -196,6 +185,12 @@ def copy_to_destination(
     target = os.path.join(destination_path, package_mapping["target"])
 
     if os.path.isdir(target):
+        _always = None
+        if overwrite is None:
+            overwrite, _always = yes_or_no_all(
+                "Overwrite '{}'?".format(package_mapping["identifier"])
+            )
+
         if overwrite:
             logger.warning(
                 "Overwrite '{}' which is already installed.".format(identifier)
@@ -206,14 +201,21 @@ def copy_to_destination(
             logger.warning(
                 "Skip '{}' which is already installed.".format(identifier)
             )
-            return False
+            if _always is False:
+                return False, None
+            return False, overwrite
+
+        if _always is False:
+            # Need to reset the overwrite to None if user didn't
+            # use the always flag
+            overwrite = None
 
     qip.filesystem.ensure_directory(os.path.dirname(target))
     shutil.copytree(source_path, target)
     logger.debug("Source copied to '{}'".format(target))
 
     logger.info("Installed '{}'.".format(identifier))
-    return True
+    return True, overwrite
 
 
 def fetch_environ(mapping=None):
