@@ -41,7 +41,7 @@ def execute(command, environ_mapping, quiet=False):
             for line in lines_iterator:
                 output += line
                 _line = line.rstrip()
-                print(_line.decode("latin"))
+                logger.debug(_line.decode("latin"))
 
         stderr = process.stderr.readlines()
     else:
