@@ -183,8 +183,8 @@ def copy_to_destination(
     identifier = package_mapping["identifier"]
     target = os.path.join(destination_path, package_mapping["target"])
 
+    _always = None
     if os.path.isdir(target):
-        _always = None
         if overwrite is None:
             overwrite, _always = yes_or_no_all(
                 "Overwrite '{}'?".format(package_mapping["identifier"])
