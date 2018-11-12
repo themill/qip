@@ -36,8 +36,7 @@ def yes_or_no_all(question):
 
     if answer[0] == "y":
         return True, always
-    else:
-        return False, always
+    return False, always
 
 
 def install(
