@@ -200,20 +200,19 @@ def copy_to_destination(
             logger.warning(
                 "Skip '{}' which is already installed.".format(identifier)
             )
+            # Reset the overwrite to None if user didn't use the always flag
             if _always is False:
                 return False, None
             return False, overwrite
-
-        if _always is False:
-            # Need to reset the overwrite to None if user didn't
-            # use the always flag
-            overwrite = None
 
     qip.filesystem.ensure_directory(os.path.dirname(target))
     shutil.copytree(source_path, target)
     logger.debug("Source copied to '{}'".format(target))
 
     logger.info("Installed '{}'.".format(identifier))
+    # Reset the overwrite to None if user didn't use the always flag
+    if _always is False:
+        return True, None
     return True, overwrite
 
 
