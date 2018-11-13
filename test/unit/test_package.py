@@ -207,25 +207,25 @@ def test_fetch_mapping_from_environ(
         "foo",
         [
             {
-                "package": {"key": "foo"}
+                "package": {"package_name": "foo"}
             }
         ],
         {
-            "package": {"key": "foo"}
+            "package": {"package_name": "foo"}
         }
     ),
     (
         "foo",
         [
             {
-                "package": {"key": "foo"}
+                "package": {"package_name": "foo"}
             },
             {
-                "package": {"key": "bar"}
+                "package": {"package_name": "bar"}
             }
         ],
         {
-            "package": {"key": "foo"}
+            "package": {"package_name": "foo"}
         }
     )
 ], ids=[
