@@ -203,7 +203,7 @@ def copy_to_destination(
             )
             # Reset the overwrite to None if user didn't use the always flag
             if _always is False:
-                return False, None
+                overwrite = None
             return False, overwrite
 
     qip.filesystem.ensure_directory(os.path.dirname(target))
@@ -213,7 +213,7 @@ def copy_to_destination(
     logger.info("Installed '{}'.".format(identifier))
     # Reset the overwrite to None if user didn't use the always flag
     if _always is False:
-        return True, None
+        overwrite = None
     return True, overwrite
 
 
