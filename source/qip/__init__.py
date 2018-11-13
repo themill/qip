@@ -23,6 +23,7 @@ from ._version import __version__
 
 
 def yes_or_no_all(question):
+    """Confirm prompt for yes/no/all."""
     answer = click.prompt(
         question + " (y[es], N[o], a[ll])", type=click.Choice([
             "y", "n", "yes", "no",
