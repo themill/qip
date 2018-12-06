@@ -104,6 +104,17 @@ def retrieve(mapping, temporary_path, output_path, editable_mode):
         definition = _update_command(definition, mapping)
         definition = _update_requirements(definition, mapping)
 
+        # Append INSTALL_LOCATION to potentially existing PYTHONPATH
+        pythonpath = [
+            path for path
+            in definition.get("environ", {}).get("PYTHONPATH", "").split(os.pathsep)
+            if path not in ["", "${PYTHONPATH}", "$PYTHONPATH"]
+        ]
+        pythonpath.append(qip.symbol.INSTALL_LOCATION)
+        definition = definition.update("environ", {
+            "PYTHONPATH": "{}:${{PYTHONPATH}}".format(os.pathsep.join(pythonpath))
+        })
+
         logger.info(
             "Wiz definition extracted from '{}'.".format(mapping["identifier"])
         )
