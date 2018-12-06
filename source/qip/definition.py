@@ -48,6 +48,9 @@ def create(mapping, path):
             _mapping["request"] for _mapping in mapping["requirements"]
         ]
 
+    if "command" in mapping.keys():
+        definition_data["command"] = mapping["command"]
+
     # Compute relative installation path.
     installation_path = os.path.join(
         qip.symbol.INSTALL_LOCATION, mapping["target"]

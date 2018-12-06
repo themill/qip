@@ -268,12 +268,12 @@ def extract_metadata_mapping(name, environ_mapping):
         result
     ).group(1)
 
-    mapping["commands"] = {}
+    mapping["command"] = {}
     for command in [
         element.split("=")[0].strip() for element in entry_points.split("\n")
         if element
     ]:
-        mapping["commands"][command] = "python -m {}".format(command)
+        mapping["command"][command] = "python -m {}".format(command)
 
     return mapping
 
