@@ -9,11 +9,13 @@ import wiz
 import qip.symbol
 
 
-def create(mapping, path):
+def create(mapping, output_path, editable_mode):
     """Create :term:`Wiz` definition for package *mapping*.
 
     :param mapping: mapping of the python package built.
-    :param path: installation path of all python packages.
+    :param output_path: installation path of all python packages.
+    :param editable_mode: install in editable mode. Default is False.
+
     :returns: definition data.
 
     """
@@ -22,7 +24,7 @@ def create(mapping, path):
     definition_data = {
         "identifier": mapping["key"],
         "version": mapping["version"],
-        "install-location": path,
+        "install-location": output_path,
         "group": "python"
     }
 
@@ -51,56 +53,44 @@ def create(mapping, path):
     if "command" in mapping.keys():
         definition_data["command"] = mapping["command"]
 
-    # Compute relative installation path.
-    installation_path = os.path.join(
-        qip.symbol.INSTALL_LOCATION, mapping["target"]
-    )
-
     # Identify if a library is installed.
     lib_path = os.path.join(
-        path, mapping["target"], qip.symbol.P27_LIB_DESTINATION
+        output_path, mapping["target"], qip.symbol.P27_LIB_DESTINATION
     )
-
     if os.path.isdir(lib_path):
         definition_data.setdefault("environ", {})
         definition_data["environ"]["PYTHONPATH"] = (
-            "{}:${{PYTHONPATH}}".format(
-                os.path.join(installation_path, qip.symbol.P27_LIB_DESTINATION)
-            )
+            "{}:${{PYTHONPATH}}".format(qip.symbol.INSTALL_LOCATION)
         )
 
-    # Identify if an executable is installed.
-    bin_path = os.path.join(path, mapping["target"], qip.symbol.BIN_DESTINATION)
-    if os.path.isdir(bin_path):
-        definition_data.setdefault("environ", {})
-        definition_data["environ"]["PATH"] = (
-            "{}:${{PATH}}".format(
-                os.path.join(installation_path, qip.symbol.BIN_DESTINATION)
-            )
-        )
+    # Update definitions install location.
+    definition = wiz.definition.Definition(definition_data)
+    definition = _update_install_location(
+        definition, output_path, mapping, editable_mode
+    )
 
     logger.info(
         "Wiz definition created for '{}'.".format(mapping["identifier"])
     )
-    return definition_data
+    return definition
 
 
-def retrieve(mapping, temporary_path, output_path):
+def retrieve(mapping, temporary_path, output_path, editable_mode):
     """Retrieve :term:`Wiz` definition from package installed.
 
     :param mapping: mapping of the python package built.
     :param temporary_path: path where the package was temporarily installed to.
     :param output_path: path where the package was installed to.
+    :param editable_mode: install in editable mode. Default is False.
+
     :returns: None if no definition was found, otherwise return the definition.
 
     """
     logger = mlog.Logger(__name__ + ".retrieve")
 
-    definition_paths = [
-        os.path.join(
-            temporary_path, "share", "wiz", mapping["name"], "wiz.json"
-        )
-    ]
+    definition_paths = [os.path.join(
+        temporary_path, "share", "wiz", mapping["name"], "wiz.json"
+    )]
 
     # Necessary as editable mode does not create the 'share' directory.
     if mapping.get("location"):
@@ -112,10 +102,10 @@ def retrieve(mapping, temporary_path, output_path):
         if not os.path.exists(definition_path):
             continue
 
-        # Update definitions install locations.
+        # Update definitions install location.
         definition = wiz.load_definition(definition_path)
         definition = _update_install_location(
-            definition, output_path, mapping["target"]
+            definition, output_path, mapping, editable_mode
         )
 
         logger.info(
@@ -124,33 +114,27 @@ def retrieve(mapping, temporary_path, output_path):
         return definition
 
 
-def _update_install_location(definition, path, target):
+def _update_install_location(definition, path, mapping, editable_mode):
     """Update a definition with new install paths.
 
     :param definition: valid :class:`~wiz.definition.Definition` instance.
-    :param path: path where the package was installed to.
-    :param target: relative path to where the package is installed.
-    :returns: a definition where all occurances of ${INSTALL_LOCATION} have been
-    replaced by ${INSTALL_LOCATION}/target and an 'install-location' key has
-    been added.
+    :param path: path to the package install root location.
+    :param mapping: mapping of the python package built.
+    :param editable_mode: install in editable mode. Default is False.
+
+    :returns: a definition where all "install-location" has been set to the
+    source when in *editable mode*, otherwise "install-root" is set to the
+    output *path* and "install-location" is set to a relative path targetting
+    the site-package install of the package.
 
     """
-    target = os.path.join("${INSTALL_LOCATION}", target)
+    if editable_mode:
+        definition = definition.set("install-location", mapping["location"])
+    else:
+        definition = definition.set("install-root", path)
+        definition = definition.set("install-location", os.path.join(
+            qip.symbol.INSTALL_ROOT, mapping["target"],
+            qip.symbol.P27_LIB_DESTINATION
+        ))
 
-    new_environ = {}
-    for key, value in definition.environ.items():
-        new_environ[key] = re.sub("\\${INSTALL_LOCATION}", target, value)
-    if len(new_environ):
-        definition = definition.set("environ", new_environ)
-
-    new_variant = []
-    for variant in definition.variants:
-        new_environ = {}
-        for key, value in variant.environ.items():
-            new_environ[key] = re.sub("\\${INSTALL_LOCATION}", target, value)
-        if len(new_environ):
-            new_variant.append(variant.update("environ", new_environ))
-    if len(new_variant):
-        definition = definition.set("variants", new_variant)
-
-    return definition.set("install-location", path)
+    return definition

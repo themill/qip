@@ -92,6 +92,7 @@ def fetch_mapping_from_environ(name, environ_mapping):
 
     :param name: package name
     :param environ_mapping: should be a mapping of environment variables
+
     :returns: mapping with information about the package gathered from the
         environment. It should be in the form of::
 

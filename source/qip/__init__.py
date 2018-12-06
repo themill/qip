@@ -100,9 +100,6 @@ def install(
             installed_packages.add(package_mapping["identifier"])
             installed_requests.add(request)
 
-            # Reset editable mode to False for requirements.
-            editable_mode = False
-
             # Install package to destination.
             success = copy_to_destination(
                 package_mapping,
@@ -116,16 +113,21 @@ def install(
             # Extract a wiz definition is requested.
             if definition_path is not None:
                 definition_data = qip.definition.retrieve(
-                    package_mapping, temporary_path, output_path
+                    package_mapping, temporary_path, output_path,
+                    editable_mode=editable_mode
                 )
                 if definition_data is None:
                     definition_data = qip.definition.create(
-                        package_mapping, output_path
+                        package_mapping, output_path,
+                        editable_mode=editable_mode
                     )
 
                 wiz.export_definition(
                     definition_path, definition_data, overwrite=True
                 )
+
+            # Reset editable mode to False for requirements.
+            editable_mode = False
 
             # Fill up queue with requirements extracted from package
             # dependencies.
