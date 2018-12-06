@@ -45,14 +45,6 @@ def create(mapping, output_path, editable_mode):
             )
         }
 
-    if "requirements" in mapping.keys():
-        definition_data["requirements"] = [
-            _mapping["request"] for _mapping in mapping["requirements"]
-        ]
-
-    if "command" in mapping.keys():
-        definition_data["command"] = mapping["command"]
-
     # Identify if a library is installed.
     lib_path = os.path.join(
         output_path, mapping["target"], qip.symbol.P27_LIB_DESTINATION
@@ -63,11 +55,13 @@ def create(mapping, output_path, editable_mode):
             "{}:${{PYTHONPATH}}".format(qip.symbol.INSTALL_LOCATION)
         )
 
-    # Update definitions install location.
+    # Update definition with install-location, commands and requirements.
     definition = wiz.definition.Definition(definition_data)
     definition = _update_install_location(
         definition, output_path, mapping, editable_mode
     )
+    definition = _update_command(definition, mapping)
+    definition = _update_requirements(definition, mapping)
 
     logger.info(
         "Wiz definition created for '{}'.".format(mapping["identifier"])
@@ -102,11 +96,13 @@ def retrieve(mapping, temporary_path, output_path, editable_mode):
         if not os.path.exists(definition_path):
             continue
 
-        # Update definitions install location.
+        # Update definition with install-location, commands and requirements.
         definition = wiz.load_definition(definition_path)
         definition = _update_install_location(
             definition, output_path, mapping, editable_mode
         )
+        definition = _update_command(definition, mapping)
+        definition = _update_requirements(definition, mapping)
 
         logger.info(
             "Wiz definition extracted from '{}'.".format(mapping["identifier"])
@@ -137,4 +133,36 @@ def _update_install_location(definition, path, mapping, editable_mode):
             qip.symbol.P27_LIB_DESTINATION
         ))
 
+    return definition
+
+
+def _update_command(definition, mapping):
+    """Update a definition with new commands.
+
+    :param definition: valid :class:`~wiz.definition.Definition` instance.
+    :param mapping: mapping of the python package built.
+
+    :returns: a definition where the command mapping has been updated with
+    commands retrieved from the package.
+
+    """
+    if "command" in mapping.keys():
+        definition = definition.update("command", mapping["command"])
+    return definition
+
+
+def _update_requirements(definition, mapping):
+    """Update a definition with new requirements.
+
+    :param definition: valid :class:`~wiz.definition.Definition` instance.
+    :param mapping: mapping of the python package built.
+
+    :returns: a definition where the requirements list has been extended with
+    requirements retrieved from the package.
+
+    """
+    if "requirements" in mapping.keys():
+        definition = definition.extend("requirements", [
+            _mapping["request"] for _mapping in mapping["requirements"]
+        ])
     return definition
