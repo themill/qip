@@ -6,6 +6,9 @@ import os
 #: Variable symbol for :term:`Wiz` definition environment.
 INSTALL_LOCATION = "${INSTALL_LOCATION}"
 
+#: Variable symbol for :term:`Wiz` definition environment.
+INSTALL_ROOT = "${INSTALL_ROOT}"
+
 #: :term:`Wiz` request to resolve :term:`Python` 2.7 environment.
 P27_REQUEST = "python==2.7.*"
 
