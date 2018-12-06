@@ -261,6 +261,20 @@ def extract_metadata_mapping(name, environ_mapping):
         ):
             mapping["system"] = qip.system.query()
 
+    # Convention: command name can only have alpha-numeric characters, hyphens
+    # and points.
+    entry_points = re.search(
+        "Entry-points:\n *\[console_scripts\]\n(( *[\w.-]+ *= *[\w:.-]+ *\n)+)",
+        result
+    ).group(1)
+
+    mapping["commands"] = {}
+    for command in [
+        element.split("=")[0].strip() for element in entry_points.split("\n")
+        if element
+    ]:
+        mapping["commands"][command] = "python -m {}".format(command)
+
     return mapping
 
 
