@@ -266,14 +266,16 @@ def extract_metadata_mapping(name, environ_mapping):
     entry_points = re.search(
         "Entry-points:\n *\[console_scripts\]\n(( *[\w.-]+ *= *[\w:.-]+ *\n)+)",
         result
-    ).group(1)
+    )
+    if entry_points is not None:
+        entry_points = entry_points.group(1)
 
-    mapping["command"] = {}
-    for command in [
-        element.split("=")[0].strip() for element in entry_points.split("\n")
-        if element
-    ]:
-        mapping["command"][command] = "python -m {}".format(command)
+        mapping["command"] = {}
+        for command in [
+            element.split("=")[0].strip()
+            for element in entry_points.split("\n") if element
+        ]:
+            mapping["command"][command] = "python -m {}".format(command)
 
     return mapping
 
