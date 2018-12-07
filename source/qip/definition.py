@@ -23,7 +23,7 @@ def create(mapping, path):
         "identifier": mapping["key"],
         "version": mapping["version"],
         "install-location": path,
-        "group": "python"
+        "namespace": "python"
     }
 
     if "description" in mapping.keys():
