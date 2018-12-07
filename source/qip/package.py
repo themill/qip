@@ -208,7 +208,7 @@ def extract_dependency_mapping(name, environ_mapping):
     mapping = None
     for _mapping in environment_packages:
         _name = _mapping.get("package", {}).get("key")
-        if _name == name:
+        if _name == name.lower():
             mapping = _mapping
             break
 
