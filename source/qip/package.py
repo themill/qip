@@ -265,17 +265,17 @@ def extract_metadata_mapping(name, environ_mapping):
     # Convention: command name can only have alpha-numeric characters, hyphens
     # and points.
     entry_points = re.search(
-        "Entry-points:\n *\[console_scripts\]\n(( *[\w.-]+ *= *[\w:.-]+ *\n)+)",
+        r"Entry-points:\n\s*\[console_scripts\]\n((\s*.+\s*=\s*.+\s*\n)+)",
         result
     )
     if entry_points is not None:
         entry_points = entry_points.group(1)
 
         mapping["command"] = {}
-        for command in [
+        for command in (
             element.split("=")[0].strip()
             for element in entry_points.split("\n") if element
-        ]:
+        ):
             mapping["command"][command] = "python -m {}".format(command)
 
     return mapping
