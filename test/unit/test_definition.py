@@ -201,16 +201,13 @@ def test_retrieve_non_existing(mocked_wiz_load_definition, logger):
     (
         {
             "identifier": "foo",
-            "version": "0.1.0",
+            "version": "0.1.0"
         },
         {
             "identifier": "foo",
             "version": "0.1.0",
             "install-root": "/path/to/installed/package",
-            "install-location": "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages",
-            "environ": {
-                "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
-            }
+            "install-location": "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
         }
     ),
     (
@@ -218,7 +215,7 @@ def test_retrieve_non_existing(mocked_wiz_load_definition, logger):
             "identifier": "foo",
             "version": "0.1.0",
             "environ": {
-                "PYTHONPATH": "/some/path:${PYTHONPATH}",
+                "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}",
                 "TEST": "True"
             }
         },
@@ -228,7 +225,7 @@ def test_retrieve_non_existing(mocked_wiz_load_definition, logger):
             "install-root": "/path/to/installed/package",
             "install-location": "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages",
             "environ": {
-                "PYTHONPATH": "/some/path:${INSTALL_LOCATION}:${PYTHONPATH}",
+                "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}",
                 "TEST": "True"
             }
         }
@@ -240,6 +237,9 @@ def test_retrieve_non_existing(mocked_wiz_load_definition, logger):
             "system": {
                 "os": "el >= 7, < 8",
                 "arch": "x86_64"
+            },
+            "environ": {
+                "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
             }
         },
         {
@@ -260,6 +260,9 @@ def test_retrieve_non_existing(mocked_wiz_load_definition, logger):
         {
             "identifier": "foo",
             "version": "0.1.0",
+            "environ": {
+                "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+            },
             "variants": [
                 {
                     "identifier": "variant1",
@@ -276,40 +279,6 @@ def test_retrieve_non_existing(mocked_wiz_load_definition, logger):
             "install-location": "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages",
             "environ": {
                 "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
-            },
-            "variants": [
-                {
-                    "identifier": "variant1",
-                    "environ": {
-                        "PATH": "${INSTALL_LOCATION}/bin:${PATH}"
-                    }
-                }
-            ]
-        }
-    ),
-    (
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "environ": {
-                "PYTHONPATH": "/some/path:${PYTHONPATH}"
-            },
-            "variants": [
-                {
-                    "identifier": "variant1",
-                    "environ": {
-                        "PATH": "${INSTALL_LOCATION}/bin:${PATH}"
-                    }
-                }
-            ]
-        },
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "install-root": "/path/to/installed/package",
-            "install-location": "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages",
-            "environ": {
-                "PYTHONPATH": "/some/path:${INSTALL_LOCATION}:${PYTHONPATH}"
             },
             "variants": [
                 {
@@ -322,11 +291,10 @@ def test_retrieve_non_existing(mocked_wiz_load_definition, logger):
         }
     )
 ], ids=[
-    "no environ",
-    "only environ",
-    "with system",
-    "with variants",
-    "with environ and variants"
+    "no environ (developer error)",
+    "environ",
+    "system",
+    "variants"
 ])
 def test_retrieve(
     mocked_wiz_load_definition, temporary_directory, definition, expected,

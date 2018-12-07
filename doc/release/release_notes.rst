@@ -20,6 +20,20 @@ Release Notes
         In **editable** mode, that path is pointing at the source to ease
         development without having to reinstall the package.
 
+        When retrieving a definition, it is being assumed that the developer 
+        has set a PYTHONPATH referencing ${INSTALL_LOCATION} in either 
+        'environ' or in a 'variant' of the definition. It is not being added 
+        automatically, to ensure that the developer remains full control over
+        the path order.
+
+        Example::
+
+            {
+                "environ": {
+                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+                }
+            }
+
     .. change:: changed
         :tags: definition
 
@@ -40,14 +54,6 @@ Release Notes
         in the retrieved definitions are extended to ensure that the developer
         can add requirements that are not in the *setup.py* (ie. "maya", "nuke",
         etc)
-
-    .. change:: changed
-        :tags: definition
-
-        Append ${INSTALL_LOCATION} to the PYTHONPATH in a retrieved definitions
-        *environ* to ensure that the installed python package can be accessed.
-
-        If no PYTHONPATH is found in the *environ*, it will be set.
 
     .. change:: fixed
 
