@@ -332,7 +332,7 @@ def test_retrieve(
     mocked_wiz_load_definition, temporary_directory, definition, expected,
     logger
 ):
-    """Retrieve existing definition from package mapping."""
+    """Retrieve existing definition from package mapping and update."""
     _definition = wiz.definition.Definition(definition)
     _expected = wiz.definition.Definition(expected)
 
@@ -361,3 +361,161 @@ def test_retrieve(
     logger.info.assert_called_once_with(
         "Wiz definition extracted from 'Foo-0.1.0'."
     )
+
+
+@pytest.mark.parametrize("definition, editable, expected", [
+    (
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+        },
+        False,
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+            "install-root": "/path/to/installed/package",
+            "install-location": "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
+        }
+    ), (
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+        },
+        True,
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+            "install-location": "/source"
+        }
+    )
+], ids=[
+    "not editable",
+    "editable"
+])
+def test_update_install_location(definition, editable, expected):
+    """Update install location and root."""
+    _definition = wiz.definition.Definition(definition)
+    _expected = wiz.definition.Definition(expected)
+
+    mapping = {
+        "identifier": "Foo-0.1.0",
+        "name": "Foo",
+        "target": "Foo/Foo-0.1.0",
+        "location": "/source",
+    }
+
+    result = qip.definition._update_install_location(
+        _definition, "/path/to/installed/package", mapping, editable
+    )
+
+    assert result == _expected
+
+
+@pytest.mark.parametrize("definition, mapping, expected", [
+    (
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+        },
+        {
+            "command": {"foo": "foo"}
+        },
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+            "command": {"foo": "foo"}
+        }
+    ), (
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+            "command": {"bar": "bar"}
+        },
+        {
+            "command": {"foo": "foo"}
+        },
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+            "command": {"bar": "bar", "foo": "foo"}
+        }
+    ),
+(
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+        },
+        {},
+        {
+            "identifier": "foo",
+            "version": "0.1.0"
+        }
+    )
+], ids=[
+    "without existing commands",
+    "with existing commands",
+    "no mapping"
+])
+def test_update_command(definition, mapping, expected):
+    """Update command."""
+    _definition = wiz.definition.Definition(definition)
+    _expected = wiz.definition.Definition(expected)
+
+    result = qip.definition._update_command(_definition, mapping)
+
+    assert result == _expected
+
+
+@pytest.mark.parametrize("definition, mapping, expected", [
+    (
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+        },
+        {
+            "requirements": [{"request": "mlog"}]
+        },
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+            "requirements": ["mlog"]
+        }
+    ), (
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+            "requirements": ["maya"]
+        },
+        {
+            "requirements": [{"request": "mlog"}]
+        },
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+            "requirements": ["maya", "mlog"]
+        }
+    ),
+(
+        {
+            "identifier": "foo",
+            "version": "0.1.0",
+        },
+        {},
+        {
+            "identifier": "foo",
+            "version": "0.1.0"
+        }
+    )
+], ids=[
+    "without existing requirements",
+    "with existing requirements",
+    "no mapping"
+])
+def test_update_requirements(definition, mapping, expected):
+    """Update requirements."""
+    _definition = wiz.definition.Definition(definition)
+    _expected = wiz.definition.Definition(expected)
+
+    result = qip.definition._update_requirements(_definition, mapping)
+
+    assert result == _expected
