@@ -3,6 +3,7 @@
 import subprocess
 
 import pytest
+from mock import call
 
 import qip.command
 
@@ -20,7 +21,7 @@ def mocked_process(mocker):
     return mocker.Mock()
 
 
-def test_execute_verbose(mocked_subprocess, mocked_process, capsys):
+def test_execute_verbose(mocked_subprocess, mocked_process, logger):
     """Execute a command verbose."""
     mocked_subprocess.return_value = mocked_process
     mocked_process.poll.side_effect = [None, None, None, False]
@@ -32,8 +33,9 @@ def test_execute_verbose(mocked_subprocess, mocked_process, capsys):
     command = "pip install foo"
     output = qip.command.execute(command, {})
 
-    stdout_message, _ = capsys.readouterr()
-    assert stdout_message == 'line one\nline two\nline three\n'
+    logger.debug.assert_has_calls([
+        call('line one'), call('line two'), call('line three')
+    ], any_order=True)
     assert output == 'line one\nline two\nline three\n'
 
 
