@@ -6,6 +6,49 @@ Release Notes
 
 .. release:: Upcoming
 
+    .. change:: changed
+        :tags: definition
+
+        Added *install-root* and *install-location* when creating or retrieving
+        a definition.
+
+        The *install-root* is being set to the :option:`qip install
+        --output-path`. In **editable** mode, no *install-root* is added.
+
+        The *install-location* is being set to the actual python package
+        location. When installing, that path is relative to the *install-root*.
+        In **editable** mode, that path is pointing at the source to ease
+        development without having to reinstall the package.
+
+    .. change:: changed
+        :tags: definition
+
+        Retrieved entry points from package to use as *command* aliasses in the
+        exported definitions.
+
+        Changed *commands* from executables to entry point python calls when
+        creating a definition.
+
+        Update *commands* in retrieved definitions, to ensure that developer
+        defined commands (any custom arguments etc) are preserved, but missing
+        entry points are being added, if available.
+
+    .. change:: changed
+        :tags: definition
+
+        Updated requirements when retrieving a definition. Any requirements
+        in the retrieved definitions are extended to ensure that the developer
+        can add requirements that are not in the *setup.py* (ie. "maya", "nuke",
+        etc)
+
+    .. change:: changed
+        :tags: definition
+
+        Append ${INSTALL_LOCATION} to the PYTHONPATH in a retrieved definitions
+        *environ* to ensure that the installed python package can be accessed.
+
+        If no PYTHONPATH is found in the *environ*, it will be set.
+
     .. change:: fixed
 
         Used the 'package_name' instead of 'key' to match the package when
