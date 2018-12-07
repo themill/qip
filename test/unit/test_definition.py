@@ -359,4 +359,5 @@ def test_retrieve(
         os.path.join(path, "wiz.json")
     )
     logger.info.assert_called_once_with(
+        "Wiz definition extracted from 'Foo-0.1.0'."
     )
