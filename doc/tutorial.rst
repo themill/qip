@@ -46,6 +46,12 @@ package directory and finally into a version subdirectory. For example:
     │                   │   └── json
     │                   └── Flask-1.0.2.dist-info
 
+.. note::
+
+    Any dependency will be installed *alongside* the requested package, having
+    its own bin/lib structure. They will *not* be installed inside the
+    `site-packages` of the requested package.
+
 Definition
 ----------
 
