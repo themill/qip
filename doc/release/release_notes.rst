@@ -6,6 +6,11 @@ Release Notes
 
 .. release:: Upcoming
 
+    .. change:: new
+        :tags: documentation
+
+        Added :ref:`development` section.
+
     .. change:: changed
         :tags: definition
 
