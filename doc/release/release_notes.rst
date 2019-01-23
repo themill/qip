@@ -6,6 +6,13 @@ Release Notes
 
 .. release:: Upcoming
 
+    .. change:: changed
+        :tags: definition
+
+        Changed 'group' keyword to 'namespace' when creating new definitions for
+        packages from :term:`Pypi` and set its value to 'library'.
+        The 'group' keyword has been replaced in :term:`Wiz` 1.3.0.
+
     .. change:: fixed
 
         Used the 'package_name' instead of 'key' to match the package when
