@@ -24,7 +24,7 @@ def create(mapping, output_path, editable_mode):
         "identifier": mapping["key"],
         "version": mapping["version"],
         "install-location": output_path,
-        "group": "python"
+        "namespace": "library"
     }
 
     if "description" in mapping.keys():

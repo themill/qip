@@ -25,9 +25,9 @@ Release Notes
         In **editable** mode, that path is pointing at the source to ease
         development without having to reinstall the package.
 
-        When retrieving a definition, it is being assumed that the developer 
-        has set a PYTHONPATH referencing ${INSTALL_LOCATION} in either 
-        'environ' or in a 'variant' of the definition. It is not being added 
+        When retrieving a definition, it is being assumed that the developer
+        has set a PYTHONPATH referencing ${INSTALL_LOCATION} in either
+        'environ' or in a 'variant' of the definition. It is not being added
         automatically, to ensure that the developer remains full control over
         the path order.
 
@@ -59,6 +59,13 @@ Release Notes
         in the retrieved definitions are extended to ensure that the developer
         can add requirements that are not in the *setup.py* (ie. "maya", "nuke",
         etc)
+
+    .. change:: changed
+        :tags: definition
+
+        Changed 'group' keyword to 'namespace' when creating new definitions for
+        packages from :term:`Pypi` and set its value to 'library'.
+        The 'group' keyword has been replaced in :term:`Wiz` 1.3.0.
 
     .. change:: fixed
 

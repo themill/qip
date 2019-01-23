@@ -36,7 +36,7 @@ def test_create(logger):
         "version": "0.2.3",
         "install-root": "/path/to/installed/package",
         "install-location": "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.7/site-packages",
-        "group": "python"
+        "namespace": "library"
     })
 
     logger.info.assert_called_once_with(
@@ -62,7 +62,7 @@ def test_create_with_description(logger):
         "description": "This is a package",
         "install-root": "/path/to/installed/package",
         "install-location": "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.7/site-packages",
-        "group": "python"
+        "namespace": "library"
     })
 
     logger.info.assert_called_once_with(
@@ -99,7 +99,7 @@ def test_create_with_system(logger):
         },
         "install-root": "/path/to/installed/package",
         "install-location": "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.7/site-packages",
-        "group": "python"
+        "namespace": "library"
     })
 
     logger.info.assert_called_once_with(
@@ -133,7 +133,7 @@ def test_create_with_requirements(logger):
         "version": "0.2.3",
         "install-root": "/path/to/installed/package",
         "install-location": "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.7/site-packages",
-        "group": "python",
+        "namespace": "library",
         "requirements": [
             "bim >= 3, < 4",
             "bar"
@@ -168,7 +168,7 @@ def test_create_with_existing_lib(temporary_directory, logger):
         "version": "0.2.3",
         "install-root": temporary_directory,
         "install-location": "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.7/site-packages",
-        "group": "python",
+        "namespace": "library",
         "environ": {
             "PYTHONPATH": (
                 "${INSTALL_LOCATION}/Foo/Foo-0.2.3/lib/python2.7/site-packages:"
