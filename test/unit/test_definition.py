@@ -309,10 +309,10 @@ def test_retrieve_non_existing(mocked_wiz_load_definition, logger):
         }
     )
 ], ids=[
-    "no environ (developer error)",
+    "no-environ",
     "environ",
     "system",
-    "variants"
+    "variants",
 ])
 def test_retrieve(
     mocked_wiz_load_definition, temporary_directory, definition, expected,
