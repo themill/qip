@@ -35,7 +35,7 @@ def test_create(logger):
         "identifier": "foo",
         "version": "0.2.3",
         "install-location": "/path/to/installed/package",
-        "namespace": "python"
+        "namespace": "library"
     }
 
     logger.info.assert_called_once_with(
@@ -60,7 +60,7 @@ def test_create_with_description(logger):
         "version": "0.2.3",
         "description": "This is a package",
         "install-location": "/path/to/installed/package",
-        "namespace": "python"
+        "namespace": "library"
     }
 
     logger.info.assert_called_once_with(
@@ -96,7 +96,7 @@ def test_create_with_system(logger):
             "os": "centos >= 7, < 8"
         },
         "install-location": "/path/to/installed/package",
-        "namespace": "python"
+        "namespace": "library"
     }
 
     logger.info.assert_called_once_with(
@@ -129,7 +129,7 @@ def test_create_with_requirements(logger):
         "identifier": "foo",
         "version": "0.2.3",
         "install-location": "/path/to/installed/package",
-        "namespace": "python",
+        "namespace": "library",
         "requirements": [
             "bim >= 3, < 4",
             "bar"
@@ -163,7 +163,7 @@ def test_create_with_existing_lib(temporary_directory, logger):
         "identifier": "foo",
         "version": "0.2.3",
         "install-location": temporary_directory,
-        "namespace": "python",
+        "namespace": "library",
         "environ": {
             "PYTHONPATH": (
                 "${INSTALL_LOCATION}/Foo/Foo-0.2.3/lib/python2.7/site-packages:"
@@ -194,7 +194,7 @@ def test_create_with_existing_bin(temporary_directory, logger):
         "identifier": "foo",
         "version": "0.2.3",
         "install-location": temporary_directory,
-        "namespace": "python",
+        "namespace": "library",
         "environ": {
             "PATH": "${INSTALL_LOCATION}/Foo/Foo-0.2.3/bin:${PATH}"
         }
