@@ -35,7 +35,9 @@ def test_create(logger):
         "identifier": "foo",
         "version": "0.2.3",
         "install-root": "/path/to/installed/package",
-        "install-location": "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.7/site-packages",
+        "install-location": (
+            "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.7/site-packages"
+        ),
         "namespace": "library"
     })
 
@@ -61,7 +63,9 @@ def test_create_with_description(logger):
         "version": "0.2.3",
         "description": "This is a package",
         "install-root": "/path/to/installed/package",
-        "install-location": "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.7/site-packages",
+        "install-location": (
+            "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.7/site-packages"
+        ),
         "namespace": "library"
     })
 
@@ -98,7 +102,9 @@ def test_create_with_system(logger):
             "os": "centos >= 7, < 8"
         },
         "install-root": "/path/to/installed/package",
-        "install-location": "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.7/site-packages",
+        "install-location": (
+            "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.7/site-packages"
+        ),
         "namespace": "library"
     })
 
@@ -132,7 +138,9 @@ def test_create_with_requirements(logger):
         "identifier": "foo",
         "version": "0.2.3",
         "install-root": "/path/to/installed/package",
-        "install-location": "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.7/site-packages",
+        "install-location": (
+            "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.7/site-packages"
+        ),
         "namespace": "library",
         "requirements": [
             "bim >= 3, < 4",
@@ -167,7 +175,9 @@ def test_create_with_existing_lib(temporary_directory, logger):
         "identifier": "foo",
         "version": "0.2.3",
         "install-root": temporary_directory,
-        "install-location": "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.7/site-packages",
+        "install-location": (
+            "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.7/site-packages"
+        ),
         "namespace": "library",
         "environ": {
             "PYTHONPATH": (
@@ -207,7 +217,9 @@ def test_retrieve_non_existing(mocked_wiz_load_definition, logger):
             "identifier": "foo",
             "version": "0.1.0",
             "install-root": "/path/to/installed/package",
-            "install-location": "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
+            "install-location": (
+                "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
+            )
         }
     ),
     (
@@ -223,7 +235,9 @@ def test_retrieve_non_existing(mocked_wiz_load_definition, logger):
             "identifier": "foo",
             "version": "0.1.0",
             "install-root": "/path/to/installed/package",
-            "install-location": "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages",
+            "install-location": (
+                "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
+            ),
             "environ": {
                 "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}",
                 "TEST": "True"
@@ -250,7 +264,9 @@ def test_retrieve_non_existing(mocked_wiz_load_definition, logger):
                 "arch": "x86_64"
             },
             "install-root": "/path/to/installed/package",
-            "install-location": "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages",
+            "install-location": (
+                "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
+            ),
             "environ": {
                 "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
             }
@@ -276,7 +292,9 @@ def test_retrieve_non_existing(mocked_wiz_load_definition, logger):
             "identifier": "foo",
             "version": "0.1.0",
             "install-root": "/path/to/installed/package",
-            "install-location": "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages",
+            "install-location": (
+                "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
+            ),
             "environ": {
                 "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
             },
@@ -342,9 +360,12 @@ def test_retrieve(
             "identifier": "foo",
             "version": "0.1.0",
             "install-root": "/path/to/installed/package",
-            "install-location": "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
+            "install-location": (
+                "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
+            )
         }
-    ), (
+    ),
+    (
         {
             "identifier": "foo",
             "version": "0.1.0",
@@ -372,8 +393,9 @@ def test_update_install_location(definition, editable, expected):
         "location": "/source",
     }
 
-    result = qip.definition._update_install_location(
-        _definition, "/path/to/installed/package", mapping, editable
+    result = qip.definition.update_definition(
+        _definition, mapping, "/path/to/installed/package",
+        editable_mode=editable
     )
 
     assert result == _expected
@@ -386,37 +408,54 @@ def test_update_install_location(definition, editable, expected):
             "version": "0.1.0",
         },
         {
-            "command": {"foo": "foo"}
+            "command": {"foo": "foo"},
+            "target": "Foo/Foo-0.1.0"
         },
         {
             "identifier": "foo",
             "version": "0.1.0",
-            "command": {"foo": "foo"}
+            "command": {"foo": "foo"},
+            "install-root": "/path/to/installed/package",
+            "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
+            )
         }
-    ), (
+    ),
+    (
         {
             "identifier": "foo",
             "version": "0.1.0",
             "command": {"bar": "bar"}
         },
         {
-            "command": {"foo": "foo"}
+            "command": {"foo": "foo"},
+            "target": "Foo/Foo-0.1.0"
         },
         {
             "identifier": "foo",
             "version": "0.1.0",
-            "command": {"bar": "bar", "foo": "foo"}
+            "command": {"bar": "bar", "foo": "foo"},
+            "install-root": "/path/to/installed/package",
+            "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
+            )
         }
     ),
-(
+    (
         {
             "identifier": "foo",
             "version": "0.1.0",
         },
-        {},
+        {
+            "target": "Foo/Foo-0.1.0"
+        },
         {
             "identifier": "foo",
-            "version": "0.1.0"
+            "version": "0.1.0",
+            "install-root": "/path/to/installed/package",
+            "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
+            )
         }
     )
 ], ids=[
@@ -429,7 +468,9 @@ def test_update_command(definition, mapping, expected):
     _definition = wiz.definition.Definition(definition)
     _expected = wiz.definition.Definition(expected)
 
-    result = qip.definition._update_command(_definition, mapping)
+    result = qip.definition.update_definition(
+        _definition, mapping, "/path/to/installed/package"
+    )
 
     assert result == _expected
 
@@ -441,37 +482,54 @@ def test_update_command(definition, mapping, expected):
             "version": "0.1.0",
         },
         {
+            "target": "Foo/Foo-0.1.0",
             "requirements": [{"request": "mlog"}]
         },
         {
             "identifier": "foo",
             "version": "0.1.0",
+            "install-root": "/path/to/installed/package",
+            "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
+            ),
             "requirements": ["mlog"]
         }
-    ), (
+    ),
+    (
         {
             "identifier": "foo",
             "version": "0.1.0",
             "requirements": ["maya"]
         },
         {
+            "target": "Foo/Foo-0.1.0",
             "requirements": [{"request": "mlog"}]
         },
         {
             "identifier": "foo",
             "version": "0.1.0",
+            "install-root": "/path/to/installed/package",
+            "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
+            ),
             "requirements": ["maya", "mlog"]
         }
     ),
-(
+    (
         {
             "identifier": "foo",
             "version": "0.1.0",
         },
-        {},
+        {
+            "target": "Foo/Foo-0.1.0"
+        },
         {
             "identifier": "foo",
-            "version": "0.1.0"
+            "version": "0.1.0",
+            "install-root": "/path/to/installed/package",
+            "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
+            )
         }
     )
 ], ids=[
@@ -484,6 +542,8 @@ def test_update_requirements(definition, mapping, expected):
     _definition = wiz.definition.Definition(definition)
     _expected = wiz.definition.Definition(expected)
 
-    result = qip.definition._update_requirements(_definition, mapping)
+    result = qip.definition.update_definition(
+        _definition, mapping, "/path/to/installed/package",
+    )
 
     assert result == _expected

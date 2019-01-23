@@ -8,14 +8,15 @@ import wiz
 import qip.symbol
 
 
-def create(mapping, output_path, editable_mode):
+def create(mapping, output_path, editable_mode=False):
     """Create :term:`Wiz` definition for package *mapping*.
 
-    :param mapping: mapping of the python package built.
+    :param mapping: mapping of the python package built as returned by
+        :func:`qip.package.install`.
     :param output_path: installation path of all python packages.
     :param editable_mode: install in editable mode. Default is False.
 
-    :returns: definition data.
+    :returns: :class:`wiz.definition.Definition` instance.
 
     """
     logger = mlog.Logger(__name__ + ".create")
@@ -23,7 +24,6 @@ def create(mapping, output_path, editable_mode):
     definition_data = {
         "identifier": mapping["key"],
         "version": mapping["version"],
-        "install-location": output_path,
         "namespace": "library"
     }
 
@@ -56,11 +56,10 @@ def create(mapping, output_path, editable_mode):
 
     # Update definition with install-location, commands and requirements.
     definition = wiz.definition.Definition(definition_data)
-    definition = _update_install_location(
-        definition, output_path, mapping, editable_mode
+    definition = update_definition(
+        definition, mapping, output_path,
+        editable_mode=editable_mode
     )
-    definition = _update_command(definition, mapping)
-    definition = _update_requirements(definition, mapping)
 
     logger.info(
         "Wiz definition created for '{}'.".format(mapping["identifier"])
@@ -68,15 +67,17 @@ def create(mapping, output_path, editable_mode):
     return definition
 
 
-def retrieve(mapping, temporary_path, output_path, editable_mode):
+def retrieve(mapping, temporary_path, output_path, editable_mode=False):
     """Retrieve :term:`Wiz` definition from package installed.
 
-    :param mapping: mapping of the python package built.
+    :param mapping: mapping of the python package built as returned by
+        :func:`qip.package.install`.
     :param temporary_path: path where the package was temporarily installed to.
     :param output_path: path where the package was installed to.
     :param editable_mode: install in editable mode. Default is False.
 
-    :returns: None if no definition was found, otherwise return the definition.
+    :returns: None if no definition was found, otherwise return the
+        :class:`wiz.definition.Definition` instance.
 
     """
     logger = mlog.Logger(__name__ + ".retrieve")
@@ -97,11 +98,10 @@ def retrieve(mapping, temporary_path, output_path, editable_mode):
 
         # Update definition with install-location, commands and requirements.
         definition = wiz.load_definition(definition_path)
-        definition = _update_install_location(
-            definition, output_path, mapping, editable_mode
+        definition = update_definition(
+            definition, mapping, output_path,
+            editable_mode=editable_mode
         )
-        definition = _update_command(definition, mapping)
-        definition = _update_requirements(definition, mapping)
 
         logger.info(
             "Wiz definition extracted from '{}'.".format(mapping["identifier"])
@@ -109,59 +109,33 @@ def retrieve(mapping, temporary_path, output_path, editable_mode):
         return definition
 
 
-def _update_install_location(definition, path, mapping, editable_mode):
-    """Update a definition with new install paths.
+def update_definition(definition, mapping, output_path, editable_mode=False):
+    """Update a *definition* from package *mapping*.
 
-    :param definition: valid :class:`~wiz.definition.Definition` instance.
-    :param path: path to the package install root location.
-    :param mapping: mapping of the python package built.
+    :param definition: :class:`~wiz.definition.Definition` instance.
+    :param mapping: mapping of the python package built as returned by
+        :func:`qip.package.install`.
+    :param output_path: path to the package install root location.
     :param editable_mode: install in editable mode. Default is False.
-
-    :returns: a definition where all "install-location" has been set to the
-    source when in *editable mode*, otherwise "install-root" is set to the
-    output *path* and "install-location" is set to a relative path targetting
-    the site-package install of the package.
 
     """
     if editable_mode:
         definition = definition.set("install-location", mapping["location"])
+
     else:
-        definition = definition.set("install-root", path)
+        print(output_path)
+        definition = definition.set("install-root", output_path)
         definition = definition.set("install-location", os.path.join(
             qip.symbol.INSTALL_ROOT, mapping["target"],
             qip.symbol.P27_LIB_DESTINATION
         ))
 
-    return definition
-
-
-def _update_command(definition, mapping):
-    """Update a definition with new commands.
-
-    :param definition: valid :class:`~wiz.definition.Definition` instance.
-    :param mapping: mapping of the python package built.
-
-    :returns: a definition where the command mapping has been updated with
-    commands retrieved from the package.
-
-    """
     if "command" in mapping.keys():
         definition = definition.update("command", mapping["command"])
-    return definition
 
-
-def _update_requirements(definition, mapping):
-    """Update a definition with new requirements.
-
-    :param definition: valid :class:`~wiz.definition.Definition` instance.
-    :param mapping: mapping of the python package built.
-
-    :returns: a definition where the requirements list has been extended with
-    requirements retrieved from the package.
-
-    """
     if "requirements" in mapping.keys():
         definition = definition.extend("requirements", [
             _mapping["request"] for _mapping in mapping["requirements"]
         ])
+
     return definition
