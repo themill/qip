@@ -241,7 +241,9 @@ def extract_metadata_mapping(name, environ_mapping):
     result = qip.command.execute(
         "pip show "
         "--disable-pip-version-check "
-        "'{}' -v".format(name), environ_mapping, quiet=True
+        "'{}' -v".format(name),
+        environ_mapping,
+        quiet=True
     )
 
     mapping = {}
