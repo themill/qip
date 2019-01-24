@@ -123,7 +123,6 @@ def update_definition(definition, mapping, output_path, editable_mode=False):
         definition = definition.set("install-location", mapping["location"])
 
     else:
-        print(output_path)
         definition = definition.set("install-root", output_path)
         definition = definition.set("install-location", os.path.join(
             qip.symbol.INSTALL_ROOT, mapping["target"],
