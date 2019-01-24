@@ -68,7 +68,12 @@ def install(
 
     try:
         # Update environment mapping.
-        environ_mapping = fetch_environ(mapping={"PYTHONPATH": install_path})
+        environ_mapping = fetch_environ(
+            mapping={
+                "PYTHONPATH": install_path,
+                "PYTHONWARNINGS": "ignore:DEPRECATION"
+            }
+        )
 
         # Record requests and package identifiers to prevent duplication
         installed_packages = set()
