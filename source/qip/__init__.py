@@ -137,11 +137,8 @@ def install(
             # Fill up queue with requirements extracted from package
             # dependencies.
             if not no_dependencies:
-                for mapping in package_mapping.get("requirements", []):
-                    if mapping["identifier"] in installed_packages:
-                        continue
-
-                    queue.put(mapping["request"])
+                for request in package_mapping.get("requirements", []):
+                    queue.put(request)
 
             # Clean up for next installation.
             logger.debug("Clean up directory content")

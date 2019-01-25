@@ -6,11 +6,20 @@ import json
 import os
 
 import mlog
-from packaging.requirements import Requirement
 
 import qip.command
 import qip.filesystem
 import qip.system
+
+
+#: Compiled regular expression to detect request with extra option.
+REQUEST_PATTERN = re.compile(r"(.*)\[(\w*)\]")
+
+
+#: Path to the python package query script.
+PACKAGE_QUERY_SCRIPT = os.path.join(
+    os.path.dirname(__file__), "package_data", "pip_query.py"
+)
 
 
 def install(
@@ -45,7 +54,8 @@ def install(
     """
     logger = mlog.Logger(__name__ + ".install")
 
-    request = sanitise_request(request)
+    if request.startswith("git@gitlab:"):
+        request = "git+ssh://" + request.replace(":", "/")
 
     logger.info("Installing '{}'...".format(request))
     result = qip.command.execute(
@@ -57,7 +67,7 @@ def install(
         "--disable-pip-version-check "
         "--cache-dir {cache_dir} "
         "{editable_mode}" 
-        "'{requirement}'".format(
+        "{requirement}".format(
             editable_mode="-e " if editable_mode else "",
             destination=destination,
             requirement=request,
@@ -73,7 +83,10 @@ def install(
         )
     name = match_name.group().strip()
 
-    return fetch_mapping_from_environ(name, environ_mapping)
+    matched = REQUEST_PATTERN.match(request)
+    extra = None if matched is None else matched.group(2)
+
+    return fetch_mapping_from_environ(name, environ_mapping, extra=extra)
 
 
 def sanitise_request(request):
@@ -81,17 +94,15 @@ def sanitise_request(request):
     if request.startswith("git@gitlab:"):
         return "git+ssh://" + request.replace(":", "/")
 
-    if os.path.isdir(request):
-        return os.path.abspath(request)
-
-    return Requirement(request)
+    return request
 
 
-def fetch_mapping_from_environ(name, environ_mapping):
+def fetch_mapping_from_environ(name, environ_mapping, extra=None):
     """Return a mapping with information about the package *name*.
 
     :param name: package name
     :param environ_mapping: should be a mapping of environment variables
+    :param extra: should be an optional extra requirement label
 
     :returns: mapping with information about the package gathered from the
         environment. It should be in the form of::
@@ -126,7 +137,9 @@ def fetch_mapping_from_environ(name, environ_mapping):
     """
     logger = mlog.Logger(__name__ + ".fetch_package_from_environ")
 
-    dependency_mapping = extract_dependency_mapping(name, environ_mapping)
+    dependency_mapping = extract_dependency_mapping(
+        name, environ_mapping, extra=extra
+    )
     metadata_mapping = extract_metadata_mapping(name, environ_mapping)
 
     mapping = {
@@ -140,12 +153,13 @@ def fetch_mapping_from_environ(name, environ_mapping):
 
     if len(dependency_mapping.get("dependencies", [])) > 0:
         mapping["requirements"] = [
-            {
-                "identifier": extract_identifier(_dependency_mapping),
-                "request": extract_request(_dependency_mapping),
-            }
+            _dependency_mapping["required_version"]
             for _dependency_mapping in dependency_mapping["dependencies"]
         ]
+
+        logger.debug(
+            "Dependencies: {}".format(" ".join(mapping["requirements"]))
+        )
 
     # Add target information to package mapping.
     mapping["target"] = os.path.join(
@@ -161,11 +175,13 @@ def fetch_mapping_from_environ(name, environ_mapping):
     return mapping
 
 
-def extract_dependency_mapping(name, environ_mapping):
+def extract_dependency_mapping(name, environ_mapping, extra=None):
     """Return package mapping for *name* from dependency mapping.
 
     :param name: package name
     :param environ_mapping: mapping of environment variables
+    :param extra: should be an optional extra requirement label
+
     :returns: None if the package *name* cannot be found in dependency mapping,
         otherwise return dependency mapping. A valid mapping should be in the
         form of::
@@ -194,27 +210,24 @@ def extract_dependency_mapping(name, environ_mapping):
 
 
     """
+    identifier = name.lower()
+    if extra is not None:
+        identifier += "[{}]".format(extra)
+
+    command = "python {script} {identifier}".format(
+        script=PACKAGE_QUERY_SCRIPT,
+        identifier=identifier
+    )
+
     result = qip.command.execute(
-        "pipdeptree --json", environ_mapping, quiet=True
+        command, environ_mapping, quiet=True
     )
 
     try:
-        environment_packages = json.loads(result)
+        mapping = json.loads(result)
     except ValueError:
         raise RuntimeError(
-            "Impossible to fetch tree package for '{}'".format(name)
-        )
-
-    mapping = None
-    for _mapping in environment_packages:
-        _name = _mapping.get("package", {}).get("key")
-        if _name == name.lower():
-            mapping = _mapping
-            break
-
-    if mapping is None:
-        raise RuntimeError(
-            "Impossible to fetch installed package for '{}'".format(name)
+            "Impossible to fetch installed package for '{}'".format(identifier)
         )
 
     return mapping
@@ -309,26 +322,3 @@ def extract_identifier(mapping):
     )
 
     return identifier
-
-
-def extract_request(mapping):
-    """Return corresponding requirement request from package *mapping*.
-
-    :param mapping: package mapping
-
-         The package mapping must be in the form of::
-
-            {
-                "key": "foo",
-                "package_name": "Foo",
-                "installed_version": "1.11",
-                "required_version": ">=1.5",
-            }
-
-    :returns: Corresponding request (ie. "foo >=1.5")
-
-    """
-    return "{name} {specifier}".format(
-        name=mapping["key"],
-        specifier=mapping.get("required_version") or ""
-    ).strip()

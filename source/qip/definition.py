@@ -133,8 +133,6 @@ def update_definition(definition, mapping, output_path, editable_mode=False):
         definition = definition.update("command", mapping["command"])
 
     if "requirements" in mapping.keys():
-        definition = definition.extend("requirements", [
-            _mapping["request"] for _mapping in mapping["requirements"]
-        ])
+        definition = definition.extend("requirements", mapping["requirements"])
 
     return definition
