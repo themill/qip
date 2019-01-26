@@ -75,68 +75,41 @@ def install(
             }
         )
 
-        # Record requests and package installed to prevent conflicts and
-        # duplications
-        installed_packages = {}
+        # Record requests and package installed to prevent duplications.
+        installed_packages = set()
         installed_requests = set()
 
         # Fill up queue with requirements extracted from requests.
         queue = _queue.Queue()
+
         for request in requests:
-            queue.put({
-                "request": request,
-                "parent": None
-            })
+            queue.put(request)
 
         while not queue.empty():
-            data = queue.get()
-
-            request = data["request"]
-            parent = data["parent"]
+            request = queue.get()
 
             if request in installed_requests:
                 continue
 
             try:
-                _package = qip.package.install(
+                package_mapping = qip.package.install(
                     request, temporary_path, environ_mapping, cache_dir,
                     editable_mode=editable_mode
                 )
+
             except RuntimeError as error:
                 logger.error(str(error))
                 continue
 
-            # Request parent and initial request to return proper feedback to
-            # user if the installation fails
-            _package["parent"] = parent
-            _package["request"] = request
+            if package_mapping["identifier"] in installed_packages:
+                continue
 
-            installed_package = installed_packages.get(_package["name"])
-            if installed_package is not None:
-                if installed_package["version"] == _package["version"]:
-                    continue
-
-                logger.error(
-                    "The package '{identifier}' could not be installed due to "
-                    "version conflict:\n"
-                    " - {request1} ({version1}) [{parent1}]\n"
-                    " - {request2} ({version2}) [{parent2}]\n".format(
-                        identifier=_package["identifier"],
-                        request1=request,
-                        request2=installed_package["request"],
-                        version1=_package["version"],
-                        version2=installed_package["version"],
-                        parent1=parent,
-                        parent2=installed_package["parent"],
-                    )
-                )
-                return
-
-            installed_packages[_package["name"]] = _package
+            installed_packages.add(package_mapping["identifier"])
+            installed_requests.add(request)
 
             # Install package to destination.
             success = copy_to_destination(
-                _package,
+                package_mapping,
                 temporary_path,
                 output_path,
                 overwrite=overwrite
@@ -147,12 +120,12 @@ def install(
             # Extract a wiz definition is requested.
             if definition_path is not None:
                 definition_data = qip.definition.retrieve(
-                    _package, temporary_path, output_path,
+                    package_mapping, temporary_path, output_path,
                     editable_mode=editable_mode
                 )
                 if definition_data is None:
                     definition_data = qip.definition.create(
-                        _package, output_path,
+                        package_mapping, output_path,
                         editable_mode=editable_mode
                     )
 
@@ -166,11 +139,8 @@ def install(
             # Fill up queue with requirements extracted from package
             # dependencies.
             if not no_dependencies:
-                for request in _package.get("requirements", []):
-                    queue.put({
-                        "request": request,
-                        "parent": _package["identifier"]
-                    })
+                for request in package_mapping.get("requirements", []):
+                    queue.put(request)
 
             # Clean up for next installation.
             logger.debug("Clean up directory content")
