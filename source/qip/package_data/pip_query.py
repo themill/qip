@@ -57,7 +57,7 @@ def display_package(name):
         result["dependencies"].append({
             "key": requirement.key,
             "package_name": requirement.project_name,
-            "required_version": requirement.name + str(requirement.specifier)
+            "required_version": requirement.key + str(requirement.specifier)
         })
 
     print json.dumps(result, sort_keys=True, indent=4)
