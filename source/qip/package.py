@@ -196,13 +196,11 @@ def extract_dependency_mapping(name, environ_mapping, extra=None):
                     {
                         "key": "bar",
                         "package_name": "Bar",
-                        "installed_version": "0.1.0",
                         "required_version": None
                     },
                     {
                         "key": "bim",
                         "package_name": "Bim",
-                        "installed_version": "2.3.1",
                         "required_version": ">= 2, <3"
                     }
                 ]
