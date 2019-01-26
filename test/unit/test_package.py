@@ -1,9 +1,8 @@
 # :coding: utf-8
 
-import json
+import re
 
 import pytest
-from packaging.requirements import Requirement
 
 import qip.command
 import qip.package
@@ -196,11 +195,29 @@ def test_fetch_mapping_from_environ(
     assert mapping == expected
 
 
-def test_extract_dependency_mapping(mocked_command):
+def test_extract_dependency_mapping(mocker, mocked_command):
     """Return package mapping from dependency mapping."""
     mocked_command.return_value = "{\"package\": {\"key\": \"foo\"}}"
 
     mapping = qip.package.extract_dependency_mapping("foo", {})
+
+    mocked_command.assert_called_once_with(mocker.ANY, {}, quiet=True)
+    assert re.match(
+        "python .+ foo", mocked_command.call_args_list[0][0][0]
+    )
+    assert mapping == {"package": {"key": "foo"}}
+
+
+def test_extract_dependency_mapping_with_extra(mocker, mocked_command):
+    """Return package mapping from dependency mapping with extra requirements.
+    """
+    mocked_command.return_value = "{\"package\": {\"key\": \"foo\"}}"
+
+    mapping = qip.package.extract_dependency_mapping("foo", {}, extra="dev")
+    mocked_command.assert_called_once_with(mocker.ANY, {}, quiet=True)
+    assert re.match(
+        r"python .+ foo\[dev\]", mocked_command.call_args_list[0][0][0]
+    )
     assert mapping == {"package": {"key": "foo"}}
 
 
