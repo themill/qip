@@ -121,14 +121,8 @@ def test_create_with_requirements(logger):
         "key": "foo",
         "version": "0.2.3",
         "requirements": [
-            {
-                "identifier": "?",
-                "request": "bim >= 3, < 4",
-            },
-            {
-                "identifier": "?",
-                "request": "bar",
-            }
+            "bim >= 3, < 4",
+            "bar",
         ],
         "target": "Foo/Foo-0.2.3"
     }
@@ -483,14 +477,14 @@ def test_update_command(definition, mapping, expected):
         },
         {
             "target": "Foo/Foo-0.1.0",
-            "requirements": [{"request": "mlog"}]
+            "requirements": ["mlog"]
         },
         {
             "identifier": "foo",
             "version": "0.1.0",
             "install-root": "/path/to/installed/package",
             "install-location": (
-                    "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
+                "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
             ),
             "requirements": ["mlog"]
         }
@@ -503,14 +497,14 @@ def test_update_command(definition, mapping, expected):
         },
         {
             "target": "Foo/Foo-0.1.0",
-            "requirements": [{"request": "mlog"}]
+            "requirements": ["mlog"]
         },
         {
             "identifier": "foo",
             "version": "0.1.0",
             "install-root": "/path/to/installed/package",
             "install-location": (
-                    "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
+                "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
             ),
             "requirements": ["maya", "mlog"]
         }
@@ -528,7 +522,7 @@ def test_update_command(definition, mapping, expected):
             "version": "0.1.0",
             "install-root": "/path/to/installed/package",
             "install-location": (
-                    "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
+                "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
             )
         }
     )

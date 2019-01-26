@@ -40,7 +40,9 @@ def test_install(mocker, mocked_command, package):
     mocked_command.return_value = "Installing collected packages: foo"
 
     result = qip.package.install(package, "/path", {}, "/cache")
-    mocked_fetch_mapping_from_environ.assert_called_once_with("foo", {})
+    mocked_fetch_mapping_from_environ.assert_called_once_with(
+        "foo", {}, extra=None
+    )
     assert result == "__VALUE__"
 
 
@@ -60,7 +62,7 @@ def test_install_fail(mocked_command):
     ),
     (
         "foo",
-        Requirement("foo")
+        "foo"
     )
 ], ids=[
     "git",
@@ -146,14 +148,12 @@ def test_sanitise_request(package, expected):
                 {
                     "key": "bar",
                     "package_name": "Bar",
-                    "installed_version": "0.1.0",
-                    "required_version": None
+                    "required_version": "bar"
                 },
                 {
                     "key": "bim",
                     "package_name": "Bim",
-                    "installed_version": "2.3.1",
-                    "required_version": ">= 2, <3"
+                    "required_version": "bim >= 2, <3"
                 }
             ]
         },
@@ -168,14 +168,8 @@ def test_sanitise_request(package, expected):
             "version": "0.1.0",
             "description": "This is a Python package",
             "requirements": [
-                {
-                    "identifier": "Bar-0.1.0",
-                    "request": "bar",
-                },
-                {
-                    "identifier": "Bim-2.3.1",
-                    "request": "bim >= 2, <3",
-                }
+                "bar",
+                "bim >= 2, <3",
             ],
             "target": "Foo/Foo-0.1.0"
         }
@@ -202,59 +196,17 @@ def test_fetch_mapping_from_environ(
     assert mapping == expected
 
 
-@pytest.mark.parametrize("name, command_result, expected", [
-    (
-        "foo",
-        [
-            {
-                "package": {"key": "foo"}
-            }
-        ],
-        {
-            "package": {"key": "foo"}
-        }
-    ),
-    (
-        "foo",
-        [
-            {
-                "package": {"key": "foo"}
-            },
-            {
-                "package": {"key": "bar"}
-            }
-        ],
-        {
-            "package": {"key": "foo"}
-        }
-    )
-], ids=[
-    "one-package",
-    "two-packages"
-])
-def test_extract_dependency_mapping(
-    mocked_command, name, command_result, expected
-):
+def test_extract_dependency_mapping(mocked_command):
     """Return package mapping from dependency mapping."""
-    mocked_command.return_value = json.dumps(command_result)
+    mocked_command.return_value = "{\"package\": {\"key\": \"foo\"}}"
 
-    mapping = qip.package.extract_dependency_mapping(name, {})
-    assert mapping == expected
+    mapping = qip.package.extract_dependency_mapping("foo", {})
+    assert mapping == {"package": {"key": "foo"}}
 
 
 def test_extract_dependency_mapping_fail_tree(mocked_command):
     """Fail to return package mapping if pipdeptree returns nothing."""
     mocked_command.return_value = ""
-
-    with pytest.raises(RuntimeError) as error:
-        qip.package.extract_dependency_mapping("foo", {})
-
-    assert str(error.value) == "Impossible to fetch tree package for 'foo'"
-
-
-def test_extract_dependency_mapping_fail_context(mocked_command):
-    """Fail to return package mapping the context returns no valid packages."""
-    mocked_command.return_value = json.dumps({})
 
     with pytest.raises(RuntimeError) as error:
         qip.package.extract_dependency_mapping("foo", {})
@@ -321,15 +273,3 @@ def test_extract_identifier():
     }
     identifier = qip.package.extract_identifier(mapping)
     assert identifier == "Foo-1.11"
-
-
-def test_extract_request():
-    """Return corresponding requirement request from package mapping."""
-    mapping = {
-        "key": "foo",
-        "package_name": "Foo",
-        "installed_version": "1.11",
-        "required_version": ">=1.5",
-    }
-    request = qip.package.extract_request(mapping)
-    assert request == "foo >=1.5"
