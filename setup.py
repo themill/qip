@@ -29,7 +29,7 @@ INSTALL_REQUIRES = [
     "pip >= 10, < 19",
     "wiz >= 1.0.0, < 2",
     "mlog >= 0.0.6, < 1",
-    "click >= 6.7, < 7"
+    "click >= 7, < 8"
 ]
 DOC_REQUIRES = [
     "sphinx >= 1.2.2, < 2",
@@ -43,6 +43,7 @@ DOC_REQUIRES = [
 
 ]
 TEST_REQUIRES = [
+    "mock >= 2, < 3",
     "pytest-runner >= 2.7, < 3",
     "pytest >= 3.0.0, < 4",
     "pytest-mock >= 0.11, < 1",
