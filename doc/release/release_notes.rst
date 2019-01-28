@@ -48,6 +48,14 @@ Release Notes
     .. change:: changed
         :tags: package
 
+        Updated :func:`qip.package.extract_dependency_mapping` to use
+        :mod:`qip.package_data.pip_query` to extract package dependency instead
+        of `pipdeptree <https://github.com/naiquevin/pipdeptree>`_ so that
+        extra requirements are taken into account (e.g. 'foo[dev]').
+
+    .. change:: changed
+        :tags: package
+
         Updated :func:`qip.package.extract_metadata_mapping` to retrieve entry
         points from package to use as command aliases in the exported
         definitions (e.g. "python -m foo").
