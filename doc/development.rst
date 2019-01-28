@@ -12,7 +12,7 @@ the module in editable mode, directly linking to the source code for rapid
 development.
 
 To ensure that Qip/Wiz can provide the same functionality as pip installing
-into a :term:`Virtualenv`, :term:`Qip` supports an editable mode.
+into a :term:`Virtualenv`, Qip supports an editable mode.
 
 For this example it is assumed that `foo` is a python module that is pip
 installable (includes a setup.py etc).
