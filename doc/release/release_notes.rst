@@ -14,22 +14,28 @@ Release Notes
     .. change:: changed
         :tags: definition
 
-        Added *install-root* and *install-location* when creating or retrieving
-        a definition.
+        Updated :mod:`qip.definition` to add
+        :ref:`install-root <definition/install_root>` and
+        :ref:`install-location <definition/install_location>` values when
+        creating or retrieving a definition.
 
-        The *install-root* is being set to the :option:`qip install
-        --output-path`. In **editable** mode, no *install-root* is added.
+        When installing a package via the command line, the :ref:`install-root
+        <definition/install_root>` value is being set by the
+        :option:`qip install --output-path` command. In **editable** mode,
+        no :ref:`install-root <definition/install_root>` value is added.
 
-        The *install-location* is being set to the actual python package
-        location. When installing, that path is relative to the *install-root*.
-        In **editable** mode, that path is pointing at the source to ease
-        development without having to reinstall the package.
+        The :ref:`install-location <definition/install_location>` value is being
+        set to the actual python package location and is relative to the
+        :ref:`install-root <definition/install_root>` value. In **editable**
+        mode, that path is pointing at the source to ease development without
+        having to reinstall the package.
 
         When retrieving a definition, it is being assumed that the developer
-        has set a PYTHONPATH referencing ${INSTALL_LOCATION} in either
-        'environ' or in a 'variant' of the definition. It is not being added
-        automatically, to ensure that the developer remains full control over
-        the path order.
+        has set a :envvar:`PYTHONPATH` environment variable referencing
+        :envvar:`INSTALL_LOCATION` in either :ref:`environ <definition/environ>`
+        or in a :ref:`variant <definition/variants>` of the definition. It is
+        not being added automatically, to ensure that the developer remains full
+        control over the path order.
 
         Example::
 
@@ -40,25 +46,29 @@ Release Notes
             }
 
     .. change:: changed
-        :tags: definition
+        :tags: package
 
-        Retrieved entry points from package to use as *command* aliasses in the
-        exported definitions.
-
-        Changed *commands* from executables to entry point python calls when
-        creating a definition.
-
-        Update *commands* in retrieved definitions, to ensure that developer
-        defined commands (any custom arguments etc) are preserved, but missing
-        entry points are being added, if available.
+        Updated :func:`qip.package.extract_metadata_mapping` to retrieve entry
+        points from package to use as command aliases in the exported
+        definitions (e.g. "python -m foo").
 
     .. change:: changed
         :tags: definition
 
-        Updated requirements when retrieving a definition. Any requirements
-        in the retrieved definitions are extended to ensure that the developer
-        can add requirements that are not in the *setup.py* (ie. "maya", "nuke",
-        etc)
+        Updated :mod:`qip.definition` to use entry point python calls instead
+        of executables to update :ref:`command <definition/command>` value.
+        When retrieving a definition, the command aliases defined by the
+        developer are preserved, but missing entry points are being added, if
+        available.
+
+    .. change:: changed
+        :tags: definition
+
+        Updated :mod:`qip.definition` to update :ref:`requirements
+        <definition/requirements>` when retrieving a definition. Any
+        requirements in the retrieved definitions are extended to ensure that
+        the developer can add requirements that are not in the *setup.py*
+        configuration file (e.g. "maya", "nuke", etc)
 
     .. change:: changed
         :tags: definition
