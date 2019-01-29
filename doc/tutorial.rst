@@ -50,7 +50,7 @@ package directory and finally into a version subdirectory. For example:
 
     Any dependency will be installed *alongside* the requested package, having
     its own bin/lib structure. They will *not* be installed inside the
-    `site-packages` of the requested package.
+    `site-packages` of another package.
 
 Definition
 ----------
