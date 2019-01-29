@@ -79,6 +79,21 @@ Release Notes
         configuration file (e.g. "maya", "nuke", etc)
 
     .. change:: changed
+        :tags: command-line
+
+        Changed :option:`qip install --output-path` and
+        :option:`qip install --definition-path` to default to temporary
+        directories when no input has been specified.
+
+    .. change:: changed
+
+        Updated :func:`qip.install` and :func:`qip.copy_to_destination` to
+        add a 'Yes to all' and 'No to all' options to the package confirmation
+        prompt. The user can now decide to be asked for confirmation once for
+        the overwriting process and apply the given value to all future
+        packages.
+
+    .. change:: changed
         :tags: definition
 
         Changed 'group' keyword to 'namespace' when creating new definitions for

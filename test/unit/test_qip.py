@@ -7,6 +7,7 @@ import wiz
 
 import click
 import pytest
+import mock
 
 import qip
 import qip.filesystem
@@ -33,9 +34,15 @@ def mocked_shutil_copytree(mocker):
 
 
 @pytest.fixture()
-def mocked_click_confirm(mocker):
-    """Return mocked 'click.confirm' function"""
-    return mocker.patch.object(click, "confirm")
+def mocked_click_prompt(mocker):
+    """Return mocked 'click.prompt' function"""
+    return mocker.patch.object(click, "prompt")
+
+
+@pytest.fixture()
+def mocked_confirm_overwrite(mocker):
+    """Return mocked 'qip._confirm_overwrite' function"""
+    return mocker.patch.object(qip, "_confirm_overwrite")
 
 
 @pytest.fixture()
@@ -149,7 +156,9 @@ def test_install(
     mocked_fetch_environ.return_value = "__ENVIRON__"
     mocked_package_install.side_effect = packages
 
-    mocked_copy_to_destination.side_effect = [True, True, True]
+    mocked_copy_to_destination.side_effect = [
+        (True, overwrite), (True, overwrite), (True, overwrite)
+    ]
 
     qip.install(["foo", "bar"], "/path/to/install", **options)
 
@@ -252,7 +261,9 @@ def test_install_with_definition_path(
     mocked_fetch_environ.return_value = "__ENVIRON__"
     mocked_package_install.side_effect = packages
 
-    mocked_copy_to_destination.side_effect = [True, True, True]
+    mocked_copy_to_destination.side_effect = [
+        (True, overwrite), (True, overwrite), (True, overwrite)
+    ]
     mocked_definition_retrieve.side_effect = ["__DATA1__", None, None]
     mocked_definition_create.side_effect = ["__DATA2__", "__DATA3__"]
 
@@ -381,7 +392,9 @@ def test_install_without_dependencies(
     mocked_fetch_environ.return_value = "__ENVIRON__"
     mocked_package_install.side_effect = packages
 
-    mocked_copy_to_destination.side_effect = [True, True]
+    mocked_copy_to_destination.side_effect = [
+        (True, overwrite), (True, overwrite)
+    ]
 
     qip.install(
         ["foo", "bar"], "/path/to/install", no_dependencies=True, **options
@@ -465,7 +478,7 @@ def test_install_with_package_skipped(
     mocked_fetch_environ.return_value = "__ENVIRON__"
     mocked_package_install.side_effect = packages
 
-    mocked_copy_to_destination.return_value = False
+    mocked_copy_to_destination.return_value = (False, overwrite)
 
     qip.install(["foo"], "/path/to/install", **options)
 
@@ -520,7 +533,7 @@ def test_install_with_package_installation_error(
     mocked_fetch_environ.return_value = "__ENVIRON__"
     mocked_package_install.side_effect = [RuntimeError("Oops"), package]
 
-    mocked_copy_to_destination.return_value = True
+    mocked_copy_to_destination.return_value = (True, True)
 
     qip.install(["foo", "bar"], "/path/to/install")
 
@@ -568,7 +581,7 @@ def test_install_with_package_installation_error(
 
 
 def test_copy_to_destination(
-    mocked_click_confirm, mocked_shutil_rmtree, mocked_shutil_copytree,
+    mocked_click_prompt, mocked_shutil_rmtree, mocked_shutil_copytree,
     mocked_filesystem_ensure_directory, logger
 ):
     """Copy package to destination."""
@@ -581,9 +594,9 @@ def test_copy_to_destination(
     result = qip.copy_to_destination(
         mapping, "/path/to/installed/package", "/path/to/destination"
     )
-    assert result is True
+    assert result == (True, False)
 
-    mocked_click_confirm.assert_not_called()
+    mocked_click_prompt.assert_not_called()
     mocked_shutil_rmtree.assert_not_called()
 
     mocked_shutil_copytree.assert_called_once_with(
@@ -600,7 +613,7 @@ def test_copy_to_destination(
 
 
 def test_copy_to_destination_with_system_restriction(
-    mocked_click_confirm, mocked_shutil_rmtree, mocked_shutil_copytree,
+    mocked_click_prompt, mocked_shutil_rmtree, mocked_shutil_copytree,
     mocked_filesystem_ensure_directory, logger
 ):
     """Copy package with system restriction to destination."""
@@ -619,9 +632,9 @@ def test_copy_to_destination_with_system_restriction(
     result = qip.copy_to_destination(
         mapping, "/path/to/installed/package", "/path/to/destination"
     )
-    assert result is True
+    assert result == (True, False)
 
-    mocked_click_confirm.assert_not_called()
+    mocked_click_prompt.assert_not_called()
     mocked_shutil_rmtree.assert_not_called()
 
     mocked_shutil_copytree.assert_called_once_with(
@@ -638,7 +651,7 @@ def test_copy_to_destination_with_system_restriction(
 
 
 def test_copy_to_destination_skip_existing(
-    temporary_directory, mocked_click_confirm, mocked_shutil_rmtree,
+    temporary_directory, mocked_click_prompt, mocked_shutil_rmtree,
     mocked_shutil_copytree, mocked_filesystem_ensure_directory, logger
 ):
     """Copy package to destination by skipping existing package."""
@@ -654,9 +667,9 @@ def test_copy_to_destination_skip_existing(
     result = qip.copy_to_destination(
         mapping, "/path/to/installed/package", temporary_directory
     )
-    assert result is False
+    assert result == (False, False)
 
-    mocked_click_confirm.assert_not_called()
+    mocked_click_prompt.assert_not_called()
     mocked_shutil_rmtree.assert_not_called()
 
     mocked_shutil_copytree.assert_not_called()
@@ -669,7 +682,7 @@ def test_copy_to_destination_skip_existing(
 
 
 def test_copy_to_destination_overwrite_existing(
-    temporary_directory, mocked_click_confirm, mocked_shutil_rmtree,
+    temporary_directory, mocked_click_prompt, mocked_shutil_rmtree,
     mocked_shutil_copytree, mocked_filesystem_ensure_directory, logger
 ):
     """Copy package to destination by overwriting existing package."""
@@ -686,9 +699,9 @@ def test_copy_to_destination_overwrite_existing(
         mapping, "/path/to/installed/package", temporary_directory,
         overwrite=True
     )
-    assert result is True
+    assert result == (True, True)
 
-    mocked_click_confirm.assert_not_called()
+    mocked_click_prompt.assert_not_called()
 
     mocked_shutil_rmtree.assert_called_once_with(path)
 
@@ -706,16 +719,27 @@ def test_copy_to_destination_overwrite_existing(
     logger.info.assert_called_once_with("Installed 'Foo-0.2.3'.")
 
 
+@pytest.mark.parametrize("overwrite, overwrite_next, expected", [
+    (True, None, None),
+    (False, None, None),
+    (True, True, True),
+    (False, False, False),
+], ids=[
+    "yes",
+    "no",
+    "yes-to-all",
+    "no-to-all",
+])
 def test_copy_to_destination_confirm_overwrite(
-    temporary_directory, mocked_click_confirm, mocked_shutil_rmtree,
-    mocked_shutil_copytree, mocked_filesystem_ensure_directory, logger
+    temporary_directory, mocked_confirm_overwrite, mocked_shutil_rmtree,
+    mocked_shutil_copytree, mocked_filesystem_ensure_directory, logger,
+    overwrite, overwrite_next, expected
 ):
     """Ask user to confirm overwrite existing package."""
     path = os.path.join(temporary_directory, "Foo", "Foo-0.2.3")
     os.makedirs(path)
 
-    # User answered No.
-    mocked_click_confirm.return_value = False
+    mocked_confirm_overwrite.return_value = (overwrite, overwrite_next)
 
     mapping = {
         "identifier": "Foo-0.2.3",
@@ -727,20 +751,51 @@ def test_copy_to_destination_confirm_overwrite(
         mapping, "/path/to/installed/package", temporary_directory,
         overwrite=None
     )
-    assert result is False
+    assert result == (overwrite, expected)
 
-    mocked_click_confirm.assert_called_once_with(
-        "Overwrite 'Foo-0.2.3'?"
+    if overwrite:
+        mocked_shutil_rmtree.assert_called_once()
+        mocked_shutil_copytree.assert_called_once()
+        mocked_filesystem_ensure_directory.assert_called_once()
+        logger.warning.assert_called_once()
+
+    else:
+        mocked_shutil_rmtree.assert_not_called()
+        mocked_shutil_copytree.assert_not_called()
+        mocked_filesystem_ensure_directory.assert_not_called()
+
+        logger.warning.assert_called_once_with(
+            "Skip 'Foo-0.2.3' which is already installed."
+        )
+        logger.info.assert_not_called()
+
+
+@pytest.mark.parametrize("answer, expected", [
+    ("y", (True, None)),
+    ("n", (False, None)),
+    ("ya", (True, True)),
+    ("na", (False, False)),
+], ids=[
+    "yes",
+    "no",
+    "yes-to-all",
+    "no-to-all",
+])
+def test_confirm_overwrite(mocked_click_prompt, answer, expected):
+    """Ask user to confirm overwrite existing package."""
+    # User answered
+    mocked_click_prompt.return_value = answer
+
+    result = qip._confirm_overwrite("foo")
+    
+    assert result == expected
+    mocked_click_prompt.assert_called_once_with(
+        "Overwrite 'foo'? ([y]es, [n]o, [ya] yes to all, [na] no to all)",
+        default='n',
+        show_choices=False,
+        show_default=False,
+        type=mock.ANY
     )
-    mocked_shutil_rmtree.assert_not_called()
-
-    mocked_shutil_copytree.assert_not_called()
-    mocked_filesystem_ensure_directory.assert_not_called()
-
-    logger.warning.assert_called_once_with(
-        "Skip 'Foo-0.2.3' which is already installed."
-    )
-    logger.info.assert_not_called()
 
 
 def test_fetch_environ(mocked_wiz_resolve_context):
