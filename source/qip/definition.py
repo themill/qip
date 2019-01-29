@@ -23,12 +23,8 @@ def create(mapping, output_path, editable_mode=False):
 
     definition_data = {
         "identifier": mapping["key"],
-        "version": mapping["version"],
         "namespace": "library"
     }
-
-    if "description" in mapping.keys():
-        definition_data["description"] = mapping["description"]
 
     if "system" in mapping.keys():
         major_version = mapping["system"]["os"]["major_version"]
@@ -119,6 +115,9 @@ def update_definition(definition, mapping, output_path, editable_mode=False):
     :param editable_mode: install in editable mode. Default is False.
 
     """
+    definition = definition.set("version", mapping["version"])
+    definition = definition.set("description", mapping["description"])
+
     if editable_mode:
         definition = definition.set("install-location", mapping["location"])
 
