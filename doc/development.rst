@@ -7,9 +7,8 @@ Python Development
 Development with Qip and Wiz
 ============================
 
-When developing Python modules, it is usually desired to be able to install
-the module in editable mode, directly linking to the source code for rapid
-development.
+Allowing a Python module to be installed in editable mode, directly linking to
+the source code, is important for rapid development.
 
 To ensure that Qip/Wiz can provide the same functionality as pip installing
 into a :term:`Virtualenv`, Qip supports an editable mode.
@@ -46,7 +45,7 @@ registry::
 Definitions
 -----------
 Since it has been installed in editable mode, foo's definition needs have a
-PYTHONPATH set to the source.
+PYTHONPATH set to the source code.
 
 Default definition
 ^^^^^^^^^^^^^^^^^^
@@ -54,9 +53,12 @@ Default definition
 If foo is a module without a custom definition in its repository, a default one
 is being created, including:
 
-- entry points for 'commands'
-- dependencies for 'requirements'
-- path to the source as "PYTHONPATH"
+- ``identifier``
+- ``version``
+- ``description`` from the setup.py
+- entry points for ``commands``
+- dependencies from the setup.py for ``requirements``
+- path to the source as ``install-location``
 
 For example::
 
@@ -78,11 +80,18 @@ Custom definition
 ^^^^^^^^^^^^^^^^^^
 
 If foo is a module with a custom definition in its repository, :term:`Qip` will
-retrieve that and update it with:
+retrieve that and update:
 
-- entry points for 'commands'
-- dependencies for 'requirements'
-- path to the source as 'install-location'
+- ``version``
+- ``description`` from the setup.py
+- append entry points for ``commands``
+- append dependencies from the setup.py for ``requirements``
+- path to the source as ``install-location``
+
+However, it will keep:
+
+- ``identifier``
+- ``environ``
 
 For example::
 
@@ -109,7 +118,7 @@ For example::
     include environment variables, requirements and command aliases, if they
     are special.
 
-    For example, this could be the `wiz.json` inside of foo for the example
+    For example, this could be the ``wiz.json`` inside of foo for the example
     above::
 
         {
