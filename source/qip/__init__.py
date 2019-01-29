@@ -104,12 +104,13 @@ def install(
             editable_mode = False
 
             # Install package to destination.
-            success = copy_to_destination(
+            success, overwrite = copy_to_destination(
                 package_mapping,
                 temporary_path,
                 output_path,
                 overwrite=overwrite
             )
+
             if not success:
                 continue
 
@@ -150,7 +151,8 @@ def copy_to_destination(
 ):
     """Copy package from *source_path* to *destination_path*.
 
-    Return a boolean value indicating whether the copy has been done.
+    Return a tuple with one boolean value indicating whether the copy has been
+    done and one indicating a new value for the *overwrite* option.
 
     :param package_mapping: mapping of the python package built.
     :param source_path: path where the package was built.
@@ -165,9 +167,12 @@ def copy_to_destination(
     identifier = package_mapping["identifier"]
     target = os.path.join(destination_path, package_mapping["target"])
 
+    # By default, future overwrite request will the same as the present one.
+    overwrite_next = overwrite
+
     if os.path.isdir(target):
         if overwrite is None:
-            overwrite = click.confirm("Overwrite '{}'?".format(identifier))
+            overwrite, overwrite_next = _confirm_overwrite(identifier)
 
         if overwrite:
             logger.warning(
@@ -179,14 +184,42 @@ def copy_to_destination(
             logger.warning(
                 "Skip '{}' which is already installed.".format(identifier)
             )
-            return False
+
+            return False, overwrite_next
 
     qip.filesystem.ensure_directory(os.path.dirname(target))
     shutil.copytree(source_path, target)
     logger.debug("Source copied to '{}'".format(target))
 
     logger.info("Installed '{}'.".format(identifier))
-    return True
+
+    return True, overwrite_next
+
+
+def _confirm_overwrite(identifier):
+    """Package overwrite confirmation prompt for *identifier*
+
+    Return a tuple with one boolean value indicating whether *identifier* should
+    be overwritten and one boolean indicating whether future packages should
+    also be overwritten.
+
+    """
+    message = (
+        "Overwrite '{}'? ([y]es, [n]o, [ya] yes to all, [na] no to all)"
+        .format(identifier)
+    )
+
+    answer = click.prompt(
+        message,
+        type=click.Choice(["y", "n", "ya", "na"]),
+        default="n",
+        show_choices=False,
+        show_default=False
+    )
+
+    overwrite = answer[0] == "y"
+    overwrite_next = overwrite if "a" in answer else None
+    return overwrite, overwrite_next
 
 
 def fetch_environ(mapping=None):

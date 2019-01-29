@@ -24,8 +24,9 @@ def test_no_arguments():
 def test_install_no_arguments():
     """Raise error for no arguments on install."""
     runner = CliRunner()
-    expected = ("Usage: install [OPTIONS] REQUESTS...\n\n"
-                "Error: Missing argument \"requests\".\n")
+    expected = ("Usage: install [OPTIONS] REQUESTS...\n"
+                "Try \"install --help\" for help.\n\n"
+                "Error: Missing argument \"REQUESTS...\".\n")
 
     result = runner.invoke(qip.command_line.install)
     assert result.exit_code == 2
