@@ -132,3 +132,20 @@ For example::
                  "maya"
             ]
         }
+
+.. important::
+
+    When retrieving a definition, it is being assumed that the developer
+    has set a :envvar:`PYTHONPATH` environment variable referencing
+    :envvar:`INSTALL_LOCATION` in either :ref:`environ <definition/environ>`
+    or in a :ref:`variant <definition/variants>` of the definition. It is
+    **NOT** being added automatically, to ensure that the developer remains
+    full control over the path order.
+
+    Example::
+
+        {
+            "environ": {
+                "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+            }
+        }

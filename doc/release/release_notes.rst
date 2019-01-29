@@ -34,8 +34,8 @@ Release Notes
         has set a :envvar:`PYTHONPATH` environment variable referencing
         :envvar:`INSTALL_LOCATION` in either :ref:`environ <definition/environ>`
         or in a :ref:`variant <definition/variants>` of the definition. It is
-        not being added automatically, to ensure that the developer remains full
-        control over the path order.
+        **NOT** being added automatically, to ensure that the developer remains
+        full control over the path order.
 
         Example::
 
