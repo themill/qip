@@ -8,13 +8,11 @@ Release Notes
 
     .. change:: changed
 
-        Changed prompt if a package should be overwritten to include a
-        'yes to all' / 'no to all' option. Now the user can decide on overwrites
-        the first time an existing package is encountered in addition to using
-        the :option:`qip install --overwrite-installed` and
-        :option:`qip install --skip-installed` options.
-
-.. release:: Upcoming
+        Updated :func:`qip.install` and :func:`qip.copy_to_destination` to
+        add a 'Yes to all' and 'No to all' options to the package confirmation
+        prompt. The user can now decide to be asked for confirmation once for
+        the overwriting process and apply the given value to all future
+        packages.
 
     .. change:: changed
         :tags: definition
