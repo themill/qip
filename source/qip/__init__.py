@@ -22,24 +22,6 @@ import qip.symbol
 from ._version import __version__
 
 
-def yes_or_no_all(question):
-    """Confirm prompt for yes/no/all."""
-    answer = click.prompt(
-        question + " (y[es], N[o], a[ll])", type=click.Choice([
-            "y", "n", "yes", "no",
-            "ya", "na", "yesa", "noa", "yall", "nall", "yesall", "noall"
-        ]), default="n", show_default=False
-    )
-
-    always = False
-    if 'a' in answer:
-        always = True
-
-    if answer[0] == "y":
-        return True, always
-    return False, always
-
-
 def install(
     requests, output_path, definition_path=None, overwrite=False,
     no_dependencies=False, editable_mode=False
@@ -169,7 +151,8 @@ def copy_to_destination(
 ):
     """Copy package from *source_path* to *destination_path*.
 
-    Return a boolean value indicating whether the copy has been done.
+    Return a tuple with one boolean value indicating whether the copy has been
+    done and one indicating a new value for the *overwrite* option.
 
     :param package_mapping: mapping of the python package built.
     :param source_path: path where the package was built.
@@ -184,12 +167,12 @@ def copy_to_destination(
     identifier = package_mapping["identifier"]
     target = os.path.join(destination_path, package_mapping["target"])
 
-    _always = None
+    # By default, future overwrite request will the same as the present one.
+    overwrite_next = overwrite
+
     if os.path.isdir(target):
         if overwrite is None:
-            overwrite, _always = yes_or_no_all(
-                "Overwrite '{}'?".format(package_mapping["identifier"])
-            )
+            overwrite, overwrite_next = _confirm_overwrite(identifier)
 
         if overwrite:
             logger.warning(
@@ -201,20 +184,42 @@ def copy_to_destination(
             logger.warning(
                 "Skip '{}' which is already installed.".format(identifier)
             )
-            # Reset the overwrite to None if user didn't use the always flag
-            if _always is False:
-                overwrite = None
-            return False, overwrite
+
+            return False, overwrite_next
 
     qip.filesystem.ensure_directory(os.path.dirname(target))
     shutil.copytree(source_path, target)
     logger.debug("Source copied to '{}'".format(target))
 
     logger.info("Installed '{}'.".format(identifier))
-    # Reset the overwrite to None if user didn't use the always flag
-    if _always is False:
-        overwrite = None
-    return True, overwrite
+
+    return True, overwrite_next
+
+
+def _confirm_overwrite(identifier):
+    """Package overwrite confirmation prompt for *identifier*
+
+    Return a tuple with one boolean value indicating whether *identifier* should
+    be overwritten and one boolean indicating whether future packages should
+    also be overwritten.
+
+    """
+    message = (
+        "Overwrite '{}'? ([y]es, [n]o, [ya] yes to all, [na] no to all)"
+        .format(identifier)
+    )
+
+    answer = click.prompt(
+        message,
+        type=click.Choice(["y", "n", "ya", "na"]),
+        default="n",
+        show_choices=False,
+        show_default=False
+    )
+
+    overwrite = answer[0] == "y"
+    always_overwrite = "a" in answer
+    return overwrite, always_overwrite
 
 
 def fetch_environ(mapping=None):
