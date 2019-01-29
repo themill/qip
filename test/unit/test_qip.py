@@ -40,9 +40,9 @@ def mocked_click_prompt(mocker):
 
 
 @pytest.fixture()
-def mocked_yes_or_no_all(mocker):
-    """Return mocked 'qip.yes_or_no_all' function"""
-    return mocker.patch.object(qip, "yes_or_no_all")
+def mocked_confirm_overwrite(mocker):
+    """Return mocked 'qip._confirm_overwrite' function"""
+    return mocker.patch.object(qip, "_confirm_overwrite")
 
 
 @pytest.fixture()
@@ -731,28 +731,27 @@ def test_copy_to_destination_overwrite_existing(
     logger.info.assert_called_once_with("Installed 'Foo-0.2.3'.")
 
 
-@pytest.mark.parametrize("overwrite, always, expected", [
-    (True, False, None),
-    (False, False, None),
+@pytest.mark.parametrize("overwrite, overwrite_next, expected", [
+    (True, None, None),
+    (False, None, None),
     (True, True, True),
-    (False, True, False),
+    (False, False, False),
 ], ids=[
     "yes",
     "no",
-    "yes always",
-    "no always"
+    "yes-to-all",
+    "no-to-all",
 ])
 def test_copy_to_destination_confirm_overwrite(
-    temporary_directory, mocked_yes_or_no_all, mocked_shutil_rmtree,
+    temporary_directory, mocked_confirm_overwrite, mocked_shutil_rmtree,
     mocked_shutil_copytree, mocked_filesystem_ensure_directory, logger,
-    overwrite, always, expected
+    overwrite, overwrite_next, expected
 ):
     """Ask user to confirm overwrite existing package."""
     path = os.path.join(temporary_directory, "Foo", "Foo-0.2.3")
     os.makedirs(path)
 
-    # User answered No.
-    mocked_yes_or_no_all.return_value = (overwrite, always)
+    mocked_confirm_overwrite.return_value = (overwrite, overwrite_next)
 
     mapping = {
         "identifier": "Foo-0.2.3",
@@ -784,33 +783,30 @@ def test_copy_to_destination_confirm_overwrite(
 
 
 @pytest.mark.parametrize("answer, expected", [
-    ("y", (True, False)),
-    ("n", (False, False)),
-    ("yes", (True, False)),
-    ("no", (False, False)),
+    ("y", (True, None)),
+    ("n", (False, None)),
     ("ya", (True, True)),
-    ("na", (False, True)),
-    ("yesa", (True, True)),
-    ("noa", (False, True)),
-    ("yall", (True, True)),
-    ("nall", (False, True)),
-    ("yesall", (True, True)),
-    ("noall", (False, True)),
+    ("na", (False, False)),
 ], ids=[
-    "y", "n", "yes", "no",
-    "ya", "na", "yesa", "noa", "yall", "nall", "yesall", "noall"
+    "yes",
+    "no",
+    "yes-to-all",
+    "no-to-all",
 ])
-def test_yes_or_no_all(mocked_click_prompt, answer, expected):
+def test_confirm_overwrite(mocked_click_prompt, answer, expected):
     """Ask user to confirm overwrite existing package."""
     # User answered
     mocked_click_prompt.return_value = answer
 
-    result = qip.yes_or_no_all("Overwrite 'Foo-0.2.3'?")
-
+    result = qip._confirm_overwrite("foo")
+    
     assert result == expected
     mocked_click_prompt.assert_called_once_with(
-        "Overwrite 'Foo-0.2.3'? (y[es], N[o], a[ll])", default='n',
-        show_default=False, type=mock.ANY
+        "Overwrite 'foo'? ([y]es, [n]o, [ya] yes to all, [na] no to all)",
+        default='n',
+        show_choices=False,
+        show_default=False,
+        type=mock.ANY
     )
 
 

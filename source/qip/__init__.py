@@ -218,8 +218,8 @@ def _confirm_overwrite(identifier):
     )
 
     overwrite = answer[0] == "y"
-    always_overwrite = "a" in answer
-    return overwrite, always_overwrite
+    overwrite_next = overwrite if "a" in answer else None
+    return overwrite, overwrite_next
 
 
 def fetch_environ(mapping=None):
