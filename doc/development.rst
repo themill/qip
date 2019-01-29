@@ -53,12 +53,12 @@ Default definition
 If foo is a module without a custom definition in its repository, a default one
 is being created, including:
 
-- :ref:`identifier <definition/identifier>`
-- :ref:`version <definition/version>`
-- :ref:`description <definition/description>` from the setup.py
-- entry points for :ref:`commands <definition/command>`
-- dependencies from the setup.py for :ref:`requirements <definition/requirements>`
-- path to the source as :ref:`install-location <definition/install_location>`
+- :ref:`identifier <wiz:definition/identifier>`
+- :ref:`version <wiz:definition/version>`
+- :ref:`description <wiz:definition/description>` from the setup.py
+- entry points for :ref:`commands <wiz:definition/command>`
+- dependencies from the setup.py for :ref:`requirements <wiz:definition/requirements>`
+- path to the source as :ref:`install-location <wiz:definition/install_location>`
 
 For example::
 
@@ -82,16 +82,16 @@ Custom definition
 If foo is a module with a custom definition in its repository, :term:`Qip` will
 retrieve that and update:
 
-- :ref:`version <definition/version>`
-- :ref:`description <definition/description>` from the setup.py
-- append entry points for :ref:`commands <definition/command>`
-- append dependencies from the setup.py for :ref:`requirements <definition/requirements>`
-- path to the source as :ref:`install-location <definition/install_location>`
+- :ref:`version <wiz:definition/version>`
+- :ref:`description <wiz:definition/description>` from the setup.py
+- append entry points for :ref:`commands <wiz:definition/command>`
+- append dependencies from the setup.py for :ref:`requirements <wiz:definition/requirements>`
+- path to the source as :ref:`install-location <wiz:definition/install_location>`
 
 However, it will keep:
 
-- :ref:`identifier <definition/identifier>`
-- :ref:`environ <definition/environ>`
+- :ref:`identifier <wiz:definition/identifier>`
+- :ref:`environ <wiz:definition/environ>`
 
 For example::
 
@@ -137,8 +137,8 @@ For example::
 
     When retrieving a definition, it is being assumed that the developer
     has set a :envvar:`PYTHONPATH` environment variable referencing
-    :envvar:`INSTALL_LOCATION` in either :ref:`environ <definition/environ>`
-    or in a :ref:`variant <definition/variants>` of the definition. It is
+    :envvar:`INSTALL_LOCATION` in either :ref:`environ <wiz:definition/environ>`
+    or in a :ref:`variant <wiz:definition/variants>` of the definition. It is
     **NOT** being added automatically, to ensure that the developer remains
     full control over the path order.
 
