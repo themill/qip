@@ -7,6 +7,7 @@ Release Notes
 .. release:: Upcoming
 
     .. change:: changed
+        :tags: command-line
 
         Changed :option:`qip install --output-path` and
         :option:`qip install --definition-path` to default to temporary
