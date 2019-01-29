@@ -24,7 +24,6 @@ with open(
 
 # Compute dependencies.
 INSTALL_REQUIRES = [
-    "pipdeptree >= 0.13.0, < 1",
     "packaging >= 17.1, < 18",
     "pip >= 10, < 19",
     "wiz >= 1.0.0, < 2",

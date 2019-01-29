@@ -119,42 +119,35 @@ def test_install(
     packages = [
         {
             "identifier": "Foo-0.2.3",
+            "name": "Foo",
+            "version": "0.2.3",
             "requirements": [
-                {
-                    "identifier": "?",
-                    "request": "bim >= 3, < 4",
-                },
-                {
-                    "identifier": "?",
-                    "request": "bar",
-                }
+                "bim >= 3, < 4",
+                "bar",
             ]
         },
         {
             "identifier": "Bar-22.3",
+            "name": "Bar",
+            "version": "22.3",
             "requirements": [
-                {
-                    "identifier": "Foo-0.2.3",
-                    "request": "foo >= 0.1.0, < 1",
-                }
+                "foo",
             ]
         },
         {
             "identifier": "Bim-3.2.1",
+            "name": "Bim",
+            "version": "3.2.1",
             "requirements": [
-                {
-                    "identifier": "?",
-                    "request": "bar > 22",
-                }
+                "bar > 22",
             ]
         },
         {
             "identifier": "Bar-22.3",
+            "name": "Bar",
+            "version": "22.3",
             "requirements": [
-                {
-                    "identifier": "Foo-0.2.3",
-                    "request": "foo >= 0.1.0, < 1",
-                }
+                "foo",
             ]
         }
     ]
@@ -178,7 +171,10 @@ def test_install(
     )
 
     mocked_fetch_environ.assert_called_once_with(
-        mapping={"PYTHONPATH": "/tmp2/lib/python2.7/site-packages"}
+        mapping={
+            "PYTHONPATH": "/tmp2/lib/python2.7/site-packages",
+            "PYTHONWARNINGS": "ignore:DEPRECATION"
+        }
     )
 
     assert mocked_package_install.call_count == 4
@@ -246,23 +242,14 @@ def test_install_with_definition_path(
         {
             "identifier": "Foo-0.2.3",
             "requirements": [
-                {
-                    "identifier": "?",
-                    "request": "bim >= 3, < 4",
-                },
-                {
-                    "identifier": "?",
-                    "request": "bar",
-                }
+                "bim >= 3, < 4",
+                "bar",
             ]
         },
         {
             "identifier": "Bar-22.3",
             "requirements": [
-                {
-                    "identifier": "Foo-0.2.3",
-                    "request": "foo >= 0.1.0, < 1",
-                }
+                "foo",
             ]
         },
         {
@@ -296,7 +283,10 @@ def test_install_with_definition_path(
     )
 
     mocked_fetch_environ.assert_called_once_with(
-        mapping={"PYTHONPATH": "/tmp2/lib/python2.7/site-packages"}
+        mapping={
+            "PYTHONPATH": "/tmp2/lib/python2.7/site-packages",
+            "PYTHONWARNINGS": "ignore:DEPRECATION"
+        }
     )
 
     assert mocked_package_install.call_count == 3
@@ -329,18 +319,22 @@ def test_install_with_definition_path(
 
     assert mocked_definition_retrieve.call_count == 3
     mocked_definition_retrieve.assert_any_call(
-        packages[0], "/tmp2", "/path/to/install"
+        packages[0], "/tmp2", "/path/to/install", editable_mode=editable_mode
     )
     mocked_definition_retrieve.assert_any_call(
-        packages[1], "/tmp2", "/path/to/install"
+        packages[1], "/tmp2", "/path/to/install", editable_mode=False
     )
     mocked_definition_retrieve.assert_any_call(
-        packages[2], "/tmp2", "/path/to/install"
+        packages[2], "/tmp2", "/path/to/install", editable_mode=False
     )
 
     assert mocked_definition_create.call_count == 2
-    mocked_definition_create.assert_any_call(packages[1], "/path/to/install")
-    mocked_definition_create.assert_any_call(packages[2], "/path/to/install")
+    mocked_definition_create.assert_any_call(
+        packages[1], "/path/to/install", editable_mode=False
+    )
+    mocked_definition_create.assert_any_call(
+        packages[2], "/path/to/install", editable_mode=False
+    )
 
     assert mocked_wiz_export_definition.call_count == 3
     mocked_wiz_export_definition.assert_any_call(
@@ -382,23 +376,14 @@ def test_install_without_dependencies(
         {
             "identifier": "Foo-0.2.3",
             "requirements": [
-                {
-                    "identifier": "?",
-                    "request": "bim >= 3, < 4",
-                },
-                {
-                    "identifier": "?",
-                    "request": "bar",
-                }
+                "bim >= 3, < 4",
+                "bar",
             ]
         },
         {
             "identifier": "Bar-22.3",
             "requirements": [
-                {
-                    "identifier": "Foo-0.2.3",
-                    "request": "foo >= 0.1.0, < 1",
-                }
+                "foo",
             ]
         }
     ]
@@ -424,7 +409,10 @@ def test_install_without_dependencies(
     )
 
     mocked_fetch_environ.assert_called_once_with(
-        mapping={"PYTHONPATH": "/tmp2/lib/python2.7/site-packages"}
+        mapping={
+            "PYTHONPATH": "/tmp2/lib/python2.7/site-packages",
+            "PYTHONWARNINGS": "ignore:DEPRECATION"
+        }
     )
 
     assert mocked_package_install.call_count == 2
@@ -480,14 +468,8 @@ def test_install_with_package_skipped(
         {
             "identifier": "Foo-0.2.3",
             "requirements": [
-                {
-                    "identifier": "?",
-                    "request": "bim >= 3, < 4",
-                },
-                {
-                    "identifier": "?",
-                    "request": "bar",
-                }
+                "bim >= 3, < 4",
+                "bar",
             ]
         }
     ]
@@ -509,7 +491,10 @@ def test_install_with_package_skipped(
     )
 
     mocked_fetch_environ.assert_called_once_with(
-        mapping={"PYTHONPATH": "/tmp2/lib/python2.7/site-packages"}
+        mapping={
+            "PYTHONPATH": "/tmp2/lib/python2.7/site-packages",
+            "PYTHONWARNINGS": "ignore:DEPRECATION"
+        }
     )
 
     assert mocked_package_install.call_count == 1
@@ -561,7 +546,10 @@ def test_install_with_package_installation_error(
     )
 
     mocked_fetch_environ.assert_called_once_with(
-        mapping={"PYTHONPATH": "/tmp2/lib/python2.7/site-packages"}
+        mapping={
+            "PYTHONPATH": "/tmp2/lib/python2.7/site-packages",
+            "PYTHONWARNINGS": "ignore:DEPRECATION"
+        }
     )
 
     assert mocked_package_install.call_count == 2

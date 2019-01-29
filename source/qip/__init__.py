@@ -68,14 +68,20 @@ def install(
 
     try:
         # Update environment mapping.
-        environ_mapping = fetch_environ(mapping={"PYTHONPATH": install_path})
+        environ_mapping = fetch_environ(
+            mapping={
+                "PYTHONPATH": install_path,
+                "PYTHONWARNINGS": "ignore:DEPRECATION"
+            }
+        )
 
-        # Record requests and package identifiers to prevent duplication
+        # Record requests and package installed to prevent duplications.
         installed_packages = set()
         installed_requests = set()
 
         # Fill up queue with requirements extracted from requests.
         queue = _queue.Queue()
+
         for request in requests:
             queue.put(request)
 
@@ -90,6 +96,7 @@ def install(
                     request, temporary_path, environ_mapping, cache_dir,
                     editable_mode=editable_mode
                 )
+
             except RuntimeError as error:
                 logger.error(str(error))
                 continue
@@ -99,9 +106,6 @@ def install(
 
             installed_packages.add(package_mapping["identifier"])
             installed_requests.add(request)
-
-            # Reset editable mode to False for requirements.
-            editable_mode = False
 
             # Install package to destination.
             success, overwrite = copy_to_destination(
@@ -117,25 +121,27 @@ def install(
             # Extract a wiz definition is requested.
             if definition_path is not None:
                 definition_data = qip.definition.retrieve(
-                    package_mapping, temporary_path, output_path
+                    package_mapping, temporary_path, output_path,
+                    editable_mode=editable_mode
                 )
                 if definition_data is None:
                     definition_data = qip.definition.create(
-                        package_mapping, output_path
+                        package_mapping, output_path,
+                        editable_mode=editable_mode
                     )
 
                 wiz.export_definition(
                     definition_path, definition_data, overwrite=True
                 )
 
+            # Reset editable mode to False for requirements.
+            editable_mode = False
+
             # Fill up queue with requirements extracted from package
             # dependencies.
             if not no_dependencies:
-                for mapping in package_mapping.get("requirements", []):
-                    if mapping["identifier"] in installed_packages:
-                        continue
-
-                    queue.put(mapping["request"])
+                for request in package_mapping.get("requirements", []):
+                    queue.put(request)
 
             # Clean up for next installation.
             logger.debug("Clean up directory content")
