@@ -53,12 +53,12 @@ Default definition
 If foo is a module without a custom definition in its repository, a default one
 is being created, including:
 
-- ``identifier``
-- ``version``
-- ``description`` from the setup.py
-- entry points for ``commands``
-- dependencies from the setup.py for ``requirements``
-- path to the source as ``install-location``
+- :ref:`identifier <definition/identifier>`
+- :ref:`version <definition/version>`
+- :ref:`description <definition/description>` from the setup.py
+- entry points for :ref:`commands <definition/command>`
+- dependencies from the setup.py for :ref:`requirements <definition/requirements>`
+- path to the source as :ref:`install-location <definition/install_location>`
 
 For example::
 
@@ -82,16 +82,16 @@ Custom definition
 If foo is a module with a custom definition in its repository, :term:`Qip` will
 retrieve that and update:
 
-- ``version``
-- ``description`` from the setup.py
-- append entry points for ``commands``
-- append dependencies from the setup.py for ``requirements``
-- path to the source as ``install-location``
+- :ref:`version <definition/version>`
+- :ref:`description <definition/description>` from the setup.py
+- append entry points for :ref:`commands <definition/command>`
+- append dependencies from the setup.py for :ref:`requirements <definition/requirements>`
+- path to the source as :ref:`install-location <definition/install_location>`
 
 However, it will keep:
 
-- ``identifier``
-- ``environ``
+- :ref:`identifier <definition/identifier>`
+- :ref:`environ <definition/environ>`
 
 For example::
 
