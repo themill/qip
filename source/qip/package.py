@@ -287,11 +287,14 @@ def extract_metadata_mapping(name, environ_mapping):
         entry_points = entry_points.group(1)
 
         mapping["command"] = {}
-        for command in (
-            element.split("=")[0].strip()
+        for alias, command in (
+            (
+                element.split("=")[0].strip(),
+                element.split("=")[1].split(":")[0].strip()
+            )
             for element in entry_points.split("\n") if element
         ):
-            mapping["command"][command] = "python -m {}".format(command)
+            mapping["command"][alias] = "python -m {}".format(command)
 
     return mapping
 
