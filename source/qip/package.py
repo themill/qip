@@ -294,6 +294,9 @@ def extract_metadata_mapping(name, environ_mapping):
             )
             for element in entry_points.split("\n") if element
         ):
+            if command.endswith(".__main__"):
+                command = command[:-9]
+
             mapping["command"][alias] = "python -m {}".format(command)
 
     return mapping
