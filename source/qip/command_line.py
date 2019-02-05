@@ -90,10 +90,14 @@ def install(
     logger = mlog.Logger(__name__ + ".install")
 
     if output_path is None:
-        output_path = os.path.join(tempfile.gettempdir(), "qip", "packages")
+        output_path = os.path.join(
+            tempfile.gettempdir(), "qip", "packages"
+        )
 
     if definition_path is None:
-        definition_path = os.path.join(tempfile.gettempdir(), "qip", "definitions")
+        definition_path = os.path.join(
+            tempfile.gettempdir(), "qip", "definitions"
+        )
 
     qip.install(
         requests, output_path,
