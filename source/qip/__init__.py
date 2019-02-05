@@ -68,14 +68,20 @@ def install(
 
     try:
         # Update environment mapping.
-        environ_mapping = fetch_environ(mapping={"PYTHONPATH": install_path})
+        environ_mapping = fetch_environ(
+            mapping={
+                "PYTHONPATH": install_path,
+                "PYTHONWARNINGS": "ignore:DEPRECATION"
+            }
+        )
 
-        # Record requests and package identifiers to prevent duplication
+        # Record requests and package installed to prevent duplications.
         installed_packages = set()
         installed_requests = set()
 
         # Fill up queue with requirements extracted from requests.
         queue = _queue.Queue()
+
         for request in requests:
             queue.put(request)
 
@@ -90,6 +96,7 @@ def install(
                     request, temporary_path, environ_mapping, cache_dir,
                     editable_mode=editable_mode
                 )
+
             except RuntimeError as error:
                 logger.error(str(error))
                 continue
@@ -100,41 +107,41 @@ def install(
             installed_packages.add(package_mapping["identifier"])
             installed_requests.add(request)
 
-            # Reset editable mode to False for requirements.
-            editable_mode = False
-
             # Install package to destination.
-            success = copy_to_destination(
+            success, overwrite = copy_to_destination(
                 package_mapping,
                 temporary_path,
                 output_path,
                 overwrite=overwrite
             )
+
             if not success:
                 continue
 
             # Extract a wiz definition is requested.
             if definition_path is not None:
                 definition_data = qip.definition.retrieve(
-                    package_mapping, temporary_path, output_path
+                    package_mapping, temporary_path, output_path,
+                    editable_mode=editable_mode
                 )
                 if definition_data is None:
                     definition_data = qip.definition.create(
-                        package_mapping, output_path
+                        package_mapping, output_path,
+                        editable_mode=editable_mode
                     )
 
                 wiz.export_definition(
                     definition_path, definition_data, overwrite=True
                 )
 
+            # Reset editable mode to False for requirements.
+            editable_mode = False
+
             # Fill up queue with requirements extracted from package
             # dependencies.
             if not no_dependencies:
-                for mapping in package_mapping.get("requirements", []):
-                    if mapping["identifier"] in installed_packages:
-                        continue
-
-                    queue.put(mapping["request"])
+                for request in package_mapping.get("requirements", []):
+                    queue.put(request)
 
             # Clean up for next installation.
             logger.debug("Clean up directory content")
@@ -150,7 +157,8 @@ def copy_to_destination(
 ):
     """Copy package from *source_path* to *destination_path*.
 
-    Return a boolean value indicating whether the copy has been done.
+    Return a tuple with one boolean value indicating whether the copy has been
+    done and one indicating a new value for the *overwrite* option.
 
     :param package_mapping: mapping of the python package built.
     :param source_path: path where the package was built.
@@ -165,9 +173,12 @@ def copy_to_destination(
     identifier = package_mapping["identifier"]
     target = os.path.join(destination_path, package_mapping["target"])
 
+    # By default, future overwrite request will the same as the present one.
+    overwrite_next = overwrite
+
     if os.path.isdir(target):
         if overwrite is None:
-            overwrite = click.confirm("Overwrite '{}'?".format(identifier))
+            overwrite, overwrite_next = _confirm_overwrite(identifier)
 
         if overwrite:
             logger.warning(
@@ -179,14 +190,42 @@ def copy_to_destination(
             logger.warning(
                 "Skip '{}' which is already installed.".format(identifier)
             )
-            return False
+
+            return False, overwrite_next
 
     qip.filesystem.ensure_directory(os.path.dirname(target))
     shutil.copytree(source_path, target)
     logger.debug("Source copied to '{}'".format(target))
 
     logger.info("Installed '{}'.".format(identifier))
-    return True
+
+    return True, overwrite_next
+
+
+def _confirm_overwrite(identifier):
+    """Package overwrite confirmation prompt for *identifier*
+
+    Return a tuple with one boolean value indicating whether *identifier* should
+    be overwritten and one boolean indicating whether future packages should
+    also be overwritten.
+
+    """
+    message = (
+        "Overwrite '{}'? ([y]es, [n]o, [ya] yes to all, [na] no to all)"
+        .format(identifier)
+    )
+
+    answer = click.prompt(
+        message,
+        type=click.Choice(["y", "n", "ya", "na"]),
+        default="n",
+        show_choices=False,
+        show_default=False
+    )
+
+    overwrite = answer[0] == "y"
+    overwrite_next = overwrite if "a" in answer else None
+    return overwrite, overwrite_next
 
 
 def fetch_environ(mapping=None):

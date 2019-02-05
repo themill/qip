@@ -1,7 +1,6 @@
 # :coding: utf-8
 
 import os
-import re
 
 import mlog
 import wiz
@@ -9,25 +8,23 @@ import wiz
 import qip.symbol
 
 
-def create(mapping, path):
+def create(mapping, output_path, editable_mode=False):
     """Create :term:`Wiz` definition for package *mapping*.
 
-    :param mapping: mapping of the python package built.
-    :param path: installation path of all python packages.
-    :returns: definition data.
+    :param mapping: mapping of the python package built as returned by
+        :func:`qip.package.install`.
+    :param output_path: installation path of all python packages.
+    :param editable_mode: install in editable mode. Default is False.
+
+    :returns: :class:`wiz.definition.Definition` instance.
 
     """
     logger = mlog.Logger(__name__ + ".create")
 
     definition_data = {
         "identifier": mapping["key"],
-        "version": mapping["version"],
-        "install-location": path,
-        "group": "python"
+        "namespace": "library"
     }
-
-    if "description" in mapping.keys():
-        definition_data["description"] = mapping["description"]
 
     if "system" in mapping.keys():
         major_version = mapping["system"]["os"]["major_version"]
@@ -43,61 +40,47 @@ def create(mapping, path):
             )
         }
 
-    if "requirements" in mapping.keys():
-        definition_data["requirements"] = [
-            _mapping["request"] for _mapping in mapping["requirements"]
-        ]
-
-    # Compute relative installation path.
-    installation_path = os.path.join(
-        qip.symbol.INSTALL_LOCATION, mapping["target"]
-    )
-
     # Identify if a library is installed.
     lib_path = os.path.join(
-        path, mapping["target"], qip.symbol.P27_LIB_DESTINATION
+        output_path, mapping["target"], qip.symbol.P27_LIB_DESTINATION
     )
-
     if os.path.isdir(lib_path):
         definition_data.setdefault("environ", {})
         definition_data["environ"]["PYTHONPATH"] = (
-            "{}:${{PYTHONPATH}}".format(
-                os.path.join(installation_path, qip.symbol.P27_LIB_DESTINATION)
-            )
+            "{}:${{PYTHONPATH}}".format(qip.symbol.INSTALL_LOCATION)
         )
 
-    # Identify if an executable is installed.
-    bin_path = os.path.join(path, mapping["target"], qip.symbol.BIN_DESTINATION)
-    if os.path.isdir(bin_path):
-        definition_data.setdefault("environ", {})
-        definition_data["environ"]["PATH"] = (
-            "{}:${{PATH}}".format(
-                os.path.join(installation_path, qip.symbol.BIN_DESTINATION)
-            )
-        )
+    # Update definition with install-location, commands and requirements.
+    definition = wiz.definition.Definition(definition_data)
+    definition = update_definition(
+        definition, mapping, output_path,
+        editable_mode=editable_mode
+    )
 
     logger.info(
         "Wiz definition created for '{}'.".format(mapping["identifier"])
     )
-    return definition_data
+    return definition
 
 
-def retrieve(mapping, temporary_path, output_path):
+def retrieve(mapping, temporary_path, output_path, editable_mode=False):
     """Retrieve :term:`Wiz` definition from package installed.
 
-    :param mapping: mapping of the python package built.
+    :param mapping: mapping of the python package built as returned by
+        :func:`qip.package.install`.
     :param temporary_path: path where the package was temporarily installed to.
     :param output_path: path where the package was installed to.
-    :returns: None if no definition was found, otherwise return the definition.
+    :param editable_mode: install in editable mode. Default is False.
+
+    :returns: None if no definition was found, otherwise return the
+        :class:`wiz.definition.Definition` instance.
 
     """
     logger = mlog.Logger(__name__ + ".retrieve")
 
-    definition_paths = [
-        os.path.join(
-            temporary_path, "share", "wiz", mapping["name"], "wiz.json"
-        )
-    ]
+    definition_paths = [os.path.join(
+        temporary_path, "share", "wiz", mapping["name"], "wiz.json"
+    )]
 
     # Necessary as editable mode does not create the 'share' directory.
     if mapping.get("location"):
@@ -109,10 +92,11 @@ def retrieve(mapping, temporary_path, output_path):
         if not os.path.exists(definition_path):
             continue
 
-        # Update definitions install locations.
+        # Update definition with install-location, commands and requirements.
         definition = wiz.load_definition(definition_path)
-        definition = _update_install_location(
-            definition, output_path, mapping["target"]
+        definition = update_definition(
+            definition, mapping, output_path,
+            editable_mode=editable_mode
         )
 
         logger.info(
@@ -121,33 +105,33 @@ def retrieve(mapping, temporary_path, output_path):
         return definition
 
 
-def _update_install_location(definition, path, target):
-    """Update a definition with new install paths.
+def update_definition(definition, mapping, output_path, editable_mode=False):
+    """Update a *definition* from package *mapping*.
 
-    :param definition: valid :class:`~wiz.definition.Definition` instance.
-    :param path: path where the package was installed to.
-    :param target: relative path to where the package is installed.
-    :returns: a definition where all occurances of ${INSTALL_LOCATION} have been
-    replaced by ${INSTALL_LOCATION}/target and an 'install-location' key has
-    been added.
+    :param definition: :class:`~wiz.definition.Definition` instance.
+    :param mapping: mapping of the python package built as returned by
+        :func:`qip.package.install`.
+    :param output_path: path to the package install root location.
+    :param editable_mode: install in editable mode. Default is False.
 
     """
-    target = os.path.join("${INSTALL_LOCATION}", target)
+    definition = definition.set("version", mapping["version"])
+    definition = definition.set("description", mapping["description"])
 
-    new_environ = {}
-    for key, value in definition.environ.items():
-        new_environ[key] = re.sub("\\${INSTALL_LOCATION}", target, value)
-    if len(new_environ):
-        definition = definition.set("environ", new_environ)
+    if editable_mode:
+        definition = definition.set("install-location", mapping["location"])
 
-    new_variant = []
-    for variant in definition.variants:
-        new_environ = {}
-        for key, value in variant.environ.items():
-            new_environ[key] = re.sub("\\${INSTALL_LOCATION}", target, value)
-        if len(new_environ):
-            new_variant.append(variant.update("environ", new_environ))
-    if len(new_variant):
-        definition = definition.set("variants", new_variant)
+    else:
+        definition = definition.set("install-root", output_path)
+        definition = definition.set("install-location", os.path.join(
+            qip.symbol.INSTALL_ROOT, mapping["target"],
+            qip.symbol.P27_LIB_DESTINATION
+        ))
 
-    return definition.set("install-location", path)
+    if "command" in mapping.keys():
+        definition = definition.update("command", mapping["command"])
+
+    if "requirements" in mapping.keys():
+        definition = definition.extend("requirements", mapping["requirements"])
+
+    return definition

@@ -24,25 +24,20 @@ with open(
 
 # Compute dependencies.
 INSTALL_REQUIRES = [
-    "pipdeptree >= 0.13.0, < 1",
     "packaging >= 17.1, < 18",
     "pip >= 10, < 19",
-    "wiz >= 1.0.0, < 2",
+    "wiz >= 2, < 3",
     "mlog >= 0.0.6, < 1",
-    "click >= 6.7"
+    "click >= 7, < 8"
 ]
 DOC_REQUIRES = [
     "sphinx >= 1.2.2, < 2",
     "sphinx_rtd_theme >= 0.1.6, < 1",
     "lowdown >= 0.1.0, < 2",
     "sphinx-click>=1.2.0",
-
-    # Restricted as 0.1.3 causes failed builds.
-    # https://bitbucket.org/birkenfeld/sphinx-contrib/issues/168
-    "sphinxcontrib-autoprogram >= 0.1.2, !=0.1.3, < 1"
-
 ]
 TEST_REQUIRES = [
+    "mock >= 2, < 3",
     "pytest-runner >= 2.7, < 3",
     "pytest >= 3.0.0, < 4",
     "pytest-mock >= 0.11, < 1",

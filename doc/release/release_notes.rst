@@ -4,6 +4,108 @@
 Release Notes
 *************
 
+.. release:: Upcoming
+
+    .. change:: new
+        :tags: documentation
+
+        Added :ref:`development` section.
+
+    .. change:: changed
+        :tags: definition
+
+        Updated :mod:`qip.definition` to add
+        :ref:`install-root <wiz:definition/install_root>` and
+        :ref:`install-location <wiz:definition/install_location>` values when
+        creating or retrieving a definition.
+
+        When installing a package via the command line, the :ref:`install-root
+        <definition/install_root>` value is being set by the
+        :option:`qip install --output-path` command. In **editable** mode,
+        no :ref:`install-root <wiz:definition/install_root>` value is added.
+
+        The :ref:`install-location <wiz:definition/install_location>` value is
+        being set to the actual python package location and is relative to the
+        :ref:`install-root <wiz:definition/install_root>` value. In **editable**
+        mode, that path is pointing at the source to ease development without
+        having to reinstall the package.
+
+        When retrieving a definition, it is being assumed that the developer
+        has set a :envvar:`PYTHONPATH` environment variable referencing
+        :envvar:`INSTALL_LOCATION` in either
+        :ref:`environ <wiz:definition/environ>` or in a
+        :ref:`variant <wiz:definition/variants>` of the definition. It is
+        **NOT** being added automatically, to ensure that the developer remains
+        full control over the path order.
+
+        Example::
+
+            {
+                "environ": {
+                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+                }
+            }
+
+    .. change:: changed
+        :tags: package
+
+        Updated :func:`qip.package.extract_dependency_mapping` to use
+        :mod:`qip.package_data.pip_query` to extract package dependency instead
+        of `pipdeptree <https://github.com/naiquevin/pipdeptree>`_ so that
+        extra requirements are taken into account (e.g. 'foo[dev]').
+
+    .. change:: changed
+        :tags: package
+
+        Updated :func:`qip.package.extract_metadata_mapping` to retrieve entry
+        points from package to use as command aliases in the exported
+        definitions (e.g. "python -m foo").
+
+    .. change:: changed
+        :tags: definition
+
+        Updated :mod:`qip.definition` to use entry point python calls instead
+        of executables to update :ref:`command <definition/command>` value.
+        When retrieving a definition, the command aliases defined by the
+        developer are preserved, but missing entry points are being added, if
+        available.
+
+    .. change:: changed
+        :tags: definition
+
+        Updated :mod:`qip.definition` to update :ref:`requirements
+        <definition/requirements>` when retrieving a definition. Any
+        requirements in the retrieved definitions are extended to ensure that
+        the developer can add requirements that are not in the *setup.py*
+        configuration file (e.g. "maya", "nuke", etc)
+
+    .. change:: changed
+        :tags: command-line
+
+        Changed :option:`qip install --output-path` and
+        :option:`qip install --definition-path` to default to temporary
+        directories when no input has been specified.
+
+    .. change:: changed
+
+        Updated :func:`qip.install` and :func:`qip.copy_to_destination` to
+        add a 'Yes to all' and 'No to all' options to the package confirmation
+        prompt. The user can now decide to be asked for confirmation once for
+        the overwriting process and apply the given value to all future
+        packages.
+
+    .. change:: changed
+        :tags: definition
+
+        Changed 'group' keyword to 'namespace' when creating new definitions for
+        packages from :term:`Pypi` and set its value to 'library'.
+        The 'group' keyword has been replaced in :term:`Wiz` 1.3.0.
+
+    .. change:: changed
+
+        Enforced the request name in lower case, to make sure any packages
+        with upper or camel case are taken into account, similar to pip.
+
 .. release:: 1.1.1
     :date: 2018-10-25
 
