@@ -13,4 +13,5 @@ qip
     :maxdepth: 1
     :glob:
 
+    */index
     *
