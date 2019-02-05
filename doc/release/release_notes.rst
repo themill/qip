@@ -4,7 +4,8 @@
 Release Notes
 *************
 
-.. release:: Upcoming
+.. release:: 1.2.0
+    :date: 2019-02-04
 
     .. change:: new
         :tags: documentation
