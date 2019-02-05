@@ -20,7 +20,6 @@ extensions = [
     "sphinx.ext.extlinks",
     "sphinx.ext.intersphinx",
     "sphinx.ext.viewcode",
-    "sphinxcontrib.autoprogram",
     "lowdown",
     'sphinx_click.ext'
 ]

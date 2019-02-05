@@ -4,6 +4,13 @@
 Release Notes
 *************
 
+.. release:: Upcoming
+
+    .. change:: fixed
+
+        Removed unnecessary `sphinxcontrib-autoprogram
+        <https://pypi.org/project/sphinxcontrib-autoprogram>`_ dependency.
+
 .. release:: 1.2.0
     :date: 2019-02-04
 
