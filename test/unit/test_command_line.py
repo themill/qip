@@ -1,5 +1,8 @@
 # :coding: utf-8
 
+import os
+import tempfile
+
 import pytest
 
 import qip.command_line
@@ -40,8 +43,10 @@ def test_missing_output(mocked_install):
 
     runner.invoke(qip.command_line.install, ["test"])
     mocked_install.assert_called_once_with(
-        ("test",), "/tmp/qip/packages",
-        definition_path="/tmp/qip/definitions",
+        ("test",), os.path.join(tempfile.gettempdir(), "qip", "packages"),
+        definition_path=os.path.join(
+            tempfile.gettempdir(), "qip", "definitions"
+        ),
         editable_mode=False,
         no_dependencies=False,
         overwrite=None
@@ -76,7 +81,9 @@ def test_install(mocked_install, packages):
 
     mocked_install.assert_called_once_with(
         packages, "/path",
-        definition_path="/tmp/qip/definitions",
+        definition_path=os.path.join(
+            tempfile.gettempdir(), "qip", "definitions"
+        ),
         editable_mode=False,
         no_dependencies=False,
         overwrite=None
