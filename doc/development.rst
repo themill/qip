@@ -32,7 +32,7 @@ The output definitions can be found (by default) in::
 Foo and all its dependencies should now be available to :term:`Wiz` through this
 registry::
 
-    > wiz -dsp /tmp/qip/definitions use foo -- foo
+    > wiz -add /tmp/qip/definitions use foo -- foo
 
 .. hint::
 
