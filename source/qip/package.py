@@ -4,6 +4,7 @@ from __future__ import print_function
 import re
 import json
 import os
+import wheel.pep425tags
 
 import mlog
 
@@ -167,8 +168,10 @@ def fetch_mapping_from_environ(name, environ_mapping, extra=None):
     )
     if mapping.get("system"):
         os_mapping = mapping["system"]["os"]
-        mapping["target"] += "-{}{}".format(
-            os_mapping["name"], os_mapping["major_version"]
+        mapping["target"] += "-{os_name}{os_version}-{abi_tag}".format(
+            os_name=os_mapping["name"],
+            os_version=os_mapping["major_version"],
+            abi_tag=wheel.pep425tags.get_abi_tag()
         )
 
     logger.info("Fetched '{}'.".format(mapping["identifier"]))
