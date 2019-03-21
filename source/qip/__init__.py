@@ -24,7 +24,7 @@ from ._version import __version__
 
 def install(
     requests, output_path, definition_path=None, overwrite=False,
-    no_dependencies=False, editable_mode=False
+    no_dependencies=False, editable_mode=False, python_exe=None
 ):
     """Install packages to *output_path* from *requests*.
 
@@ -50,6 +50,8 @@ def install(
     :param no_dependencies: indicate whether package dependencies should be
         skipped. Default is False.
     :param editable_mode: install in editable mode. Default is False.
+    :param python_exe: path to a python executable to use instead of fetching
+        the Python environment via a Wiz request.
 
     """
     logger = mlog.Logger(__name__ + ".install")
@@ -72,7 +74,8 @@ def install(
             mapping={
                 "PYTHONPATH": install_path,
                 "PYTHONWARNINGS": "ignore:DEPRECATION"
-            }
+            },
+            python_exe=python_exe
         )
 
         # Record requests and package installed to prevent duplications.
@@ -228,11 +231,13 @@ def _confirm_overwrite(identifier):
     return overwrite, overwrite_next
 
 
-def fetch_environ(mapping=None):
+def fetch_environ(mapping=None, python_exe=None):
     """Fetch mapping with all environment variables needed.
 
     :param mapping: optional custom environment mapping to be added to initial
         environment.
+    :param python_exe: path to a python executable to use instead of fetching
+        the Python environment via a Wiz request.
 
     """
     logger = mlog.Logger(__name__ + ".fetch")
@@ -241,8 +246,17 @@ def fetch_environ(mapping=None):
     if mapping is None:
         mapping = {}
 
-    context = wiz.resolve_context(
-        [qip.symbol.P27_REQUEST], environ_mapping=mapping
-    )
+    # If a Python executable is provided, use it instead of the Wiz request.
+    if python_exe is not None:
+        environ_mapping = mapping.copy()
+        environ_mapping.update({
+            "PATH": "{}:${{PATH}}".format(os.path.dirname(python_exe))
+        })
+        context = {"environ": environ_mapping}
+
+    else:
+        context = wiz.resolve_context(
+            [qip.symbol.P27_REQUEST], environ_mapping=mapping
+        )
 
     return context["environ"]

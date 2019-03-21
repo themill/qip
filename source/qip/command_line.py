@@ -62,6 +62,14 @@ def main(verbosity):
     is_flag=True,
     default=False
 )
+@click.option(
+    "--python-exe",
+    help=(
+        "Target a specific Python executable path instead of relying on Wiz"
+        "to fetch the Python environment required."
+    ),
+    type=click.Path(),
+)
 @click.argument(
     "requests",
     nargs=-1,
@@ -69,7 +77,7 @@ def main(verbosity):
 )
 def install(
         requests, output_path, definition_path, overwrite_installed,
-        no_dependencies, editable
+        no_dependencies, editable, python_exe
 ):
     """Install a package.
 
@@ -104,7 +112,8 @@ def install(
         definition_path=definition_path,
         overwrite=overwrite_installed,
         no_dependencies=no_dependencies,
-        editable_mode=editable
+        editable_mode=editable,
+        python_exe=python_exe
     )
 
     logger.info("Package output directory: {!r}".format(output_path))
