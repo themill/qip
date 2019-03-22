@@ -122,23 +122,32 @@ def update_definition(definition, mapping, output_path, editable_mode=False):
     definition = definition.set("version", mapping["version"])
     definition = definition.set("description", mapping["description"])
 
+    # Add commands to the root level.
+    if "command" in mapping.keys():
+        definition = definition.update("command", mapping["command"])
+
+    # Create variant mapping for Python version
+    variant_mapping = {
+        "identifier": mapping["python"]["identifier"],
+        "environ": {
+            "PYTHONPATH": "{}:${{PYTHONPATH}}".format(
+                qip.symbol.INSTALL_LOCATION
+            )
+        },
+        "requirements": (
+            [mapping["python"]["request"]] + mapping.get("requirements", [])
+        )
+    }
+
     if editable_mode:
-        definition = definition.set("install-location", mapping["location"])
+        variant_mapping["install-location"] = mapping["location"]
 
     else:
         definition = definition.set("install-root", output_path)
-        definition = definition.set("install-location", os.path.join(
+        variant_mapping["install-location"] = os.path.join(
             qip.symbol.INSTALL_ROOT, mapping["target"],
             qip.symbol.LIB_DESTINATION
-        ))
+        )
 
-    variant = definition.variants[0]
-
-    if "command" in mapping.keys():
-        variant = variant.update("command", mapping["command"])
-
-    if "requirements" in mapping.keys():
-        variant = variant.extend("requirements", mapping["requirements"])
-
-    definition = definition.set("variants", [variant])
+    definition = definition.set("variants", [variant_mapping])
     return definition
