@@ -63,7 +63,7 @@ def install(
     # Setup temporary folder for package installation.
     cache_dir = tempfile.mkdtemp()
     temporary_path = tempfile.mkdtemp()
-    install_path = os.path.join(temporary_path, qip.symbol.P27_LIB_DESTINATION)
+    install_path = os.path.join(temporary_path, qip.symbol.LIB_DESTINATION)
 
     # Needed for the editable mode.
     qip.filesystem.ensure_directory(install_path)
