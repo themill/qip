@@ -17,7 +17,26 @@ REQUEST_PATTERN = re.compile(r"(.*)\[(\w*)\]")
 
 
 def display_package(name):
-    """Display package mapping from selected *name*."""
+    """Display package mapping from selected *name*.
+
+    Example::
+
+        >>> display_package("foo")
+
+        {
+            "package": {
+                "installed_version": "1.0.0",
+                "key": "foo",
+                "package_name": "Foo"
+            },
+            "requirements": [
+                "bim<3,>=2",
+                "baz",
+            ]
+        }
+
+
+    """
     # Query all installed packages.
     packages = get_installed_distributions(local_only=False)
 
@@ -50,15 +69,11 @@ def display_package(name):
             "package_name": package.project_name,
             "installed_version": package.version,
         },
-        "dependencies": []
+        "requirements": [
+            requirement.key + str(requirement.specifier)
+            for requirement in package.requires(extras=labels)
+        ]
     }
-
-    for requirement in package.requires(extras=labels):
-        result["dependencies"].append({
-            "key": requirement.key,
-            "package_name": requirement.project_name,
-            "required_version": requirement.key + str(requirement.specifier)
-        })
 
     print json.dumps(result, sort_keys=True, indent=4)
 
