@@ -28,7 +28,6 @@ INSTALL_REQUIRES = [
     "mlog >= 0.0.6, < 1",
     "packaging >= 17.1, < 18",
     "pip >= 10, < 19",
-    "wheel >= 0.33, <1",
     "wiz >= 2, < 3"
 ]
 DOC_REQUIRES = [
