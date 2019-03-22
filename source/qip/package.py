@@ -2,9 +2,9 @@
 
 from __future__ import print_function
 import re
+import sys
 import json
 import os
-import wheel.pep425tags
 
 import mlog
 
@@ -114,7 +114,12 @@ def fetch_mapping_from_environ(name, environ_mapping, extra=None):
                 "key": "foo",
                 "version": "0.1.0",
                 "description": "This is a Python package",
-                "target": "Foo/Foo-0.1.0-centos7",
+                "location": "/path/to/source",
+                "target": "Foo/Foo-0.1.0-py27-centos7",
+                "python": {
+                    "identifier": "2.7",
+                    "request": "python >= 2.7, < 2.8"
+                },
                 "system": {
                     "platform": "linux",
                     "arch": "x86_64",
@@ -124,55 +129,39 @@ def fetch_mapping_from_environ(name, environ_mapping, extra=None):
                     }
                 },
                 "requirements": [
-                    {
-                        "identifier": "Bar-0.1.0",
-                        "request": "bar",
-                    },
-                    {
-                        "identifier": "Bim-2.3.1",
-                        "request": "bim >= 2, <3",
-                    }
+                    "bim<3,>=2"
                 ]
             }
 
     """
-    logger = mlog.Logger(__name__ + ".fetch_package_from_environ")
+    logger = mlog.Logger(__name__ + ".fetch_mapping_from_environ")
 
+    metadata_mapping = extract_metadata_mapping(name, environ_mapping)
     dependency_mapping = extract_dependency_mapping(
         name, environ_mapping, extra=extra
     )
-    metadata_mapping = extract_metadata_mapping(name, environ_mapping)
 
     mapping = {
         "identifier": extract_identifier(dependency_mapping["package"]),
         "key": dependency_mapping["package"]["key"],
         "name": dependency_mapping["package"]["package_name"],
         "version": dependency_mapping["package"]["installed_version"],
+        "python": fetch_python_request_mapping()
     }
 
     mapping.update(metadata_mapping)
 
-    if len(dependency_mapping.get("dependencies", [])) > 0:
-        mapping["requirements"] = [
-            _dependency_mapping["required_version"]
-            for _dependency_mapping in dependency_mapping["dependencies"]
-        ]
-
+    if len(dependency_mapping.get("requirements", [])) > 0:
+        mapping["requirements"] = dependency_mapping["requirements"]
         logger.debug(
             "Dependencies: {}".format(" ".join(mapping["requirements"]))
         )
 
     # Add target information to package mapping.
-    mapping["target"] = os.path.join(
-        mapping["name"], mapping["identifier"]
+    mapping["target"] = extract_target_path(
+        mapping["name"], mapping["identifier"],
+        os_mapping=mapping.get("system", {}).get("os")
     )
-    if mapping.get("system"):
-        os_mapping = mapping["system"]["os"]
-        mapping["target"] += "-{os_name}{os_version}-{abi_tag}".format(
-            os_name=os_mapping["name"],
-            os_version=os_mapping["major_version"],
-            abi_tag=wheel.pep425tags.get_abi_tag()
-        )
 
     logger.info("Fetched '{}'.".format(mapping["identifier"]))
     return mapping
@@ -195,17 +184,8 @@ def extract_dependency_mapping(name, environ_mapping, extra=None):
                     "package_name": "Foo",
                     "installed_version": "0.1.0",
                 },
-                "dependencies": [
-                    {
-                        "key": "bar",
-                        "package_name": "Bar",
-                        "required_version": None
-                    },
-                    {
-                        "key": "bim",
-                        "package_name": "Bim",
-                        "required_version": ">= 2, <3"
-                    }
+                "requirements": [
+                    "bim<3,>=2"
                 ]
             }
 
@@ -239,6 +219,7 @@ def extract_metadata_mapping(name, environ_mapping):
 
     :param name: package name
     :param environ_mapping: mapping of environment variables
+
     :returns: mapping with information about the package gathered from the
         environment (system and description). It should be in the form of::
 
@@ -247,7 +228,11 @@ def extract_metadata_mapping(name, environ_mapping):
                 "location": "/path/to/source",
                 "system": {
                     "platform": "linux",
-                    "os": "el >= 6, <7"
+                    "arch": "x86_64",
+                    "os": {
+                        "name": "centos",
+                        "major_version": 7
+                    }
                 }
             }
 
@@ -270,37 +255,12 @@ def extract_metadata_mapping(name, environ_mapping):
     if match_location is not None:
         mapping["location"] = match_location.group().strip()
 
-    # Find out if the package is platform specific from the classifiers
-    # (https://pypi.org/classifiers/)
-    os_classifiers = re.findall("Operating System :: .*", result)
-    if len(os_classifiers) > 0:
-        if not (
-            len(os_classifiers) == 1 and
-            os_classifiers[0] == "Operating System :: OS Independent"
-        ):
-            mapping["system"] = qip.system.query()
+    if is_system_required(result):
+        mapping["system"] = qip.system.query()
 
-    # Convention: command name can only have alpha-numeric characters, hyphens
-    # and points.
-    entry_points = re.search(
-        r"Entry-points:\n\s*\[console_scripts\]\n((\s*.+\s*=\s*.+\s*\n)+)",
-        result
-    )
-    if entry_points is not None:
-        entry_points = entry_points.group(1)
-
-        mapping["command"] = {}
-        for alias, command in (
-            (
-                element.split("=")[0].strip(),
-                element.split("=")[1].split(":")[0].strip()
-            )
-            for element in entry_points.split("\n") if element
-        ):
-            if command.endswith(".__main__"):
-                command = command[:-9]
-
-            mapping["command"][alias] = "python -m {}".format(command)
+    command_mapping = extract_command_mapping(result)
+    if len(command_mapping) > 0:
+        mapping["command"] = command_mapping
 
     return mapping
 
@@ -318,7 +278,7 @@ def extract_identifier(mapping):
                 "installed_version": "1.11",
             }
 
-    :returns: Corresponding identifier (ie. "Foo-1.11", "Bar")
+    :returns: Corresponding identifier (e.g. "Foo-1.11", "Bar")
 
     """
     identifier = qip.filesystem.sanitise_value(
@@ -329,3 +289,124 @@ def extract_identifier(mapping):
     )
 
     return identifier
+
+
+def is_system_required(metadata):
+    """Indicate whether package is platform-specific from *metadata*.
+
+    Package `classifiers <https://pypi.org/classifiers/>`_ are retrieved from
+    *metadata* to indicate if a specific operating system is required.
+
+    :param metadata: string resulting from the "pip show -v" command.
+
+    :returns: Boolean value
+
+    """
+    classifiers = re.findall("Operating System :: .*", metadata)
+
+    # Check if the package is os independent.
+    os_independent = (
+        len(classifiers) == 1 and
+        classifiers[0] == "Operating System :: OS Independent"
+    )
+
+    return len(classifiers) > 0 and not os_independent
+
+
+def extract_command_mapping(metadata):
+    """Extract command mapping from entry points within *metadata*.
+
+    :param metadata: string resulting from the "pip show -v" command.
+
+    :returns: mapping in the form of::
+
+        {
+            "foo": "python -m foo",
+            "bar": "python -m bar"
+        }
+
+    """
+    mapping = {}
+
+    # Convention: command name can only have alpha-numeric characters, hyphens
+    # and points.
+    entry_points = re.search(
+        r"Entry-points:\n\s*\[console_scripts\]\n((\s*.+\s*=\s*.+\s*\n)+)",
+        metadata
+    )
+    if entry_points is not None:
+        entry_points = entry_points.group(1)
+
+        for alias, command in (
+            (
+                element.split("=")[0].strip(),
+                element.split("=")[1].split(":")[0].strip()
+            )
+            for element in entry_points.split("\n") if element
+        ):
+            if command.endswith(".__main__"):
+                command = command[:-9]
+
+            mapping[alias] = "python -m {}".format(command)
+
+    return mapping
+
+
+def extract_target_path(name, identifier, os_mapping=None):
+    """Return the corresponding target path from package *mapping*.
+
+    :param name: package name
+    :param identifier: package identifier
+    :param os_mapping: could be a mapping in the form of::
+
+            {
+                "name": "centos",
+                "major_version": 7
+            }
+
+    :returns: Corresponding path (e.g. "Foo/Foo-1.11-py27-centos7")
+
+    """
+    path = os.path.join(name, identifier)
+
+    # Indicate Python version
+    python_version = sys.version_info
+    path += "-py{major}{minor}".format(
+        major=python_version.major,
+        minor=python_version.minor
+    )
+
+    # Indicate system if necessary
+    if os_mapping:
+        path += "-{os_name}{os_version}".format(
+            os_name=os_mapping["name"],
+            os_version=os_mapping["major_version"],
+        )
+
+    return path
+
+
+def fetch_python_request_mapping():
+    """Return mapping indicating the Python version required.
+
+    :returns: mapping in the form of::
+
+        {
+            "identifier": "2.7",
+            "request": "python >= 2.7, < 2.8"
+        }
+
+    """
+    python_version = sys.version_info
+
+    return {
+        "identifier": "{major}.{minor}".format(
+            major=python_version.major,
+            minor=python_version.minor,
+        ),
+        "request": "python >= {major}.{minor}, < {major}.{next_minor}".format(
+            major=python_version.major,
+            minor=python_version.minor,
+            next_minor=python_version.minor + 1
+        )
+    }
