@@ -23,4 +23,4 @@ INSTALL_ROOT = "${INSTALL_ROOT}"
 P27_REQUEST = "python==2.7.*"
 
 #: Relative path to installed libraries in :term:`Python`.
-LIB_DESTINATION = _lib_destination
+LIB_DESTINATION = _lib_destination()
