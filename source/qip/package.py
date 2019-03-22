@@ -136,9 +136,18 @@ def fetch_mapping_from_environ(name, environ_mapping, extra=None):
     """
     logger = mlog.Logger(__name__ + ".fetch_mapping_from_environ")
 
-    metadata_mapping = extract_metadata_mapping(name, environ_mapping)
+    # Extract package information and its dependency.
     dependency_mapping = extract_dependency_mapping(
         name, environ_mapping, extra=extra
+    )
+
+    # Run pip show command to find extra information from extended metadata.
+    metadata = qip.command.execute(
+        "pip show "
+        "--disable-pip-version-check "
+        "'{}' -v".format(name),
+        environ_mapping,
+        quiet=True
     )
 
     mapping = {
@@ -149,7 +158,20 @@ def fetch_mapping_from_environ(name, environ_mapping, extra=None):
         "python": fetch_python_request_mapping()
     }
 
-    mapping.update(metadata_mapping)
+    match_description = re.search("(?<=Summary: ).+", metadata)
+    if match_description is not None:
+        mapping["description"] = match_description.group().strip()
+
+    match_location = re.search("(?<=Location: ).+", metadata)
+    if match_location is not None:
+        mapping["location"] = match_location.group().strip()
+
+    if is_system_required(metadata):
+        mapping["system"] = qip.system.query()
+
+    command_mapping = extract_command_mapping(metadata)
+    if len(command_mapping) > 0:
+        mapping["command"] = command_mapping
 
     if len(dependency_mapping.get("requirements", [])) > 0:
         mapping["requirements"] = dependency_mapping["requirements"]
@@ -210,57 +232,6 @@ def extract_dependency_mapping(name, environ_mapping, extra=None):
         raise RuntimeError(
             "Impossible to fetch installed package for '{}'".format(identifier)
         )
-
-    return mapping
-
-
-def extract_metadata_mapping(name, environ_mapping):
-    """Return package mapping for *name* from available metadata.
-
-    :param name: package name
-    :param environ_mapping: mapping of environment variables
-
-    :returns: mapping with information about the package gathered from the
-        environment (system and description). It should be in the form of::
-
-            {
-                "description": "This is a Python package.",
-                "location": "/path/to/source",
-                "system": {
-                    "platform": "linux",
-                    "arch": "x86_64",
-                    "os": {
-                        "name": "centos",
-                        "major_version": 7
-                    }
-                }
-            }
-
-    """
-    result = qip.command.execute(
-        "pip show "
-        "--disable-pip-version-check "
-        "'{}' -v".format(name),
-        environ_mapping,
-        quiet=True
-    )
-
-    mapping = {}
-
-    match_description = re.search("(?<=Summary: ).+", result)
-    if match_description is not None:
-        mapping["description"] = match_description.group().strip()
-
-    match_location = re.search("(?<=Location: ).+", result)
-    if match_location is not None:
-        mapping["location"] = match_location.group().strip()
-
-    if is_system_required(result):
-        mapping["system"] = qip.system.query()
-
-    command_mapping = extract_command_mapping(result)
-    if len(command_mapping) > 0:
-        mapping["command"] = command_mapping
 
     return mapping
 
