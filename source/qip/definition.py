@@ -4,6 +4,7 @@ import os
 
 import mlog
 import wiz
+import wiz.utility
 
 import qip.symbol
 
@@ -23,6 +24,8 @@ def create(mapping, output_path, editable_mode=False):
 
     definition_data = {
         "identifier": mapping["key"],
+        "version": mapping["version"],
+        "description": mapping["description"],
         "namespace": "library",
         "variants": [
             {
@@ -32,12 +35,17 @@ def create(mapping, output_path, editable_mode=False):
                         qip.symbol.INSTALL_LOCATION
                     )
                 },
-                "requirements": [
-                    mapping["python"]["request"]
-                ]
+                "requirements": (
+                    [mapping["python"]["request"]] +
+                    mapping.get("requirements", [])
+                )
             }
         ]
     }
+
+    # Add commands mapping.
+    if "command" in mapping.keys():
+        definition_data["command"] = mapping["command"]
 
     # Add system constraint if necessary.
     if "system" in mapping.keys():
@@ -54,15 +62,20 @@ def create(mapping, output_path, editable_mode=False):
             )
         }
 
-    # Update definition with install-location, commands and requirements.
-    definition = wiz.definition.Definition(definition_data)
-    definition = update_definition(
-        definition, mapping, output_path,
-        editable_mode=editable_mode
-    )
+    # Target package location if the installation is in editable mode.
+    if editable_mode:
+        definition_data["variants"][0]["install-location"] = mapping["location"]
 
+    else:
+        definition_data["install-root"] = output_path
+        definition_data["variants"][0]["install-location"] = os.path.join(
+            qip.symbol.INSTALL_ROOT, mapping["target"],
+            qip.symbol.LIB_DESTINATION
+        )
+
+    definition = wiz.definition.Definition(definition_data)
     logger.info(
-        "Wiz definition created for '{}'.".format(mapping["identifier"])
+        "Wiz definition created for '{}'.".format(definition.identifier)
     )
     return definition
 
@@ -98,56 +111,46 @@ def retrieve(mapping, temporary_path, output_path, editable_mode=False):
 
         # Update definition with install-location, commands and requirements.
         definition = wiz.load_definition(definition_path)
-        definition = update_definition(
-            definition, mapping, output_path,
-            editable_mode=editable_mode
-        )
+
+        # Add commands to the root level.
+        if "command" in mapping.keys():
+            definition = definition.update("command", mapping["command"])
+
+        # Target package location if the installation is in editable mode.
+        location_path = mapping["location"]
+
+        if not editable_mode:
+            definition = definition.set("install-root", output_path)
+            location_path = os.path.join(
+                qip.symbol.INSTALL_ROOT, mapping["target"],
+                qip.symbol.LIB_DESTINATION
+            )
+
+        # Process all requirements to detect duplication.
+        python_request = mapping["python"]["request"]
+
+        requirements = [
+            wiz.utility.get_requirement(_req)
+            for _req in [python_request] + mapping.get("requirements", [])
+        ]
+
+        for index, variant in enumerate(definition.variants):
+            if variant.identifier != mapping["python"]["identifier"]:
+                continue
+
+            variant = variant.set("install-location", location_path)
+
+            # Add requirements that are not already in the definition.
+            remaining = set(requirements).difference(variant.requirements)
+            variant = variant.extend(
+                "requirements",
+                [_req for _req in requirements if _req in remaining]
+            )
+
+            definition.insert("variants", index, variant)
+            break
 
         logger.info(
             "Wiz definition extracted from '{}'.".format(mapping["identifier"])
         )
         return definition
-
-
-def update_definition(definition, mapping, output_path, editable_mode=False):
-    """Update a *definition* from package *mapping*.
-
-    :param definition: :class:`~wiz.definition.Definition` instance.
-    :param mapping: mapping of the python package built as returned by
-        :func:`qip.package.install`.
-    :param output_path: path to the package install root location.
-    :param editable_mode: install in editable mode. Default is False.
-
-    """
-    definition = definition.set("version", mapping["version"])
-    definition = definition.set("description", mapping["description"])
-
-    # Add commands to the root level.
-    if "command" in mapping.keys():
-        definition = definition.update("command", mapping["command"])
-
-    # Create variant mapping for Python version
-    variant_mapping = {
-        "identifier": mapping["python"]["identifier"],
-        "environ": {
-            "PYTHONPATH": "{}:${{PYTHONPATH}}".format(
-                qip.symbol.INSTALL_LOCATION
-            )
-        },
-        "requirements": (
-            [mapping["python"]["request"]] + mapping.get("requirements", [])
-        )
-    }
-
-    if editable_mode:
-        variant_mapping["install-location"] = mapping["location"]
-
-    else:
-        definition = definition.set("install-root", output_path)
-        variant_mapping["install-location"] = os.path.join(
-            qip.symbol.INSTALL_ROOT, mapping["target"],
-            qip.symbol.LIB_DESTINATION
-        )
-
-    definition = definition.set("variants", [variant_mapping])
-    return definition
