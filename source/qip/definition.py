@@ -23,9 +23,23 @@ def create(mapping, output_path, editable_mode=False):
 
     definition_data = {
         "identifier": mapping["key"],
-        "namespace": "library"
+        "namespace": "library",
+        "variants": [
+            {
+                "identifier": mapping["python"]["identifier"],
+                "environ": {
+                    "PYTHONPATH": "{}:${{PYTHONPATH}}".format(
+                        qip.symbol.INSTALL_LOCATION
+                    )
+                },
+                "requirements": [
+                    mapping["python"]["request"]
+                ]
+            }
+        ]
     }
 
+    # Add system constraint if necessary.
     if "system" in mapping.keys():
         major_version = mapping["system"]["os"]["major_version"]
         definition_data["system"] = {
@@ -39,16 +53,6 @@ def create(mapping, output_path, editable_mode=False):
                 )
             )
         }
-
-    # Identify if a library is installed.
-    lib_path = os.path.join(
-        output_path, mapping["target"], qip.symbol.P27_LIB_DESTINATION
-    )
-    if os.path.isdir(lib_path):
-        definition_data.setdefault("environ", {})
-        definition_data["environ"]["PYTHONPATH"] = (
-            "{}:${{PYTHONPATH}}".format(qip.symbol.INSTALL_LOCATION)
-        )
 
     # Update definition with install-location, commands and requirements.
     definition = wiz.definition.Definition(definition_data)
@@ -125,13 +129,16 @@ def update_definition(definition, mapping, output_path, editable_mode=False):
         definition = definition.set("install-root", output_path)
         definition = definition.set("install-location", os.path.join(
             qip.symbol.INSTALL_ROOT, mapping["target"],
-            qip.symbol.P27_LIB_DESTINATION
+            qip.symbol.LIB_DESTINATION
         ))
 
+    variant = definition.variants[0]
+
     if "command" in mapping.keys():
-        definition = definition.update("command", mapping["command"])
+        variant = variant.update("command", mapping["command"])
 
     if "requirements" in mapping.keys():
-        definition = definition.extend("requirements", mapping["requirements"])
+        variant = variant.extend("requirements", mapping["requirements"])
 
+    definition = definition.set("variants", [variant])
     return definition
