@@ -108,9 +108,7 @@ def retrieve(mapping, temporary_path, output_path, editable_mode=False):
         )
 
     for definition_path in definition_paths:
-        print(definition_path)
         if not os.path.exists(definition_path):
-            print("test")
             continue
 
         # Update definition with install-location, commands and requirements.
