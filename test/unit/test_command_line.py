@@ -49,7 +49,8 @@ def test_missing_output(mocked_install):
         ),
         editable_mode=False,
         no_dependencies=False,
-        overwrite=None
+        overwrite=None,
+        python_exe=None
     )
 
 
@@ -86,5 +87,6 @@ def test_install(mocked_install, packages):
         ),
         editable_mode=False,
         no_dependencies=False,
-        overwrite=None
+        overwrite=None,
+        python_exe=None,
     )
