@@ -333,10 +333,9 @@ def extract_target_path(name, identifier, os_mapping=None):
     path = os.path.join(name, identifier)
 
     # Indicate Python version
-    python_version = sys.version_info
     path += "-py{major}{minor}".format(
-        major=python_version.major,
-        minor=python_version.minor
+        major=sys.version_info.major,
+        minor=sys.version_info.minor
     )
 
     # Indicate system if necessary

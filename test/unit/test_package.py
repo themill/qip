@@ -1,12 +1,21 @@
 # :coding: utf-8
 
 import re
+import sys
+import collections
 
 import pytest
 
 import qip.command
 import qip.system
 import qip.package
+
+
+@pytest.fixture()
+def mock_sys_version_info(mocker):
+    """Mocked 'sys.version_info'."""
+    _version = collections.namedtuple("version_info", "major, minor")
+    return mocker.patch.object(sys, "version_info", _version(2, 7))
 
 
 @pytest.fixture()
@@ -79,7 +88,7 @@ def mocked_fetch_python_request_mapping(mocker):
     "git@gitlab:rnd/foo.git@dev"
 ])
 def test_install(
-        mocked_fetch_mapping_from_environ, mocked_command_execute, package
+    mocked_fetch_mapping_from_environ, mocked_command_execute, package
 ):
     """Install package."""
     mocked_fetch_mapping_from_environ.return_value = "__VALUE__"
@@ -392,3 +401,105 @@ def test_extract_identifier():
     }
     identifier = qip.package.extract_identifier(mapping)
     assert identifier == "Foo-1.11"
+
+
+@pytest.mark.parametrize("metadata, expected", [
+    ("", False),
+    ("Operating System :: OS Independent", False),
+    (
+        (
+            "Operating System :: OS Independent"
+            "Operating System :: Linux"
+        ),
+        True
+    ),
+    (
+        (
+            "Operating System :: Mac"
+            "Operating System :: Linux"
+        ),
+        True
+    ),
+    (
+        (
+            "Operating System :: Mac"
+        ),
+        True
+    ),
+], ids=[
+    "no-metadata",
+    "independent",
+    "confusing-classifiers",
+    "multi-platforms",
+    "single-platform",
+])
+def test_is_system_required(metadata, expected):
+    """Indicate whether package is platform-specific."""
+    assert qip.package.is_system_required(metadata) == expected
+
+
+@pytest.mark.parametrize("metadata, expected", [
+    ("", {}),
+    (
+        (
+            "Entry-points:\n"
+            "  [console_scripts]\n"
+            "  sphinx-apidoc = sphinx.ext.apidoc:main\n"
+            "  sphinx-autogen = sphinx.ext.autosummary.generate:main\n"
+            "  sphinx-build = sphinx.cmd.build:main\n"
+            "  sphinx-quickstart = sphinx.cmd.quickstart:main\n"
+        ),
+        {
+            "sphinx-apidoc": "python -m sphinx.ext.apidoc",
+            "sphinx-autogen": "python -m sphinx.ext.autosummary.generate",
+            "sphinx-build": "python -m sphinx.cmd.build",
+            "sphinx-quickstart": "python -m sphinx.cmd.quickstart",
+        }
+    ),
+    (
+        (
+            "Entry-points:\n"
+            "  [console_scripts]\n"
+            "  qip = qip.__main__:main\n"
+        ),
+        {
+            "qip": "python -m qip"
+        }
+    ),
+], ids=[
+    "no-metadata",
+    "multi-commands",
+    "main-command",
+])
+def test_extract_command_mapping(metadata, expected):
+    """Extract command mapping from entry points"""
+    assert qip.package.extract_command_mapping(metadata) == expected
+
+
+@pytest.mark.usefixtures("mock_sys_version_info")
+def test_extract_target_path():
+    """Return the corresponding target path from package."""
+    path = qip.package.extract_target_path("Foo", "Foo-0.1.0")
+    assert path == "Foo/Foo-0.1.0-py27"
+
+
+@pytest.mark.usefixtures("mock_sys_version_info")
+def test_extract_target_path_with_system():
+    """Return the corresponding target path from package with system."""
+    path = qip.package.extract_target_path(
+        "Foo", "Foo-0.1.0", os_mapping={
+            "name": "centos",
+            "major_version": 7
+        }
+    )
+    assert path == "Foo/Foo-0.1.0-py27-centos7"
+
+
+@pytest.mark.usefixtures("mock_sys_version_info")
+def test_fetch_python_request_mapping():
+    """Return mapping indicating the Python version required."""
+    assert qip.package.fetch_python_request_mapping() == {
+        "identifier": "2.7",
+        "request": "python >= 2.7, < 2.8"
+    }
+
