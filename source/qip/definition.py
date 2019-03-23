@@ -102,11 +102,15 @@ def retrieve(mapping, temporary_path, output_path, editable_mode=False):
     # Necessary as editable mode does not create the 'share' directory.
     if mapping.get("location"):
         definition_paths.append(
-            os.path.join(mapping.get("location"), "..", "wiz.json")
+            os.path.abspath(
+                os.path.join(mapping.get("location"), "..", "wiz.json")
+            )
         )
 
     for definition_path in definition_paths:
+        print(definition_path)
         if not os.path.exists(definition_path):
+            print("test")
             continue
 
         # Update definition with install-location, commands and requirements.
@@ -117,7 +121,7 @@ def retrieve(mapping, temporary_path, output_path, editable_mode=False):
             definition = definition.update("command", mapping["command"])
 
         # Target package location if the installation is in editable mode.
-        location_path = mapping["location"]
+        location_path = mapping.get("location", "")
 
         if not editable_mode:
             definition = definition.set("install-root", output_path)
@@ -134,23 +138,49 @@ def retrieve(mapping, temporary_path, output_path, editable_mode=False):
             for _req in [python_request] + mapping.get("requirements", [])
         ]
 
-        for index, variant in enumerate(definition.variants):
-            if variant.identifier != mapping["python"]["identifier"]:
-                continue
-
-            variant = variant.set("install-location", location_path)
-
-            # Add requirements that are not already in the definition.
-            remaining = set(requirements).difference(variant.requirements)
-            variant = variant.extend(
-                "requirements",
-                [_req for _req in requirements if _req in remaining]
-            )
-
-            definition.insert("variants", index, variant)
-            break
+        if not _update_variant(
+            definition, mapping["python"]["identifier"], requirements,
+            location_path
+        ):
+            definition = definition.extend("variants", [{
+                "identifier": mapping["python"]["identifier"],
+                "install-location": location_path,
+                "requirements": requirements
+            }])
 
         logger.info(
             "Wiz definition extracted from '{}'.".format(mapping["identifier"])
         )
         return definition
+
+
+def _update_variant(definition, identifier, requirements, location_path):
+    """Update *definition* variant corresponding to *identifier*.
+
+    Return whether variant has been found and updated.
+
+    :param definition: :class:`wiz.definition.Definition` instance
+    :param identifier: variant identifier
+    :param requirements: list of Requirement instances
+    :param location_path: path to package.
+
+    :returns: Boolean value
+
+    """
+    for index, variant in enumerate(definition.variants):
+        if variant.identifier != identifier:
+            continue
+
+        variant = variant.set("install-location", location_path)
+
+        # Add requirements that are not already in the definition.
+        remaining = set(requirements).difference(variant.requirements)
+        variant = variant.extend(
+            "requirements",
+            [_req for _req in requirements if _req in remaining]
+        )
+
+        definition.insert("variants", index, variant)
+        return True
+
+    return False
