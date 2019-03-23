@@ -75,7 +75,7 @@ def create(mapping, output_path, editable_mode=False):
 
     definition = wiz.definition.Definition(definition_data)
     logger.info(
-        "Wiz definition created for '{}'.".format(definition.identifier)
+        "Wiz definition created for '{}'.".format(mapping["identifier"])
     )
     return definition
 
