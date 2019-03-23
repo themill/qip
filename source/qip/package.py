@@ -90,14 +90,6 @@ def install(
     return fetch_mapping_from_environ(name, environ_mapping, extra=extra)
 
 
-def sanitise_request(request):
-    """Sanitize *request* if it is a git repository address."""
-    if request.startswith("git@gitlab:"):
-        return "git+ssh://" + request.replace(":", "/")
-
-    return request
-
-
 def fetch_mapping_from_environ(name, environ_mapping, extra=None):
     """Return a mapping with information about the package *name*.
 
