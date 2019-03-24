@@ -136,11 +136,13 @@ def retrieve(mapping, temporary_path, output_path, editable_mode=False):
             for _req in [python_request] + mapping.get("requirements", [])
         ]
 
-        if not _update_variant(
+        _definition = _update_variant(
             definition, mapping["python"]["identifier"], requirements,
             location_path
-        ):
-            definition = definition.extend("variants", [{
+        )
+
+        if not _definition:
+            _definition = definition.extend("variants", [{
                 "identifier": mapping["python"]["identifier"],
                 "install-location": location_path,
                 "requirements": requirements
@@ -149,13 +151,13 @@ def retrieve(mapping, temporary_path, output_path, editable_mode=False):
         logger.info(
             "Wiz definition extracted from '{}'.".format(mapping["identifier"])
         )
-        return definition
+        return _definition
 
 
 def _update_variant(definition, identifier, requirements, location_path):
     """Update *definition* variant corresponding to *identifier*.
 
-    Return whether variant has been found and updated.
+    Return updated :class:`wiz.definition.Definition` instance or None.
 
     :param definition: :class:`wiz.definition.Definition` instance
     :param identifier: variant identifier
@@ -178,7 +180,5 @@ def _update_variant(definition, identifier, requirements, location_path):
             [_req for _req in requirements if _req in remaining]
         )
 
-        definition.insert("variants", index, variant)
-        return True
-
-    return False
+        definition = definition.remove_index("variants", index)
+        return definition.insert("variants", variant, index)
