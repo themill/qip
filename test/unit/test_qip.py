@@ -167,14 +167,15 @@ def test_install(
     assert mocked_filesystem_ensure_directory.call_count == 2
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/install")
     mocked_filesystem_ensure_directory.assert_any_call(
-        "/tmp2/lib/python2.7/site-packages"
+        "/tmp2/lib/python2.8/site-packages"
     )
 
     mocked_fetch_environ.assert_called_once_with(
         mapping={
-            "PYTHONPATH": "/tmp2/lib/python2.7/site-packages",
+            "PYTHONPATH": "/tmp2/lib/python2.8/site-packages",
             "PYTHONWARNINGS": "ignore:DEPRECATION"
-        }
+        },
+        python_exe=None
     )
 
     assert mocked_package_install.call_count == 4
@@ -279,14 +280,15 @@ def test_install_with_definition_path(
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/install")
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/definitions")
     mocked_filesystem_ensure_directory.assert_any_call(
-        "/tmp2/lib/python2.7/site-packages"
+        "/tmp2/lib/python2.8/site-packages"
     )
 
     mocked_fetch_environ.assert_called_once_with(
         mapping={
-            "PYTHONPATH": "/tmp2/lib/python2.7/site-packages",
+            "PYTHONPATH": "/tmp2/lib/python2.8/site-packages",
             "PYTHONWARNINGS": "ignore:DEPRECATION"
-        }
+        },
+        python_exe=None
     )
 
     assert mocked_package_install.call_count == 3
@@ -405,14 +407,15 @@ def test_install_without_dependencies(
     assert mocked_filesystem_ensure_directory.call_count == 2
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/install")
     mocked_filesystem_ensure_directory.assert_any_call(
-        "/tmp2/lib/python2.7/site-packages"
+        "/tmp2/lib/python2.8/site-packages"
     )
 
     mocked_fetch_environ.assert_called_once_with(
         mapping={
-            "PYTHONPATH": "/tmp2/lib/python2.7/site-packages",
+            "PYTHONPATH": "/tmp2/lib/python2.8/site-packages",
             "PYTHONWARNINGS": "ignore:DEPRECATION"
-        }
+        },
+        python_exe=None
     )
 
     assert mocked_package_install.call_count == 2
@@ -487,14 +490,15 @@ def test_install_with_package_skipped(
     assert mocked_filesystem_ensure_directory.call_count == 2
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/install")
     mocked_filesystem_ensure_directory.assert_any_call(
-        "/tmp2/lib/python2.7/site-packages"
+        "/tmp2/lib/python2.8/site-packages"
     )
 
     mocked_fetch_environ.assert_called_once_with(
         mapping={
-            "PYTHONPATH": "/tmp2/lib/python2.7/site-packages",
+            "PYTHONPATH": "/tmp2/lib/python2.8/site-packages",
             "PYTHONWARNINGS": "ignore:DEPRECATION"
-        }
+        },
+        python_exe=None
     )
 
     assert mocked_package_install.call_count == 1
@@ -542,14 +546,15 @@ def test_install_with_package_installation_error(
     assert mocked_filesystem_ensure_directory.call_count == 2
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/install")
     mocked_filesystem_ensure_directory.assert_any_call(
-        "/tmp2/lib/python2.7/site-packages"
+        "/tmp2/lib/python2.8/site-packages"
     )
 
     mocked_fetch_environ.assert_called_once_with(
         mapping={
-            "PYTHONPATH": "/tmp2/lib/python2.7/site-packages",
+            "PYTHONPATH": "/tmp2/lib/python2.8/site-packages",
             "PYTHONWARNINGS": "ignore:DEPRECATION"
-        }
+        },
+        python_exe=None
     )
 
     assert mocked_package_install.call_count == 2
@@ -787,7 +792,7 @@ def test_confirm_overwrite(mocked_click_prompt, answer, expected):
     mocked_click_prompt.return_value = answer
 
     result = qip._confirm_overwrite("foo")
-    
+
     assert result == expected
     mocked_click_prompt.assert_called_once_with(
         "Overwrite 'foo'? ([y]es, [n]o, [ya] yes to all, [na] no to all)",
@@ -820,3 +825,15 @@ def test_fetch_environ_with_mapping(mocked_wiz_resolve_context):
     mocked_wiz_resolve_context.assert_called_once_with(
         ["python==2.7.*"], environ_mapping="__INITIAL_MAPPING__"
     )
+
+
+def test_fetch_environ_with_python_exe(mocked_wiz_resolve_context):
+    """Fetch and return environment mapping with python exe."""
+    mocked_wiz_resolve_context.return_value = {"environ": "__ENVIRON__"}
+
+    environ = qip.fetch_environ(python_exe="/bin/python")
+    assert environ == {
+        "PATH": "/bin:${PATH}"
+    }
+
+    mocked_wiz_resolve_context.assert_not_called()
