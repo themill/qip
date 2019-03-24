@@ -4,6 +4,7 @@ import os
 
 import pytest
 import wiz
+import wiz.definition
 
 import qip.definition
 
@@ -14,12 +15,6 @@ def mocked_wiz_load_definition(mocker):
     return mocker.patch.object(wiz, "load_definition")
 
 
-@pytest.fixture()
-def mocked_update_install_location(mocker):
-    """Return mocked '_update_install_location' function"""
-    return mocker.patch.object(qip.definition, "_update_install_location")
-
-
 def test_create(logger):
     """Create a definition from package mapping."""
     mapping = {
@@ -28,19 +23,36 @@ def test_create(logger):
         "key": "foo",
         "version": "0.2.3",
         "target": "Foo/Foo-0.2.3",
-        "description": "This is a package"
+        "description": "This is a package",
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9"
+        }
     }
 
-    result = qip.definition.create(mapping, "/path/to/installed/package", False)
-    assert sorted(result.to_dict()) == sorted({
+    result = qip.definition.create(
+        mapping, "/path/to/installed/package", editable_mode=False
+    )
+    assert result == wiz.definition.Definition({
         "identifier": "foo",
         "version": "0.2.3",
         "install-root": "/path/to/installed/package",
-        "install-location": (
-            "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.7/site-packages"
-        ),
         "namespace": "library",
-        "description": "This is a package"
+        "description": "This is a package",
+        "variants": [
+            {
+                "identifier": "2.8",
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
+                ),
+                "environ": {
+                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+                },
+                "requirements": [
+                    "python >=2.8, <2.9",
+                ]
+            }
+        ]
     })
 
     logger.info.assert_called_once_with(
@@ -64,24 +76,41 @@ def test_create_with_system(logger):
             }
         },
         "target": "Foo/Foo-0.2.3",
-        "description": "This is a package"
+        "description": "This is a package",
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9"
+        }
     }
 
-    result = qip.definition.create(mapping, "/path/to/installed/package", False)
-    assert sorted(result.to_dict()) == sorted({
+    result = qip.definition.create(
+        mapping, "/path/to/installed/package", editable_mode=False
+    )
+    assert result == wiz.definition.Definition({
         "identifier": "foo",
         "version": "0.2.3",
+        "install-root": "/path/to/installed/package",
+        "namespace": "library",
+        "description": "This is a package",
         "system": {
             "platform": "linux",
             "arch": "x86_64",
             "os": "centos >= 7, < 8"
         },
-        "install-root": "/path/to/installed/package",
-        "install-location": (
-            "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.7/site-packages"
-        ),
-        "namespace": "library",
-        "description": "This is a package"
+        "variants": [
+            {
+                "identifier": "2.8",
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
+                ),
+                "environ": {
+                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+                },
+                "requirements": [
+                    "python >=2.8, <2.9",
+                ]
+            }
+        ]
     })
 
     logger.info.assert_called_once_with(
@@ -101,23 +130,38 @@ def test_create_with_requirements(logger):
             "bar",
         ],
         "target": "Foo/Foo-0.2.3",
-        "description": "This is a package"
+        "description": "This is a package",
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9"
+        }
     }
 
-    result = qip.definition.create(mapping, "/path/to/installed/package", False)
-    assert sorted(result.to_dict()) == sorted({
+    result = qip.definition.create(
+        mapping, "/path/to/installed/package", editable_mode=False
+    )
+    assert result == wiz.definition.Definition({
         "identifier": "foo",
         "version": "0.2.3",
         "install-root": "/path/to/installed/package",
-        "install-location": (
-            "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.7/site-packages"
-        ),
         "namespace": "library",
-        "requirements": [
-            "bim >= 3, < 4",
-            "bar"
-        ],
-        "description": "This is a package"
+        "description": "This is a package",
+        "variants": [
+            {
+                "identifier": "2.8",
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
+                ),
+                "environ": {
+                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+                },
+                "requirements": [
+                    "python >=2.8, <2.9",
+                    "bim >= 3, < 4",
+                    "bar",
+                ]
+            }
+        ]
     })
 
     logger.info.assert_called_once_with(
@@ -125,40 +169,95 @@ def test_create_with_requirements(logger):
     )
 
 
-def test_create_with_existing_lib(temporary_directory, logger):
-    """Create a definition from package mapping."""
-    os.makedirs(
-        os.path.join(
-            temporary_directory, "Foo", "Foo-0.2.3", "lib", "python2.7",
-            "site-packages"
-        )
-    )
-
+def test_create_with_commands(logger):
+    """Create a definition from package mapping with commands."""
     mapping = {
         "identifier": "Foo-0.2.3",
         "name": "Foo",
         "key": "foo",
         "version": "0.2.3",
         "target": "Foo/Foo-0.2.3",
-        "description": "This is a package"
+        "description": "This is a package",
+        "command": {
+            "foo": "python -m foo",
+            "test": "python -m foo.test",
+        },
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9"
+        }
     }
 
-    result = qip.definition.create(mapping, temporary_directory, False)
-    assert sorted(result.to_dict()) == sorted({
+    result = qip.definition.create(
+        mapping, "/path/to/installed/package", editable_mode=False
+    )
+    assert result == wiz.definition.Definition({
         "identifier": "foo",
         "version": "0.2.3",
-        "install-root": temporary_directory,
-        "install-location": (
-            "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.7/site-packages"
-        ),
+        "install-root": "/path/to/installed/package",
         "namespace": "library",
-        "environ": {
-            "PYTHONPATH": (
-                "${INSTALL_LOCATION}/Foo/Foo-0.2.3/lib/python2.7/site-packages:"
-                "${PYTHONPATH}"
-            )
+        "description": "This is a package",
+        "command": {
+            "foo": "python -m foo",
+            "test": "python -m foo.test",
         },
-        "description": "This is a package"
+        "variants": [
+            {
+                "identifier": "2.8",
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
+                ),
+                "environ": {
+                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+                },
+                "requirements": [
+                    "python >=2.8, <2.9"
+                ]
+            }
+        ]
+    })
+
+    logger.info.assert_called_once_with(
+        "Wiz definition created for 'Foo-0.2.3'."
+    )
+
+
+def test_create_editable_mode(logger):
+    """Create a definition from package mapping in editable mode."""
+    mapping = {
+        "identifier": "Foo-0.2.3",
+        "name": "Foo",
+        "key": "foo",
+        "version": "0.2.3",
+        "target": "Foo/Foo-0.2.3",
+        "description": "This is a package",
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9"
+        },
+        "location": "/path/to/source"
+    }
+
+    result = qip.definition.create(
+        mapping, "/path/to/installed/package", editable_mode=True
+    )
+    assert result == wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "library",
+        "description": "This is a package",
+        "variants": [
+            {
+                "identifier": "2.8",
+                "install-location": "/path/to/source",
+                "environ": {
+                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+                },
+                "requirements": [
+                    "python >=2.8, <2.9"
+                ]
+            }
+        ]
     })
 
     logger.info.assert_called_once_with(
@@ -181,372 +280,409 @@ def test_retrieve_non_existing(mocked_wiz_load_definition, logger):
     logger.info.assert_not_called()
 
 
-@pytest.mark.parametrize("definition, expected", [
-    (
-        {
-            "identifier": "foo",
-            "version": "0.1.0"
-        },
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a package",
-            "install-root": "/path/to/installed/package",
-            "install-location": (
-                "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
-            )
-        }
-    ),
-    (
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "environ": {
-                "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}",
-                "TEST": "True"
-            }
-        },
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a package",
-            "install-root": "/path/to/installed/package",
-            "install-location": (
-                "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
-            ),
-            "environ": {
-                "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}",
-                "TEST": "True"
-            }
-        }
-    ),
-    (
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "system": {
-                "os": "el >= 7, < 8",
-                "arch": "x86_64"
-            },
-            "environ": {
-                "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
-            }
-        },
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a package",
-            "system": {
-                "os": "el >= 7, < 8",
-                "arch": "x86_64"
-            },
-            "install-root": "/path/to/installed/package",
-            "install-location": (
-                "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
-            ),
-            "environ": {
-                "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
-            }
-        }
-    ),
-    (
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "environ": {
-                "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
-            },
-            "variants": [
-                {
-                    "identifier": "variant1",
-                    "environ": {
-                        "PATH": "${INSTALL_LOCATION}/bin:${PATH}"
-                    }
-                }
-            ]
-        },
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a package",
-            "install-root": "/path/to/installed/package",
-            "install-location": (
-                "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
-            ),
-            "environ": {
-                "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
-            },
-            "variants": [
-                {
-                    "identifier": "variant1",
-                    "environ": {
-                        "PATH": "${INSTALL_LOCATION}/bin:${PATH}"
-                    }
-                }
-            ]
-        }
-    )
-], ids=[
-    "no-environ",
-    "environ",
-    "system",
-    "variants",
-])
 def test_retrieve(
-    mocked_wiz_load_definition, temporary_directory, definition, expected,
-    logger
+    mocked_wiz_load_definition, temporary_directory, logger
 ):
-    """Retrieve existing definition from package mapping and update."""
-    _definition = wiz.definition.Definition(definition)
-    _expected = wiz.definition.Definition(expected)
+    """Retrieve definition from package installed."""
+    path = os.path.join(temporary_directory, "share", "wiz", "Foo", "wiz.json")
+    _ensure_exists(path)
 
-    path = os.path.join(temporary_directory, "share", "wiz", "Foo")
-    os.makedirs(path)
-    with open(os.path.join(path, "wiz.json"), "w") as stream:
-        stream.write("")
-
-    mocked_wiz_load_definition.return_value = _definition
+    mocked_wiz_load_definition.return_value = wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "library",
+    })
 
     mapping = {
-        "identifier": "Foo-0.1.0",
+        "identifier": "Foo-0.2.3",
         "name": "Foo",
-        "target": "Foo/Foo-0.1.0",
-        "version": "0.1.0",
-        "description": "This is a package"
+        "key": "foo",
+        "version": "0.2.3",
+        "target": "Foo/Foo-0.2.3",
+        "description": "This is a package",
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9"
+        }
     }
 
-    result = qip.definition.retrieve(
-        mapping, temporary_directory, "/path/to/installed/package", False
+    _definition = qip.definition.retrieve(
+        mapping, temporary_directory, "/path/to/installed/package",
+        editable_mode=False
     )
 
-    assert result == _expected
+    assert _definition == wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "library",
+        "install-root": "/path/to/installed/package",
+        "variants": [
+            {
+                "identifier": "2.8",
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
+                ),
+                "requirements": [
+                    "python >=2.8, <2.9"
+                ]
+            }
+        ]
+    })
 
-    mocked_wiz_load_definition.assert_called_once_with(
-        os.path.join(path, "wiz.json")
-    )
     logger.info.assert_called_once_with(
-        "Wiz definition extracted from 'Foo-0.1.0'."
+        "Wiz definition extracted from 'Foo-0.2.3'."
     )
 
+    mocked_wiz_load_definition.assert_any_call(path)
 
-@pytest.mark.parametrize("definition, editable, expected", [
-    (
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-        },
-        False,
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a package",
-            "install-root": "/path/to/installed/package",
-            "install-location": (
-                "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
-            )
-        }
-    ),
-    (
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-        },
-        True,
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a package",
-            "install-location": "/source"
-        }
-    )
-], ids=[
-    "not editable",
-    "editable"
-])
-def test_update_install_location(definition, editable, expected):
-    """Update install location and root."""
-    _definition = wiz.definition.Definition(definition)
-    _expected = wiz.definition.Definition(expected)
+
+def test_retrieve_from_source_location(
+    mocked_wiz_load_definition, temporary_directory, logger
+):
+    """Retrieve definition from package installed from source location."""
+    path = os.path.join(temporary_directory, "foo", "wiz.json")
+    _ensure_exists(path)
+
+    mocked_wiz_load_definition.return_value = wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "library",
+    })
 
     mapping = {
-        "identifier": "Foo-0.1.0",
+        "identifier": "Foo-0.2.3",
         "name": "Foo",
-        "target": "Foo/Foo-0.1.0",
-        "location": "/source",
-        "version": "0.1.0",
-        "description": "This is a package"
+        "key": "foo",
+        "version": "0.2.3",
+        "target": "Foo/Foo-0.2.3",
+        "description": "This is a package",
+        "location": os.path.join(temporary_directory, "foo", "source"),
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9"
+        }
     }
 
-    result = qip.definition.update_definition(
-        _definition, mapping, "/path/to/installed/package",
-        editable_mode=editable
+    _definition = qip.definition.retrieve(
+        mapping, temporary_directory, "/path/to/installed/package",
+        editable_mode=False
     )
 
-    assert result == _expected
+    assert _definition == wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "library",
+        "install-root": "/path/to/installed/package",
+        "variants": [
+            {
+                "identifier": "2.8",
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
+                ),
+                "requirements": [
+                    "python >=2.8, <2.9"
+                ]
+            }
+        ]
+    })
 
-
-@pytest.mark.parametrize("definition, mapping, expected", [
-    (
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-        },
-        {
-            "command": {"foo": "foo"},
-            "target": "Foo/Foo-0.1.0",
-            "version": "0.1.0",
-            "description": "This is a package"
-        },
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a package",
-            "command": {"foo": "foo"},
-            "install-root": "/path/to/installed/package",
-            "install-location": (
-                    "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
-            )
-        }
-    ),
-    (
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "command": {"bar": "bar"}
-        },
-        {
-            "command": {"foo": "foo"},
-            "target": "Foo/Foo-0.1.0",
-            "version": "0.1.0",
-            "description": "This is a package"
-        },
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a package",
-            "command": {"bar": "bar", "foo": "foo"},
-            "install-root": "/path/to/installed/package",
-            "install-location": (
-                    "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
-            )
-        }
-    ),
-    (
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-        },
-        {
-            "target": "Foo/Foo-0.1.0",
-            "version": "0.1.0",
-            "description": "This is a package"
-        },
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a package",
-            "install-root": "/path/to/installed/package",
-            "install-location": (
-                    "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
-            )
-        }
-    )
-], ids=[
-    "without existing commands",
-    "with existing commands",
-    "no mapping"
-])
-def test_update_command(definition, mapping, expected):
-    """Update command."""
-    _definition = wiz.definition.Definition(definition)
-    _expected = wiz.definition.Definition(expected)
-
-    result = qip.definition.update_definition(
-        _definition, mapping, "/path/to/installed/package"
+    logger.info.assert_called_once_with(
+        "Wiz definition extracted from 'Foo-0.2.3'."
     )
 
-    assert result == _expected
+    mocked_wiz_load_definition.assert_any_call(path)
 
 
-@pytest.mark.parametrize("definition, mapping, expected", [
-    (
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
+def test_retrieve_with_commands(
+    mocked_wiz_load_definition, temporary_directory, logger
+):
+    """Retrieve definition from package installed with commands."""
+    path = os.path.join(temporary_directory, "share", "wiz", "Foo", "wiz.json")
+    _ensure_exists(path)
+
+    mocked_wiz_load_definition.return_value = wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "library",
+    })
+
+    mapping = {
+        "identifier": "Foo-0.2.3",
+        "name": "Foo",
+        "key": "foo",
+        "version": "0.2.3",
+        "target": "Foo/Foo-0.2.3",
+        "description": "This is a package",
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9"
         },
-        {
-            "target": "Foo/Foo-0.1.0",
-            "requirements": ["mlog"],
-            "version": "0.1.0",
-            "description": "This is a package"
-        },
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a package",
-            "install-root": "/path/to/installed/package",
-            "install-location": (
-                "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
-            ),
-            "requirements": ["mlog"]
+        "command": {
+            "foo": "python -m foo",
+            "test": "python -m foo.test",
         }
-    ),
-    (
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "requirements": ["maya"]
-        },
-        {
-            "target": "Foo/Foo-0.1.0",
-            "requirements": ["mlog"],
-            "version": "0.1.0",
-            "description": "This is a package"
-        },
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-            "description": "This is a package",
-            "install-root": "/path/to/installed/package",
-            "install-location": (
-                "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
-            ),
-            "requirements": ["maya", "mlog"]
-        }
-    ),
-    (
-        {
-            "identifier": "foo",
-            "version": "0.1.0",
-        },
-        {
-            "target": "Foo/Foo-0.1.0",
-            "version": "0.1.0",
-            "description": "This is a package"
-        },
-        {
-            "identifier": "foo",
+    }
 
-            "version": "0.1.0",
-            "description": "This is a package",
-            "install-root": "/path/to/installed/package",
-            "install-location": (
-                "${INSTALL_ROOT}/Foo/Foo-0.1.0/lib/python2.7/site-packages"
-            )
-        }
-    )
-], ids=[
-    "without existing requirements",
-    "with existing requirements",
-    "no mapping"
-])
-def test_update_requirements(definition, mapping, expected):
-    """Update requirements."""
-    _definition = wiz.definition.Definition(definition)
-    _expected = wiz.definition.Definition(expected)
-
-    result = qip.definition.update_definition(
-        _definition, mapping, "/path/to/installed/package",
+    _definition = qip.definition.retrieve(
+        mapping, temporary_directory, "/path/to/installed/package",
+        editable_mode=False
     )
 
-    assert result == _expected
+    assert _definition == wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "library",
+        "install-root": "/path/to/installed/package",
+        "command": {
+            "foo": "python -m foo",
+            "test": "python -m foo.test",
+        },
+        "variants": [
+            {
+                "identifier": "2.8",
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
+                ),
+                "requirements": [
+                    "python >=2.8, <2.9"
+                ]
+            }
+        ]
+    })
+
+    logger.info.assert_called_once_with(
+        "Wiz definition extracted from 'Foo-0.2.3'."
+    )
+
+    mocked_wiz_load_definition.assert_any_call(path)
+
+
+def test_retrieve_with_commands_updated(
+    mocked_wiz_load_definition, temporary_directory, logger
+):
+    """Retrieve definition from package installed with updated commands."""
+    path = os.path.join(temporary_directory, "share", "wiz", "Foo", "wiz.json")
+    _ensure_exists(path)
+
+    mocked_wiz_load_definition.return_value = wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "library",
+        "command": {
+            "test": "python -m foo.test",
+        }
+    })
+
+    mapping = {
+        "identifier": "Foo-0.2.3",
+        "name": "Foo",
+        "key": "foo",
+        "version": "0.2.3",
+        "target": "Foo/Foo-0.2.3",
+        "description": "This is a package",
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9"
+        },
+        "command": {
+            "foo": "python -m foo",
+        }
+    }
+
+    _definition = qip.definition.retrieve(
+        mapping, temporary_directory, "/path/to/installed/package",
+        editable_mode=False
+    )
+
+    assert _definition == wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "library",
+        "install-root": "/path/to/installed/package",
+        "command": {
+            "foo": "python -m foo",
+            "test": "python -m foo.test",
+        },
+        "variants": [
+            {
+                "identifier": "2.8",
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
+                ),
+                "requirements": [
+                    "python >=2.8, <2.9"
+                ]
+            }
+        ]
+    })
+
+    logger.info.assert_called_once_with(
+        "Wiz definition extracted from 'Foo-0.2.3'."
+    )
+
+    mocked_wiz_load_definition.assert_any_call(path)
+
+
+def test_retrieve_with_existing_variant_1(
+    mocked_wiz_load_definition, temporary_directory, logger
+):
+    """Retrieve definition from package installed with existing variant."""
+    path = os.path.join(temporary_directory, "share", "wiz", "Foo", "wiz.json")
+    _ensure_exists(path)
+
+    mocked_wiz_load_definition.return_value = wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "library",
+        "variants": [
+            {
+                "identifier": "2.8",
+                "environ": {
+                    "KEY": "VALUE"
+                },
+                "requirements": [
+                    "python >=2.8, <2.9",
+                    "bar >=2, < 3"
+                ]
+            }
+        ]
+    })
+
+    mapping = {
+        "identifier": "Foo-0.2.3",
+        "name": "Foo",
+        "key": "foo",
+        "version": "0.2.3",
+        "target": "Foo/Foo-0.2.3",
+        "description": "This is a package",
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9"
+        },
+        "requirements": [
+            "bim"
+        ]
+    }
+
+    _definition = qip.definition.retrieve(
+        mapping, temporary_directory, "/path/to/installed/package",
+        editable_mode=False
+    )
+
+    assert _definition == wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "library",
+        "install-root": "/path/to/installed/package",
+        "variants": [
+            {
+                "identifier": "2.8",
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
+                ),
+                "environ": {
+                    "KEY": "VALUE"
+                },
+                "requirements": [
+                    "python >=2.8, <2.9",
+                    "bar >=2, < 3",
+                    "bim",
+                ]
+            }
+        ]
+    })
+
+    logger.info.assert_called_once_with(
+        "Wiz definition extracted from 'Foo-0.2.3'."
+    )
+
+    mocked_wiz_load_definition.assert_any_call(path)
+
+
+def test_retrieve_with_existing_variant_2(
+    mocked_wiz_load_definition, temporary_directory, logger
+):
+    """Retrieve definition from package installed with existing variant."""
+    path = os.path.join(temporary_directory, "share", "wiz", "Foo", "wiz.json")
+    _ensure_exists(path)
+
+    mocked_wiz_load_definition.return_value = wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "library",
+        "variants": [
+            {
+                "identifier": "3.6",
+                "environ": {
+                    "KEY": "VALUE"
+                },
+                "requirements": [
+                    "python >=3.6, <3.7",
+                    "bar >=2, < 3"
+                ]
+            }
+        ]
+    })
+
+    mapping = {
+        "identifier": "Foo-0.2.3",
+        "name": "Foo",
+        "key": "foo",
+        "version": "0.2.3",
+        "target": "Foo/Foo-0.2.3",
+        "description": "This is a package",
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9"
+        },
+        "requirements": [
+            "bim"
+        ]
+    }
+
+    _definition = qip.definition.retrieve(
+        mapping, temporary_directory, "/path/to/installed/package",
+        editable_mode=False
+    )
+
+    assert _definition == wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "library",
+        "install-root": "/path/to/installed/package",
+        "variants": [
+            {
+                "identifier": "3.6",
+                "environ": {
+                    "KEY": "VALUE"
+                },
+                "requirements": [
+                    "python >=3.6, <3.7",
+                    "bar >=2, < 3"
+                ]
+            },
+            {
+                "identifier": "2.8",
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
+                ),
+                "requirements": [
+                    "python >=2.8, <2.9",
+                    "bim"
+                ]
+            }
+        ]
+    })
+
+    logger.info.assert_called_once_with(
+        "Wiz definition extracted from 'Foo-0.2.3'."
+    )
+
+    mocked_wiz_load_definition.assert_any_call(path)
+
+
+def _ensure_exists(path):
+    """Ensure that *path* file exists."""
+    os.makedirs(os.path.dirname(path))
+    with open(path, "w") as stream:
+        stream.write("")

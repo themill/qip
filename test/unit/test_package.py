@@ -1,21 +1,12 @@
 # :coding: utf-8
 
 import re
-import sys
-import collections
 
 import pytest
 
 import qip.command
 import qip.system
 import qip.package
-
-
-@pytest.fixture()
-def mock_sys_version_info(mocker):
-    """Mocked 'sys.version_info'."""
-    _version = collections.namedtuple("version_info", "major, minor")
-    return mocker.patch.object(sys, "version_info", _version(2, 7))
 
 
 @pytest.fixture()
@@ -476,14 +467,12 @@ def test_extract_command_mapping(metadata, expected):
     assert qip.package.extract_command_mapping(metadata) == expected
 
 
-@pytest.mark.usefixtures("mock_sys_version_info")
 def test_extract_target_path():
     """Return the corresponding target path from package."""
     path = qip.package.extract_target_path("Foo", "Foo-0.1.0")
-    assert path == "Foo/Foo-0.1.0-py27"
+    assert path == "Foo/Foo-0.1.0-py28"
 
 
-@pytest.mark.usefixtures("mock_sys_version_info")
 def test_extract_target_path_with_system():
     """Return the corresponding target path from package with system."""
     path = qip.package.extract_target_path(
@@ -492,14 +481,13 @@ def test_extract_target_path_with_system():
             "major_version": 7
         }
     )
-    assert path == "Foo/Foo-0.1.0-py27-centos7"
+    assert path == "Foo/Foo-0.1.0-py28-centos7"
 
 
-@pytest.mark.usefixtures("mock_sys_version_info")
 def test_fetch_python_request_mapping():
     """Return mapping indicating the Python version required."""
     assert qip.package.fetch_python_request_mapping() == {
-        "identifier": "2.7",
-        "request": "python >= 2.7, < 2.8"
+        "identifier": "2.8",
+        "request": "python >= 2.8, < 2.9"
     }
 
