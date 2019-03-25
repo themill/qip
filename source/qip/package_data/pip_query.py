@@ -75,7 +75,7 @@ def display_package(name):
         ]
     }
 
-    print json.dumps(result, sort_keys=True, indent=4)
+    print(json.dumps(result, sort_keys=True, indent=4))
 
 
 if __name__ == "__main__":
