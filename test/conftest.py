@@ -4,8 +4,6 @@ import os
 import shutil
 import tempfile
 import uuid
-import sys
-import collections
 
 import mlog
 import pytest
@@ -46,14 +44,6 @@ def temporary_directory(request):
     request.addfinalizer(cleanup)
 
     return path
-
-
-@pytest.fixture(autouse=True)
-def mock_sys_version_info(mocker):
-    """Mocked 'sys.version_info'."""
-    _version = collections.namedtuple("version_info", "major, minor")
-    mock = mocker.patch.object(sys, "version_info", _version(2, 8))
-    return mock
 
 
 @pytest.fixture()
