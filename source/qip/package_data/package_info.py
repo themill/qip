@@ -1,5 +1,6 @@
 # :coding: utf-8
 
+from __future__ import print_function
 import sys
 import re
 import json
@@ -16,12 +17,21 @@ except ImportError:
 REQUEST_PATTERN = re.compile(r"(.*)\[(\w*)\]")
 
 
-def display_package(name):
-    """Display package mapping from selected *name*.
+def display_package_mapping(name):
+    """Display Python package information mapping from selected *name*.
+
+    :term:`Pip` Python API is being used to fetch useful information about a
+    package within an environment. The information is displayed as a
+    :term:`JSON` encoded mapping so that it can easily be retrieved via a
+    subprocess.
+
+    :param name: Python package name.
+
+    :return: None
 
     Example::
 
-        >>> display_package("foo")
+        >>> display_package_mapping("foo")
 
         {
             "package": {
@@ -80,11 +90,11 @@ def display_package(name):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        prog="pip-query",
-        description="Query information about an installed package",
+        prog="package-info",
+        description="Query information about an installed Python package",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    parser.add_argument("name", help="Package name to query.")
+    parser.add_argument("name", help="Python package name to query.")
     namespace = parser.parse_args()
 
-    sys.exit(display_package(namespace.name))
+    sys.exit(display_package_mapping(namespace.name))

@@ -2,7 +2,6 @@
 
 from __future__ import print_function
 import re
-import sys
 import json
 import os
 
@@ -18,20 +17,16 @@ import qip.system
 REQUEST_PATTERN = re.compile(r"(.*)\[(\w*)\]")
 
 
-#: Path to the python package query script.
-PACKAGE_QUERY_SCRIPT = os.path.join(
-    os.path.dirname(__file__), "package_data", "pip_query.py"
+#: Path to the Python package info script.
+PACKAGE_INFO_SCRIPT = os.path.join(
+    os.path.dirname(__file__), "package_data", "package_info.py"
 )
 
 
-def install(
-    request, destination, environ_mapping, cache_dir, editable_mode=False
-):
-    """Install package in *destination* from *requirement*.
+def install(request, path, context_mapping, cache_path, editable_mode=False):
+    """Install package in *path* from *request*.
 
-    :param request: package to be installed
-
-        A request can be one of::
+    :param request: package to be installed. A request can be one of::
 
             "/path/to/foo/"
             "."
@@ -42,16 +37,45 @@ def install(
             "git@gitlab:rnd/foo.git@0.1.0"
             "git@gitlab:rnd/foo.git@dev"
 
-    :param destination: valid path to install all packages to
-    :param environ_mapping: mapping of environment variables
-    :param cache_dir: Temporary directory for the pip cache
+    :param path: path to install Python packages to.
+    :param context_mapping: contain environment mapping and python mapping, as
+        returned from :func:`qip.fetch_context_mapping`.
+    :param cache_path: Temporary directory for the pip cache.
     :param editable_mode: install in editable mode. Default is False.
 
-    :raises RuntimeError: if pip fails to install
-    :raises ValueError: if the package name can not be extracted from the
-        request.
-    :returns: mapping with information about the package, as returned by
-        :func:`fetch_mapping_from_environ`.
+    :raise RuntimeError: if :term:`Pip` fails to install Python package.
+    :raise ValueError: if the Python package name can not be extracted from
+        *request*.
+
+    :return: mapping with information about the package gathered from the
+        environment. It should be in the form of::
+
+            {
+                "identifier": "Foo-0.1.0",
+                "request": "foo >= 0.1.0, < 1",
+                "name": "Foo",
+                "key": "foo",
+                "version": "0.1.0",
+                "description": "This is a Python package",
+                "location": "/path/to/source",
+                "target": "Foo/Foo-0.1.0-py27-centos7",
+                "python": {
+                    "identifier": "2.7",
+                    "request": "python >= 2.7, < 2.8",
+                    "library-path": "lib/python2.8/site-packages"
+                },
+                "system": {
+                    "platform": "linux",
+                    "arch": "x86_64",
+                    "os": {
+                        "name": "centos",
+                        "major_version": 7
+                    }
+                },
+                "requirements": [
+                    "bim<3,>=2"
+                ]
+            }
 
     """
     logger = mlog.Logger(__name__ + ".install")
@@ -71,11 +95,11 @@ def install(
         "{editable_mode}" 
         "{requirement}".format(
             editable_mode="-e " if editable_mode else "",
-            destination=destination,
+            destination=path,
             requirement=request,
-            cache_dir=cache_dir
+            cache_dir=cache_path
         ),
-        environ_mapping
+        context_mapping["environ"]
     )
 
     match_name = re.search("(?<=Installing collected packages: ).*", result)
@@ -88,15 +112,19 @@ def install(
     matched = REQUEST_PATTERN.match(request)
     extra = None if matched is None else matched.group(2)
 
-    return fetch_mapping_from_environ(name, environ_mapping, extra=extra)
+    mapping = fetch_mapping_from_environ(name, context_mapping, extra=extra)
+    mapping["request"] = request
+    return mapping
 
 
-def fetch_mapping_from_environ(name, environ_mapping, extra=None):
-    """Return a mapping with information about the package *name*.
+def fetch_mapping_from_environ(name, context_mapping, extra=None):
+    """Return a mapping with information about the Python package *name*.
 
-    :param name: package name
-    :param environ_mapping: should be a mapping of environment variables
-    :param extra: should be an optional extra requirement label
+    :param name: Python package name.
+    :param context_mapping: contain environment mapping and python mapping, as
+        returned from :func:`qip.fetch_context_mapping`.
+    :param extra: None or extra requirement label (e.g. "test"). Default is
+        None.
 
     :returns: mapping with information about the package gathered from the
         environment. It should be in the form of::
@@ -111,7 +139,8 @@ def fetch_mapping_from_environ(name, environ_mapping, extra=None):
                 "target": "Foo/Foo-0.1.0-py27-centos7",
                 "python": {
                     "identifier": "2.7",
-                    "request": "python >= 2.7, < 2.8"
+                    "request": "python >= 2.7, < 2.8",
+                    "library-path": "lib/python2.8/site-packages"
                 },
                 "system": {
                     "platform": "linux",
@@ -131,7 +160,7 @@ def fetch_mapping_from_environ(name, environ_mapping, extra=None):
 
     # Extract package information and its dependency.
     dependency_mapping = extract_dependency_mapping(
-        name, environ_mapping, extra=extra
+        name, context_mapping["environ"], extra=extra
     )
 
     # Run pip show command to find extra information from extended metadata.
@@ -139,7 +168,7 @@ def fetch_mapping_from_environ(name, environ_mapping, extra=None):
         "pip show "
         "--disable-pip-version-check "
         "'{}' -v".format(name),
-        environ_mapping,
+        context_mapping["environ"],
         quiet=True
     )
 
@@ -148,7 +177,7 @@ def fetch_mapping_from_environ(name, environ_mapping, extra=None):
         "key": dependency_mapping["package"]["key"],
         "name": dependency_mapping["package"]["package_name"],
         "version": dependency_mapping["package"]["installed_version"],
-        "python": qip.environ.python_request_mapping()
+        "python": context_mapping["python"]
     }
 
     match_description = re.search("(?<=Summary: ).+", metadata)
@@ -175,7 +204,8 @@ def fetch_mapping_from_environ(name, environ_mapping, extra=None):
     # Add target information to package mapping.
     mapping["target"] = extract_target_path(
         mapping["name"], mapping["identifier"],
-        os_mapping=mapping.get("system", {}).get("os")
+        context_mapping["python"]["identifier"],
+        os_mapping=mapping.get("system", {}).get("os"),
     )
 
     logger.info("Fetched '{}'.".format(mapping["identifier"]))
@@ -183,13 +213,14 @@ def fetch_mapping_from_environ(name, environ_mapping, extra=None):
 
 
 def extract_dependency_mapping(name, environ_mapping, extra=None):
-    """Return package mapping for *name* from dependency mapping.
+    """Return mapping for Python package with all dependency requirements.
 
-    :param name: package name
-    :param environ_mapping: mapping of environment variables
-    :param extra: should be an optional extra requirement label
+    :param name: Python package name.
+    :param environ_mapping: mapping of environment variables.
+    :param extra: None or extra requirement label (e.g. "test"). Default is
+        None.
 
-    :returns: None if the package *name* cannot be found in dependency mapping,
+    :return: None if the package *name* cannot be found in dependency mapping,
         otherwise return dependency mapping. A valid mapping should be in the
         form of::
 
@@ -204,21 +235,17 @@ def extract_dependency_mapping(name, environ_mapping, extra=None):
                 ]
             }
 
-
     """
     identifier = name.lower()
     if extra is not None:
         identifier += "[{}]".format(extra)
 
     command = "python {script} {identifier}".format(
-        script=PACKAGE_QUERY_SCRIPT,
+        script=PACKAGE_INFO_SCRIPT,
         identifier=identifier
     )
 
-    result = qip.command.execute(
-        command, environ_mapping, quiet=True
-    )
-
+    result = qip.command.execute(command, environ_mapping, quiet=True)
     try:
         mapping = json.loads(result)
     except ValueError:
@@ -232,9 +259,8 @@ def extract_dependency_mapping(name, environ_mapping, extra=None):
 def extract_identifier(mapping):
     """Return corresponding identifier from package *mapping*.
 
-    :param mapping: package mapping.
-
-        The package mapping must be in the form of::
+    :param mapping: package mapping. The package mapping must be in the form
+        of::
 
             {
                 "key": "foo",
@@ -242,7 +268,7 @@ def extract_identifier(mapping):
                 "installed_version": "1.11",
             }
 
-    :returns: Corresponding identifier (e.g. "Foo-1.11", "Bar")
+    :return: Corresponding identifier (e.g. "Foo-1.11", "Bar").
 
     """
     identifier = qip.filesystem.sanitise_value(
@@ -263,7 +289,7 @@ def is_system_required(metadata):
 
     :param metadata: string resulting from the "pip show -v" command.
 
-    :returns: Boolean value
+    :return: Boolean value.
 
     """
     classifiers = re.findall("Operating System :: .*", metadata)
@@ -282,7 +308,7 @@ def extract_command_mapping(metadata):
 
     :param metadata: string resulting from the "pip show -v" command.
 
-    :returns: mapping in the form of::
+    :return: mapping in the form of::
 
         {
             "foo": "python -m foo",
@@ -316,11 +342,12 @@ def extract_command_mapping(metadata):
     return mapping
 
 
-def extract_target_path(name, identifier, os_mapping=None):
+def extract_target_path(name, identifier, python_version, os_mapping=None):
     """Return the corresponding target path from package *mapping*.
 
-    :param name: package name
-    :param identifier: package identifier
+    :param name: Python package name.
+    :param identifier: Python package identifier.
+    :param python_version: Python version identifier (e.g. "2.7").
     :param os_mapping: could be a mapping in the form of::
 
             {
@@ -328,16 +355,13 @@ def extract_target_path(name, identifier, os_mapping=None):
                 "major_version": 7
             }
 
-    :returns: Corresponding path (e.g. "Foo/Foo-1.11-py27-centos7")
+    :return: Corresponding path (e.g. "Foo/Foo-1.11-py27-centos7").
 
     """
     path = os.path.join(name, identifier)
 
     # Indicate Python version
-    path += "-py{major}{minor}".format(
-        major=sys.version_info.major,
-        minor=sys.version_info.minor
-    )
+    path += "-py{}".format(python_version.replace(".", ""))
 
     # Indicate system if necessary
     if os_mapping:

@@ -5,20 +5,128 @@ import os
 import mlog
 import wiz
 import wiz.utility
+import wiz.exception
 
-import qip.environ
 import qip.symbol
 
 
-def create(mapping, output_path, editable_mode=False):
+def export(
+    path, mapping, package_path, output_path, editable_mode=False,
+    definition_mapping=None
+):
+    """Export :term:`Wiz` definition to *path* for package *mapping*.
+
+    :param path: destination path for the :term:`Wiz` definition.
+    :param mapping: mapping of the python package built as returned by
+        :func:`qip.package.install`.
+    :param package_path: path where python package has been installed.
+    :param output_path: root destination path for Python packages installation.
+    :param editable_mode: indicate whether the Python package location should
+        target the source installation package. Default is False.
+    :param definition_mapping: None or mapping regrouping all available
+        definitions. Default is None.
+
+    :return: None
+
+    """
+    additional_variants = None
+
+    # Extract additional variants from existing definition if possible.
+    if definition_mapping is not None:
+        try:
+            _definition = wiz.fetch_definition(
+                mapping["request"], definition_mapping
+            )
+            additional_variants = _definition.variants
+        except wiz.exception.RequestNotFound:
+            pass
+
+    # Retrieve definition from installation package path if possible.
+    definition = qip.definition.retrieve(package_path, mapping)
+
+    # Update definition or create a new definition.
+    if definition is not None:
+        definition = qip.definition.update(
+            definition, mapping, output_path,
+            editable_mode=editable_mode,
+            additional_variants=additional_variants,
+        )
+
+    else:
+        definition = qip.definition.create(
+            mapping, output_path,
+            editable_mode=editable_mode,
+            additional_variants=additional_variants
+        )
+
+    wiz.export_definition(path, definition, overwrite=True)
+
+
+def retrieve(path, mapping):
+    """Retrieve :term:`Wiz` definition from package *mapping* installed.
+
+    Return the :term:`Wiz` definition found in *path* or in the package source
+    location if available.
+
+    :param path: path where python package has been installed.
+    :param mapping: mapping of the python package built as returned by
+        :func:`qip.package.install`.
+
+    :raise :exc:`wiz.exception.WizError` if the :term:`Wiz` definition found is
+        incorrect.
+
+    :return: None if no definition was found, otherwise return the
+        :class:`wiz.definition.Definition` instance.
+
+    Example::
+
+        >>> retrieve("/path/to/package", mapping)
+        Definition({
+            "identifier": "foo"
+            "definition-location": '/path/to/package/share/wiz/wiz.json',
+            ...
+        })
+
+    """
+    logger = mlog.Logger(__name__ + ".retrieve")
+
+    definition_paths = [
+        os.path.join(path, "share", "wiz", mapping["name"], "wiz.json")
+    ]
+
+    # Necessary as editable mode does not create the 'share' directory.
+    if mapping.get("location"):
+        definition_paths.append(
+            os.path.abspath(
+                os.path.join(mapping.get("location"), "..", "wiz.json")
+            )
+        )
+
+    for definition_path in definition_paths:
+        if not os.path.exists(definition_path):
+            continue
+
+        # Update definition with install-location, commands and requirements.
+        definition = wiz.load_definition(definition_path)
+
+        logger.info(
+            "Wiz definition extracted from '{}'.".format(mapping["identifier"])
+        )
+        return definition
+
+
+def create(mapping, output_path, editable_mode=False, additional_variants=None):
     """Create :term:`Wiz` definition for package *mapping*.
 
     :param mapping: mapping of the python package built as returned by
         :func:`qip.package.install`.
-    :param output_path: installation path of all python packages.
-    :param editable_mode: install in editable mode. Default is False.
+    :param output_path: root destination path for Python packages installation.
+    :param editable_mode: indicate whether the Python package location should
+        target the source installation package. Default is False.
+    :param additional_variants: None or list of variant mappings that should be
+        added to the definition created. Default is None.
 
-    :returns: :class:`wiz.definition.Definition` instance.
+    :return: :class:`wiz.definition.Definition` instance created.
 
     """
     logger = mlog.Logger(__name__ + ".create")
@@ -27,21 +135,7 @@ def create(mapping, output_path, editable_mode=False):
         "identifier": mapping["key"],
         "version": mapping["version"],
         "description": mapping["description"],
-        "namespace": "library",
-        "variants": [
-            {
-                "identifier": mapping["python"]["identifier"],
-                "environ": {
-                    "PYTHONPATH": "{}:${{PYTHONPATH}}".format(
-                        qip.symbol.INSTALL_LOCATION
-                    )
-                },
-                "requirements": (
-                    [mapping["python"]["request"]] +
-                    mapping.get("requirements", [])
-                )
-            }
-        ]
+        "namespace": "library"
     }
 
     # Add commands mapping.
@@ -64,15 +158,31 @@ def create(mapping, output_path, editable_mode=False):
         }
 
     # Target package location if the installation is in editable mode.
-    if editable_mode:
-        definition_data["variants"][0]["install-location"] = mapping["location"]
+    location_path = mapping.get("location", "")
 
-    else:
+    if not editable_mode:
         definition_data["install-root"] = output_path
-        definition_data["variants"][0]["install-location"] = os.path.join(
+        location_path = os.path.join(
             qip.symbol.INSTALL_ROOT, mapping["target"],
-            qip.environ.python_library_path()
+            mapping["python"]["library-path"]
         )
+
+    # Update and set variant for python version.
+    variants = []
+
+    if additional_variants is not None:
+        variants = additional_variants
+
+    _update_variants(
+        variants, mapping, location_path,
+        environ_mapping={
+            "PYTHONPATH": "{}:${{PYTHONPATH}}".format(
+                qip.symbol.INSTALL_LOCATION
+            )
+        }
+    )
+
+    definition_data["variants"] = variants
 
     definition = wiz.definition.Definition(definition_data)
     logger.info(
@@ -81,92 +191,81 @@ def create(mapping, output_path, editable_mode=False):
     return definition
 
 
-def retrieve(mapping, temporary_path, output_path, editable_mode=False):
-    """Retrieve :term:`Wiz` definition from package installed.
+def update(
+    definition, mapping, output_path, editable_mode=False,
+    additional_variants=None
+):
+    """Update *definition* with *mapping*.
 
+    :param definition: :class:`wiz.definition.Definition` instance.
     :param mapping: mapping of the python package built as returned by
         :func:`qip.package.install`.
-    :param temporary_path: path where the package was temporarily installed to.
-    :param output_path: path where the package was installed to.
-    :param editable_mode: install in editable mode. Default is False.
+    :param output_path: root destination path for Python packages installation.
+    :param editable_mode: indicate whether the Python package location should
+        target the source installation package. Default is False.
+    :param additional_variants: None or list of variant mappings that should be
+        added to the definition updated. Default is None.
 
-    :returns: None if no definition was found, otherwise return the
-        :class:`wiz.definition.Definition` instance.
+    :return: Updated :class:`wiz.definition.Definition` instance.
 
     """
-    logger = mlog.Logger(__name__ + ".retrieve")
+    # Add commands to the root level.
+    if "command" in mapping.keys():
+        definition = definition.update("command", mapping["command"])
 
-    definition_paths = [os.path.join(
-        temporary_path, "share", "wiz", mapping["name"], "wiz.json"
-    )]
+    # Target package location if the installation is in editable mode.
+    package_path = mapping.get("location", "")
 
-    # Necessary as editable mode does not create the 'share' directory.
-    if mapping.get("location"):
-        definition_paths.append(
-            os.path.abspath(
-                os.path.join(mapping.get("location"), "..", "wiz.json")
-            )
+    if not editable_mode:
+        definition = definition.set("install-root", output_path)
+        package_path = os.path.join(
+            qip.symbol.INSTALL_ROOT, mapping["target"],
+            mapping["python"]["library-path"]
         )
 
-    for definition_path in definition_paths:
-        if not os.path.exists(definition_path):
-            continue
+    variants = definition.variants
+    _update_variants(variants, mapping, package_path)
 
-        # Update definition with install-location, commands and requirements.
-        definition = wiz.load_definition(definition_path)
+    if additional_variants is not None:
+        _update_variants(additional_variants, mapping, package_path)
 
-        # Add commands to the root level.
-        if "command" in mapping.keys():
-            definition = definition.update("command", mapping["command"])
-
-        # Target package location if the installation is in editable mode.
-        location_path = mapping.get("location", "")
-
-        if not editable_mode:
-            definition = definition.set("install-root", output_path)
-            location_path = os.path.join(
-                qip.symbol.INSTALL_ROOT, mapping["target"],
-                qip.environ.python_library_path()
-            )
-
-        # Process all requirements to detect duplication.
-        python_request = mapping["python"]["request"]
-
-        requirements = [
-            wiz.utility.get_requirement(_req)
-            for _req in [python_request] + mapping.get("requirements", [])
-        ]
-
-        definition = _add_variant(
-            definition, mapping["python"]["identifier"], requirements,
-            location_path
-        )
-
-        logger.info(
-            "Wiz definition extracted from '{}'.".format(mapping["identifier"])
-        )
-        return definition
+    return definition.set("variants", variants)
 
 
-def _add_variant(definition, identifier, requirements, location_path):
-    """Add *definition* variant corresponding to *identifier*.
+def _update_variants(variants, mapping, path, environ_mapping=None):
+    """Add variant corresponding to *identifier* to the *variant* list.
 
     Update existing variant if necessary or add new variant corresponding to the
     python version required. If a new variant is added, it will be inserted
     to the variant list so that the highest Python version is always first.
 
-    :param definition: :class:`wiz.definition.Definition` instance
-    :param identifier: variant identifier
-    :param requirements: list of Requirement instances
-    :param location_path: path to package.
+    :param variants: list of variant mappings to update.
+    :param mapping: mapping of the python package built as returned by
+        :func:`qip.package.install`.
+    :param path: path where python package has been installed.
+    :param environ_mapping: could be an environment mapping to add to the
+        variant. Default is None.
 
-    :returns: :class:`wiz.definition.Definition` instance
+    :return: None
+
+    .. note::
+
+        The *variants* list will be mutated.
 
     """
+    identifier = mapping["python"]["identifier"]
+    python_request = mapping["python"]["request"]
+
+    # Process all requirements to detect duplication.
+    requirements = [
+        wiz.utility.get_requirement(_req)
+        for _req in [python_request] + mapping.get("requirements", [])
+    ]
+
     # Index of new variant if necessary.
     _index = 0
 
-    for index, variant in enumerate(definition.variants):
+    for index, variant in enumerate(variants):
         if variant.identifier != identifier:
 
             # Update index for new variant.
@@ -175,26 +274,34 @@ def _add_variant(definition, identifier, requirements, location_path):
 
             continue
 
-        variant = variant.set("install-location", location_path)
+        variant = variant.set("install-location", path)
 
         # Add requirements that are not already in the definition.
         remaining = set(requirements).difference(variant.requirements)
         variant = variant.extend(
-            "requirements",
-            [_req for _req in requirements if _req in remaining]
+            "requirements", [_req for _req in requirements if _req in remaining]
         )
 
-        definition = definition.remove_index("variants", index)
-        return definition.insert("variants", variant, index)
+        # Add environment mapping if necessary
+        if environ_mapping:
+            variant = variant.set("environ", environ_mapping)
+
+        del variants[index]
+        variants.insert(index, variant)
+        return
 
     # If no variant has been updated, create a new variant.
     variant = {
         "identifier": identifier,
-        "install-location": location_path,
+        "install-location": path,
         "requirements": requirements
     }
 
-    return definition.insert("variants", variant, _index)
+    # Add environment mapping if necessary
+    if environ_mapping:
+        variant["environ"] = environ_mapping
+
+    variants.insert(_index, variant)
 
 
 def _is_superior(identifier, variant_identifier):
@@ -206,7 +313,18 @@ def _is_superior(identifier, variant_identifier):
     :param identifier: New variant identifier.
     :param variant_identifier: Variant identifier analyzed.
 
-    :returns: Boolean value.
+    :return: Boolean value.
+
+    Example::
+
+        >>> _is_superior("2.7", "3.6")
+        False
+
+        >>> _is_superior("10.1", "2.1")
+        True
+
+        >>> _is_superior("2.7", "foo")
+        False
 
     """
     try:

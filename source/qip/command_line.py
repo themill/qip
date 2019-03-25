@@ -114,7 +114,7 @@ def install(
         overwrite=overwrite_installed,
         no_dependencies=no_dependencies,
         editable_mode=editable,
-        python=python,
+        python_target=python,
     )
 
     logger.info("Package output directory: {!r}".format(output_path))
