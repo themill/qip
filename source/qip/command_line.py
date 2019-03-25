@@ -5,6 +5,7 @@ import click
 import mlog
 import tempfile
 
+import wiz
 import qip
 from qip import __version__
 
@@ -17,25 +18,45 @@ from qip import __version__
     type=click.Choice(mlog.levels),
     default="info"
 )
-def main(verbosity):
+def main(**kwargs):
     """Quarantine Installer for Python."""
     mlog.configure()
-    mlog.root.handlers["stderr"].filterer.filterers[0].min = verbosity
+    mlog.root.handlers["stderr"].filterer.filterers[0].min = kwargs["verbosity"]
 
 
 @main.command()
 @click.option(
     "-o", "--output-path",
-    help="Destination for the package installation data.",
-    type=click.Path()
+    help=(
+        "Destination for the package installation data. Default will be "
+        "'<TEMPORARY_FOLDER>/qip/packages'"
+    ),
+    type=click.Path(),
+    metavar="PATH",
 )
 @click.option(
     "-d", "--definition-path",
     help=(
-        "Destination for the Wiz definitions extracted. No definitions will be "
-        "extracted by default."
+        "Destination for the Wiz definitions extracted. Default will be "
+        "'<TEMPORARY_FOLDER>/qip/definitions'"
     ),
     type=click.Path(),
+    metavar="PATH",
+)
+@click.option(
+    "--update",
+    help=(
+        "Update Wiz definition(s) that already exist in the Wiz definitions "
+        "output path with additional Python variants."
+    ),
+    is_flag=True,
+    default=False
+)
+@click.option(
+    "--no-dependencies",
+    help="Install the specified package(s) without dependencies.",
+    is_flag=True,
+    default=False
 )
 @click.option(
     "--overwrite-installed/--skip-installed",
@@ -44,14 +65,6 @@ def main(verbosity):
          "or skipped. By default, a user confirmation will be required."
     ),
     default=None
-)
-@click.option(
-    "--no-dependencies",
-    help=(
-         "Install the specified package(s) without dependencies."
-    ),
-    is_flag=True,
-    default=False
 )
 @click.option(
     "-e", "--editable",
@@ -68,17 +81,16 @@ def main(verbosity):
         "Target a specific Python version via a Wiz request or a path to a "
         "Python executable."
     ),
-    default="python==2.7.*"
+    default="python==2.7.*",
+    show_default=True,
+    metavar="TARGET",
 )
 @click.argument(
     "requests",
     nargs=-1,
     required=True
 )
-def install(
-        requests, output_path, definition_path, overwrite_installed,
-        no_dependencies, editable, python
-):
+def install(**kwargs):
     """Install a package.
 
     Command example::
@@ -98,6 +110,9 @@ def install(
     """
     logger = mlog.Logger(__name__ + ".install")
 
+    output_path = kwargs["output_path"]
+    definition_path = kwargs["definition_path"]
+
     if output_path is None:
         output_path = os.path.join(
             tempfile.gettempdir(), "qip", "packages"
@@ -108,13 +123,21 @@ def install(
             tempfile.gettempdir(), "qip", "definitions"
         )
 
+    # Fetch definition mapping from definition path if previously extracted
+    # definitions should to create new definition.
+    definition_mapping = None
+
+    if kwargs["update"]:
+        definition_mapping = wiz.fetch_definition_mapping([definition_path])
+
     qip.install(
-        requests, output_path,
+        kwargs["requests"],  output_path,
         definition_path=definition_path,
-        overwrite=overwrite_installed,
-        no_dependencies=no_dependencies,
-        editable_mode=editable,
-        python_target=python,
+        overwrite=kwargs["overwrite_installed"],
+        no_dependencies=kwargs["no_dependencies"],
+        editable_mode=kwargs["editable"],
+        python_target=kwargs["python"],
+        definition_mapping=definition_mapping
     )
 
     logger.info("Package output directory: {!r}".format(output_path))

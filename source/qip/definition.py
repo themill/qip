@@ -35,7 +35,8 @@ def export(
     if definition_mapping is not None:
         try:
             _definition = wiz.fetch_definition(
-                mapping["request"], definition_mapping
+                "library::{}".format(mapping["request"]),
+                definition_mapping
             )
             additional_variants = _definition.variants
         except wiz.exception.RequestNotFound:

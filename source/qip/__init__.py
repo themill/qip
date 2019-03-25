@@ -10,7 +10,6 @@ try:
 except ImportError:
     import Queue as _queue
 
-import wiz
 import click
 import mlog
 
@@ -26,6 +25,7 @@ from ._version import __version__
 def install(
     requests, output_path, definition_path=None, overwrite=False,
     no_dependencies=False, editable_mode=False, python_target="python==2.7.*",
+    definition_mapping=None
 ):
     """Install packages to *output_path* from *requests*.
 
@@ -55,6 +55,10 @@ def install(
     :param python_target: Target a specific Python version via a Wiz request or
         a path to a Python executable (e.g. "python==2.7.*" or
         "/path/to/bin/python"). Default is "python==2.7.*".
+    :param definition_mapping: None or mapping regrouping all available
+        :term:`Wiz` definitions. Default is None.
+
+    :return: Boolean value.
 
     """
     logger = mlog.Logger(__name__ + ".install")
@@ -66,12 +70,6 @@ def install(
     # Setup temporary folder for package installation.
     cache_path = tempfile.mkdtemp()
     package_path = tempfile.mkdtemp()
-
-    # Fetch existing definitions from output if possible
-    definition_mapping = {}
-
-    if definition_path is not None:
-        definition_mapping = wiz.fetch_definition_mapping([definition_path])
 
     try:
         # Fetch environment mapping and installation path.
