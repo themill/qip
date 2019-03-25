@@ -39,7 +39,7 @@ def execute(command, environ_mapping, quiet=False):
         lines_iterator = iter(process.stdout.readline, b"")
         while process.poll() is None:
             for line in lines_iterator:
-                output += line
+                output += str(line)
                 _line = line.rstrip()
                 logger.debug(_line.decode("latin"))
 
