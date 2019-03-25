@@ -17,6 +17,7 @@ import mlog
 import qip.definition
 import qip.package
 import qip.filesystem
+import qip.environ
 import qip.symbol
 
 from ._version import __version__
@@ -24,7 +25,7 @@ from ._version import __version__
 
 def install(
     requests, output_path, definition_path=None, overwrite=False,
-    no_dependencies=False, editable_mode=False, python_exe=None
+    no_dependencies=False, editable_mode=False, python="python==2.7.*",
 ):
     """Install packages to *output_path* from *requests*.
 
@@ -50,8 +51,8 @@ def install(
     :param no_dependencies: indicate whether package dependencies should be
         skipped. Default is False.
     :param editable_mode: install in editable mode. Default is False.
-    :param python_exe: path to a python executable to use instead of fetching
-        the Python environment via a Wiz request.
+    :param python: Target a specific Python version via a Wiz request or a path
+        to a Python executable.
 
     """
     logger = mlog.Logger(__name__ + ".install")
@@ -63,19 +64,21 @@ def install(
     # Setup temporary folder for package installation.
     cache_dir = tempfile.mkdtemp()
     temporary_path = tempfile.mkdtemp()
-    install_path = os.path.join(temporary_path, qip.symbol.LIB_DESTINATION)
+    install_path = os.path.join(
+        temporary_path, qip.environ.python_library_path()
+    )
 
     # Needed for the editable mode.
     qip.filesystem.ensure_directory(install_path)
 
     try:
         # Update environment mapping.
-        environ_mapping = fetch_environ(
+        environ_mapping = qip.environ.fetch(
+            python,
             mapping={
                 "PYTHONPATH": install_path,
                 "PYTHONWARNINGS": "ignore:DEPRECATION"
-            },
-            python_exe=python_exe
+            }
         )
 
         # Record requests and package installed to prevent duplications.
@@ -229,34 +232,3 @@ def _confirm_overwrite(identifier):
     overwrite = answer[0] == "y"
     overwrite_next = overwrite if "a" in answer else None
     return overwrite, overwrite_next
-
-
-def fetch_environ(mapping=None, python_exe=None):
-    """Fetch mapping with all environment variables needed.
-
-    :param mapping: optional custom environment mapping to be added to initial
-        environment.
-    :param python_exe: path to a python executable to use instead of fetching
-        the Python environment via a Wiz request.
-
-    """
-    logger = mlog.Logger(__name__ + ".fetch")
-    logger.debug("initial environment: {}".format(mapping))
-
-    if mapping is None:
-        mapping = {}
-
-    # If a Python executable is provided, use it instead of the Wiz request.
-    if python_exe is not None:
-        environ_mapping = mapping.copy()
-        environ_mapping.update({
-            "PATH": "{}:${{PATH}}".format(os.path.dirname(python_exe))
-        })
-        context = {"environ": environ_mapping}
-
-    else:
-        context = wiz.resolve_context(
-            [qip.symbol.P27_REQUEST], environ_mapping=mapping
-        )
-
-    return context["environ"]

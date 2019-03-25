@@ -10,6 +10,7 @@ import mlog
 
 import qip.command
 import qip.filesystem
+import qip.environ
 import qip.system
 
 
@@ -147,7 +148,7 @@ def fetch_mapping_from_environ(name, environ_mapping, extra=None):
         "key": dependency_mapping["package"]["key"],
         "name": dependency_mapping["package"]["package_name"],
         "version": dependency_mapping["package"]["installed_version"],
-        "python": fetch_python_request_mapping()
+        "python": qip.environ.python_request_mapping()
     }
 
     match_description = re.search("(?<=Summary: ).+", metadata)
@@ -346,29 +347,3 @@ def extract_target_path(name, identifier, os_mapping=None):
         )
 
     return path
-
-
-def fetch_python_request_mapping():
-    """Return mapping indicating the Python version required.
-
-    :returns: mapping in the form of::
-
-        {
-            "identifier": "2.7",
-            "request": "python >= 2.7, < 2.8"
-        }
-
-    """
-    python_version = sys.version_info
-
-    return {
-        "identifier": "{major}.{minor}".format(
-            major=python_version.major,
-            minor=python_version.minor,
-        ),
-        "request": "python >= {major}.{minor}, < {major}.{next_minor}".format(
-            major=python_version.major,
-            minor=python_version.minor,
-            next_minor=python_version.minor + 1
-        )
-    }

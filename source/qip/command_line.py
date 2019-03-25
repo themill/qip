@@ -63,12 +63,12 @@ def main(verbosity):
     default=False
 )
 @click.option(
-    "--python-exe",
+    "-p", "--python",
     help=(
-        "Target a specific Python executable path instead of relying on Wiz"
-        "to fetch the Python environment required."
+        "Target a specific Python version via a Wiz request or a path to a "
+        "Python executable."
     ),
-    type=click.Path(),
+    default="python==2.7.*"
 )
 @click.argument(
     "requests",
@@ -77,22 +77,23 @@ def main(verbosity):
 )
 def install(
         requests, output_path, definition_path, overwrite_installed,
-        no_dependencies, editable, python_exe
+        no_dependencies, editable, python
 ):
     """Install a package.
 
     Command example::
 
         \b
-        qip install . --output-path .
-        qip install /path/to/foo/ --output-path .
-        qip install foo --output-path .
-        qip install foo bar --output-path .
-        qip install "foo==0.1.0" --output-path .
-        qip install "foo >= 7, < 8" --output-path .
-        qip install "git@gitlab:rnd/foo.git" --output-path .
-        qip install "git@gitlab:rnd/foo.git@0.1.0" --output-path .
-        qip install "git@gitlab:rnd/foo.git@dev" --output-path .
+        qip install .
+        qip install /path/to/foo/
+        qip install foo
+        qip install foo bar
+        qip install "foo==0.1.0"
+        qip install "foo >= 7, < 8"
+        qip install "git@gitlab:rnd/foo.git"
+        qip install "git@gitlab:rnd/foo.git@0.1.0"
+        qip install "git@gitlab:rnd/foo.git@dev"
+        qip install foo -p "python==3.6.*"
 
     """
     logger = mlog.Logger(__name__ + ".install")
@@ -113,7 +114,7 @@ def install(
         overwrite=overwrite_installed,
         no_dependencies=no_dependencies,
         editable_mode=editable,
-        python_exe=python_exe
+        python=python,
     )
 
     logger.info("Package output directory: {!r}".format(output_path))

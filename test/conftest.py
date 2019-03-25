@@ -10,8 +10,6 @@ import collections
 import mlog
 import pytest
 
-import qip.symbol
-
 
 @pytest.fixture()
 def unique_name():
@@ -55,7 +53,6 @@ def mock_sys_version_info(mocker):
     """Mocked 'sys.version_info'."""
     _version = collections.namedtuple("version_info", "major, minor")
     mock = mocker.patch.object(sys, "version_info", _version(2, 8))
-    reload(qip.symbol)
     return mock
 
 

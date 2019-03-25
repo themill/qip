@@ -52,12 +52,6 @@ def mocked_copy_to_destination(mocker):
 
 
 @pytest.fixture()
-def mocked_fetch_environ(mocker):
-    """Return mocked 'qip.fetch_environ' function"""
-    return mocker.patch.object(qip, "fetch_environ")
-
-
-@pytest.fixture()
 def mocked_filesystem_ensure_directory(mocker):
     """Return mocked 'qip.filesystem.ensure_directory' function"""
     return mocker.patch.object(qip.filesystem, "ensure_directory")
@@ -88,15 +82,15 @@ def mocked_definition_retrieve(mocker):
 
 
 @pytest.fixture()
-def mocked_wiz_export_definition(mocker):
-    """Return mocked 'wiz.export_definition' function"""
-    return mocker.patch.object(wiz, "export_definition")
+def mocked_fetch_environ(mocker):
+    """Return mocked 'qip.environ.fetch' function"""
+    return mocker.patch.object(qip.environ, "fetch")
 
 
 @pytest.fixture()
-def mocked_wiz_resolve_context(mocker):
-    """Return mocked 'wiz.resolve_context' function"""
-    return mocker.patch.object(wiz, "resolve_context")
+def mocked_wiz_export_definition(mocker):
+    """Return mocked 'wiz.export_definition' function"""
+    return mocker.patch.object(wiz, "export_definition")
 
 
 @pytest.mark.parametrize("options, overwrite, editable_mode", [
@@ -108,7 +102,7 @@ def mocked_wiz_resolve_context(mocker):
     "with-overwrite-packages",
     "with-editable-mode",
 ])
-def test_install(
+def stest_install(
     mocked_filesystem_ensure_directory, mocked_tempfile_mkdtemp,
     mocked_fetch_environ, mocked_package_install, mocked_copy_to_destination,
     mocked_definition_retrieve, mocked_definition_create,
@@ -171,11 +165,11 @@ def test_install(
     )
 
     mocked_fetch_environ.assert_called_once_with(
+        "python==2.7.*",
         mapping={
             "PYTHONPATH": "/tmp2/lib/python2.8/site-packages",
             "PYTHONWARNINGS": "ignore:DEPRECATION"
         },
-        python_exe=None
     )
 
     assert mocked_package_install.call_count == 4
@@ -284,11 +278,11 @@ def test_install_with_definition_path(
     )
 
     mocked_fetch_environ.assert_called_once_with(
+        "python==2.7.*",
         mapping={
             "PYTHONPATH": "/tmp2/lib/python2.8/site-packages",
             "PYTHONWARNINGS": "ignore:DEPRECATION"
         },
-        python_exe=None
     )
 
     assert mocked_package_install.call_count == 3
@@ -411,11 +405,11 @@ def test_install_without_dependencies(
     )
 
     mocked_fetch_environ.assert_called_once_with(
+        "python==2.7.*",
         mapping={
             "PYTHONPATH": "/tmp2/lib/python2.8/site-packages",
             "PYTHONWARNINGS": "ignore:DEPRECATION"
         },
-        python_exe=None
     )
 
     assert mocked_package_install.call_count == 2
@@ -494,11 +488,11 @@ def test_install_with_package_skipped(
     )
 
     mocked_fetch_environ.assert_called_once_with(
+        "python==2.7.*",
         mapping={
             "PYTHONPATH": "/tmp2/lib/python2.8/site-packages",
             "PYTHONWARNINGS": "ignore:DEPRECATION"
         },
-        python_exe=None
     )
 
     assert mocked_package_install.call_count == 1
@@ -550,11 +544,11 @@ def test_install_with_package_installation_error(
     )
 
     mocked_fetch_environ.assert_called_once_with(
+        "python==2.7.*",
         mapping={
             "PYTHONPATH": "/tmp2/lib/python2.8/site-packages",
             "PYTHONWARNINGS": "ignore:DEPRECATION"
         },
-        python_exe=None
     )
 
     assert mocked_package_install.call_count == 2
@@ -801,39 +795,3 @@ def test_confirm_overwrite(mocked_click_prompt, answer, expected):
         show_default=False,
         type=mock.ANY
     )
-
-
-def test_fetch_environ(mocked_wiz_resolve_context):
-    """Fetch and return environment mapping."""
-    mocked_wiz_resolve_context.return_value = {"environ": "__ENVIRON__"}
-
-    environ = qip.fetch_environ()
-    assert environ == "__ENVIRON__"
-
-    mocked_wiz_resolve_context.assert_called_once_with(
-        ["python==2.7.*"], environ_mapping={}
-    )
-
-
-def test_fetch_environ_with_mapping(mocked_wiz_resolve_context):
-    """Fetch and return environment mapping with initial mapping."""
-    mocked_wiz_resolve_context.return_value = {"environ": "__ENVIRON__"}
-
-    environ = qip.fetch_environ(mapping="__INITIAL_MAPPING__")
-    assert environ == "__ENVIRON__"
-
-    mocked_wiz_resolve_context.assert_called_once_with(
-        ["python==2.7.*"], environ_mapping="__INITIAL_MAPPING__"
-    )
-
-
-def test_fetch_environ_with_python_exe(mocked_wiz_resolve_context):
-    """Fetch and return environment mapping with python exe."""
-    mocked_wiz_resolve_context.return_value = {"environ": "__ENVIRON__"}
-
-    environ = qip.fetch_environ(python_exe="/bin/python")
-    assert environ == {
-        "PATH": "/bin:${PATH}"
-    }
-
-    mocked_wiz_resolve_context.assert_not_called()

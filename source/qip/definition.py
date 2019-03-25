@@ -6,6 +6,7 @@ import mlog
 import wiz
 import wiz.utility
 
+import qip.environ
 import qip.symbol
 
 
@@ -70,7 +71,7 @@ def create(mapping, output_path, editable_mode=False):
         definition_data["install-root"] = output_path
         definition_data["variants"][0]["install-location"] = os.path.join(
             qip.symbol.INSTALL_ROOT, mapping["target"],
-            qip.symbol.LIB_DESTINATION
+            qip.environ.python_library_path()
         )
 
     definition = wiz.definition.Definition(definition_data)
@@ -125,7 +126,7 @@ def retrieve(mapping, temporary_path, output_path, editable_mode=False):
             definition = definition.set("install-root", output_path)
             location_path = os.path.join(
                 qip.symbol.INSTALL_ROOT, mapping["target"],
-                qip.symbol.LIB_DESTINATION
+                qip.environ.python_library_path()
             )
 
         # Process all requirements to detect duplication.
