@@ -126,7 +126,7 @@ def fetch_mapping_from_environ(name, context_mapping, extra=None):
     :param extra: None or extra requirement label (e.g. "test"). Default is
         None.
 
-    :returns: mapping with information about the package gathered from the
+    :return: mapping with information about the package gathered from the
         environment. It should be in the form of::
 
             {
@@ -271,7 +271,7 @@ def extract_identifier(mapping):
     :return: Corresponding identifier (e.g. "Foo-1.11", "Bar").
 
     """
-    identifier = qip.filesystem.sanitise_value(
+    identifier = qip.filesystem.sanitize_value(
         "{name}-{version}".format(
             name=mapping["package_name"],
             version=mapping["installed_version"]
@@ -308,12 +308,14 @@ def extract_command_mapping(metadata):
 
     :param metadata: string resulting from the "pip show -v" command.
 
-    :return: mapping in the form of::
+    :return: command mapping
 
-        {
-            "foo": "python -m foo",
-            "bar": "python -m bar"
-        }
+        It should be in the form of::
+
+            {
+                "foo": "python -m foo",
+                "bar": "python -m bar"
+            }
 
     """
     mapping = {}
@@ -348,7 +350,10 @@ def extract_target_path(name, identifier, python_version, os_mapping=None):
     :param name: Python package name.
     :param identifier: Python package identifier.
     :param python_version: Python version identifier (e.g. "2.7").
-    :param os_mapping: could be a mapping in the form of::
+    :param os_mapping: None or a mapping describing the operating system.
+        Default is None.
+
+        It should be in the form of::
 
             {
                 "name": "centos",

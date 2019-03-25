@@ -53,7 +53,8 @@ def install(
     :param editable_mode: indicate whether the Python package location should
         target the source installation package. Default is False.
     :param python_target: Target a specific Python version via a Wiz request or
-        a path to a Python executable.
+        a path to a Python executable (e.g. "python==2.7.*" or
+        "/path/to/bin/python"). Default is "python==2.7.*".
 
     """
     logger = mlog.Logger(__name__ + ".install")
@@ -152,11 +153,12 @@ def install(
 
 
 def copy_to_destination(
-    package_mapping, source_path, destination_path, overwrite=False
+    mapping, source_path, destination_path, overwrite=False
 ):
     """Copy package from *source_path* to *destination_path*.
 
-    :param package_mapping: mapping of the python package built.
+    :param mapping: mapping of the python package built as returned by
+        :func:`qip.package.install`.
     :param source_path: path where the package was built.
     :param destination_path: path to install to.
     :param overwrite: indicate whether packages already installed should be
@@ -169,8 +171,8 @@ def copy_to_destination(
     """
     logger = mlog.Logger(__name__ + ".copy_to_destination")
 
-    identifier = package_mapping["identifier"]
-    target = os.path.join(destination_path, package_mapping["target"])
+    identifier = mapping["identifier"]
+    target = os.path.join(destination_path, mapping["target"])
 
     # By default, future overwrite request will the same as the present one.
     overwrite_next = overwrite
@@ -227,30 +229,33 @@ def _confirm_overwrite(identifier):
     return overwrite, overwrite_next
 
 
-def fetch_context_mapping(path, python):
+def fetch_context_mapping(path, python_target):
     """Return context mapping containing environment and python mapping.
 
     :param path: path where python package has been installed.
-    :param python: Target a specific Python version via a Wiz request or a path
-        to a Python executable (e.g. "python==2.7.*" or "/path/to/bin/python").
+    :param python_target: Target a specific Python version via a Wiz request or
+        a path to a Python executable (e.g. "python==2.7.*" or
+        "/path/to/bin/python").
 
-    :return: Context mapping in the form of::
+    :return: Context mapping.
 
-        {
-            "environ": {
-                "PATH": "/path/to/bin",
-                "PYTHONPATH": "/path/to/lib/python2.7/site-packages",
-            },
-            "python": {
-                "identifier": "2.7",
-                "request": "python >= 2.7, < 2.8",
-                "installation-target": "lib/python2.7/site-packages"
+        It should be in the form of::
+
+            {
+                "environ": {
+                    "PATH": "/path/to/bin",
+                    "PYTHONPATH": "/path/to/lib/python2.7/site-packages",
+                },
+                "python": {
+                    "identifier": "2.7",
+                    "request": "python >= 2.7, < 2.8",
+                    "installation-target": "lib/python2.7/site-packages"
+                }
             }
-        }
 
     """
     environ_mapping = qip.environ.fetch(
-        python, mapping={"PYTHONWARNINGS": "ignore:DEPRECATION"}
+        python_target, mapping={"PYTHONWARNINGS": "ignore:DEPRECATION"}
     )
 
     # Fetch Python version mapping from environment

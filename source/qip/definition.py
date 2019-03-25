@@ -26,7 +26,7 @@ def export(
     :param definition_mapping: None or mapping regrouping all available
         definitions. Default is None.
 
-    :return: None
+    :return: None.
 
     """
     additional_variants = None
@@ -72,7 +72,7 @@ def retrieve(path, mapping):
     :param mapping: mapping of the python package built as returned by
         :func:`qip.package.install`.
 
-    :raise :exc:`wiz.exception.WizError` if the :term:`Wiz` definition found is
+    :raise wiz.exception.WizError: if the :term:`Wiz` definition found is
         incorrect.
 
     :return: None if no definition was found, otherwise return the
@@ -246,7 +246,7 @@ def _update_variants(variants, mapping, path, environ_mapping=None):
     :param environ_mapping: could be an environment mapping to add to the
         variant. Default is None.
 
-    :return: None
+    :return: None.
 
     .. note::
 
