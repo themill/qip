@@ -137,39 +137,42 @@ def retrieve(mapping, temporary_path, output_path, editable_mode=False):
             for _req in [python_request] + mapping.get("requirements", [])
         ]
 
-        _definition = _update_variant(
+        definition = _add_variant(
             definition, mapping["python"]["identifier"], requirements,
             location_path
         )
 
-        if not _definition:
-            _definition = definition.extend("variants", [{
-                "identifier": mapping["python"]["identifier"],
-                "install-location": location_path,
-                "requirements": requirements
-            }])
-
         logger.info(
             "Wiz definition extracted from '{}'.".format(mapping["identifier"])
         )
-        return _definition
+        return definition
 
 
-def _update_variant(definition, identifier, requirements, location_path):
-    """Update *definition* variant corresponding to *identifier*.
+def _add_variant(definition, identifier, requirements, location_path):
+    """Add *definition* variant corresponding to *identifier*.
 
-    Return updated :class:`wiz.definition.Definition` instance or None.
+    Update existing variant if necessary or add new variant corresponding to the
+    python version required. If a new variant is added, it will be inserted
+    to the variant list so that the highest Python version is always first.
 
     :param definition: :class:`wiz.definition.Definition` instance
     :param identifier: variant identifier
     :param requirements: list of Requirement instances
     :param location_path: path to package.
 
-    :returns: Boolean value
+    :returns: :class:`wiz.definition.Definition` instance
 
     """
+    # Index of new variant if necessary.
+    _index = 0
+
     for index, variant in enumerate(definition.variants):
         if variant.identifier != identifier:
+
+            # Update index for new variant.
+            if _is_superior(variant.identifier, identifier):
+                _index = index + 1
+
             continue
 
         variant = variant.set("install-location", location_path)
@@ -183,3 +186,30 @@ def _update_variant(definition, identifier, requirements, location_path):
 
         definition = definition.remove_index("variants", index)
         return definition.insert("variants", variant, index)
+
+    # If no variant has been updated, create a new variant.
+    variant = {
+        "identifier": identifier,
+        "install-location": location_path,
+        "requirements": requirements
+    }
+
+    return definition.insert("variants", variant, _index)
+
+
+def _is_superior(identifier, variant_identifier):
+    """Indicate whether *identifier* is superior that *variant_identifier*.
+
+    It is assumed that both identifier are Python version. False is returned
+    otherwise.
+
+    :param identifier: New variant identifier.
+    :param variant_identifier: Variant identifier analyzed.
+
+    :returns: Boolean value.
+
+    """
+    try:
+        return float(identifier) > float(variant_identifier)
+    except ValueError:
+        return False

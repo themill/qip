@@ -681,6 +681,86 @@ def test_retrieve_with_existing_variant_2(
     mocked_wiz_load_definition.assert_any_call(path)
 
 
+def test_retrieve_with_existing_variant_3(
+    mocked_wiz_load_definition, temporary_directory, logger
+):
+    """Retrieve definition from package installed with existing variant."""
+    path = os.path.join(temporary_directory, "share", "wiz", "Foo", "wiz.json")
+    _ensure_exists(path)
+
+    mocked_wiz_load_definition.return_value = wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "library",
+        "variants": [
+            {
+                "identifier": "3.6",
+            },
+            {
+                "identifier": "3.5",
+            },
+            {
+                "identifier": "2.7",
+            },
+        ]
+    })
+
+    mapping = {
+        "identifier": "Foo-0.2.3",
+        "name": "Foo",
+        "key": "foo",
+        "version": "0.2.3",
+        "target": "Foo/Foo-0.2.3",
+        "description": "This is a package",
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9"
+        },
+        "requirements": [
+            "bim"
+        ]
+    }
+
+    _definition = qip.definition.retrieve(
+        mapping, temporary_directory, "/path/to/installed/package",
+        editable_mode=False
+    )
+
+    assert _definition == wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "library",
+        "install-root": "/path/to/installed/package",
+        "variants": [
+            {
+                "identifier": "3.6",
+            },
+            {
+                "identifier": "3.5",
+            },
+            {
+                "identifier": "2.8",
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
+                ),
+                "requirements": [
+                    "python >=2.8, <2.9",
+                    "bim"
+                ]
+            },
+            {
+                "identifier": "2.7",
+            }
+        ]
+    })
+
+    logger.info.assert_called_once_with(
+        "Wiz definition extracted from 'Foo-0.2.3'."
+    )
+
+    mocked_wiz_load_definition.assert_any_call(path)
+
+
 def _ensure_exists(path):
     """Ensure that *path* file exists."""
     os.makedirs(os.path.dirname(path))
