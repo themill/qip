@@ -58,19 +58,13 @@ def mocked_extract_target_path(mocker):
     return mocker.patch.object(qip.package, "extract_target_path")
 
 
-@pytest.fixture()
-def mocked_python_request_mapping(mocker):
-    """Return mocked 'qip.environ.python_request_mapping' function"""
-    return mocker.patch.object(qip.environ, "python_request_mapping")
-
-
-@pytest.mark.parametrize("package", [
-    "foo",
-    "foo==0.1.0",
-    "foo >= 7, < 8",
-    "git@gitlab:rnd/foo.git",
-    "git@gitlab:rnd/foo.git@0.1.0",
-    "git@gitlab:rnd/foo.git@dev"
+@pytest.mark.parametrize("package, expected", [
+    ("foo", "foo"),
+    ("foo==0.1.0", "foo==0.1.0"),
+    ("foo >= 7, < 8", "foo >= 7, < 8"),
+    ("git@gitlab:rnd/foo.git", "git+ssh://git@gitlab/rnd/foo.git"),
+    ("git@gitlab:rnd/foo.git@0.1.0", "git+ssh://git@gitlab/rnd/foo.git@0.1.0"),
+    ("git@gitlab:rnd/foo.git@dev", "git+ssh://git@gitlab/rnd/foo.git@dev"),
 ], ids=[
     "foo",
     "foo==0.1.0",
@@ -80,17 +74,19 @@ def mocked_python_request_mapping(mocker):
     "git@gitlab:rnd/foo.git@dev"
 ])
 def test_install(
-    mocked_fetch_mapping_from_environ, mocked_command_execute, package
+    mocked_fetch_mapping_from_environ, mocked_command_execute, package, expected
 ):
     """Install package."""
-    mocked_fetch_mapping_from_environ.return_value = "__VALUE__"
+    mocked_fetch_mapping_from_environ.return_value = {}
     mocked_command_execute.return_value = "Installing collected packages: foo"
 
-    result = qip.package.install(package, "/path", {}, "/cache")
-    mocked_fetch_mapping_from_environ.assert_called_once_with(
-        "foo", {}, extra=None
+    result = qip.package.install(
+        package, "/path", {"environ": "__ENV__"}, "/cache"
     )
-    assert result == "__VALUE__"
+    mocked_fetch_mapping_from_environ.assert_called_once_with(
+        "foo", {"environ": "__ENV__"}, extra=None
+    )
+    assert result == {"request": expected}
 
 
 def test_install_fail(mocked_command_execute):
@@ -98,17 +94,23 @@ def test_install_fail(mocked_command_execute):
     mocked_command_execute.return_value = "__FAIL__"
 
     with pytest.raises(ValueError) as error:
-        qip.package.install("foo", "/path", {}, "/cache")
+        qip.package.install("foo", "/path", {"environ": "__ENV__"}, "/cache")
     assert str(error.value) == "Package name could not be extracted from 'foo'."
 
 
 def test_fetch_mapping_from_environ(
     mocked_extract_dependency_mapping, mocked_extract_identifier,
     mocked_is_system_required, mocked_extract_command_mapping,
-    mocked_extract_target_path, mocked_python_request_mapping,
-    mocked_command_execute, mocked_system_query
+    mocked_extract_target_path, mocked_command_execute, mocked_system_query
 ):
     """Return a package mapping from environment."""
+    context = {
+        "environ": "__ENV__",
+        "python": {
+            "identifier": "2.8"
+        }
+    }
+
     mocked_command_execute.return_value = ""
     mocked_extract_dependency_mapping.return_value = {
         "package": {
@@ -123,20 +125,21 @@ def test_fetch_mapping_from_environ(
     mocked_is_system_required.return_value = False
     mocked_extract_command_mapping.return_value = {}
     mocked_extract_target_path.return_value = "/path/to/target"
-    mocked_python_request_mapping.return_value = "__PYTHON__"
 
-    mapping = qip.package.fetch_mapping_from_environ("foo", {})
+    mapping = qip.package.fetch_mapping_from_environ("foo", context)
     assert mapping == {
         "identifier": "Foo-0.1.0",
         "key": "foo",
         "name": "Foo",
         "version": "0.1.0",
-        "python": "__PYTHON__",
+        "python": {
+            "identifier": "2.8"
+        },
         "target": "/path/to/target"
     }
 
     mocked_command_execute.assert_called_once_with(
-        "pip show --disable-pip-version-check 'foo' -v", {}, quiet=True
+        "pip show --disable-pip-version-check 'foo' -v", "__ENV__", quiet=True
     )
     mocked_system_query.assert_not_called()
 
@@ -144,10 +147,16 @@ def test_fetch_mapping_from_environ(
 def test_fetch_mapping_from_environ_with_system(
     mocked_extract_dependency_mapping, mocked_extract_identifier,
     mocked_is_system_required, mocked_extract_command_mapping,
-    mocked_extract_target_path, mocked_python_request_mapping,
-    mocked_command_execute, mocked_system_query
+    mocked_extract_target_path, mocked_command_execute, mocked_system_query
 ):
     """Return a package mapping from environment with system."""
+    context = {
+        "environ": "__ENV__",
+        "python": {
+            "identifier": "2.8"
+        }
+    }
+
     mocked_command_execute.return_value = ""
     mocked_extract_dependency_mapping.return_value = {
         "package": {
@@ -162,22 +171,23 @@ def test_fetch_mapping_from_environ_with_system(
     mocked_is_system_required.return_value = True
     mocked_extract_command_mapping.return_value = {}
     mocked_extract_target_path.return_value = "/path/to/target"
-    mocked_python_request_mapping.return_value = "__PYTHON__"
     mocked_system_query.return_value = {"os": "__SYSTEM__"}
 
-    mapping = qip.package.fetch_mapping_from_environ("foo", {})
+    mapping = qip.package.fetch_mapping_from_environ("foo", context)
     assert mapping == {
         "identifier": "Foo-0.1.0",
         "key": "foo",
         "name": "Foo",
         "version": "0.1.0",
-        "python": "__PYTHON__",
+        "python": {
+            "identifier": "2.8"
+        },
         "target": "/path/to/target",
         "system": {"os": "__SYSTEM__"}
     }
 
     mocked_command_execute.assert_called_once_with(
-        "pip show --disable-pip-version-check 'foo' -v", {}, quiet=True
+        "pip show --disable-pip-version-check 'foo' -v", "__ENV__", quiet=True
     )
     mocked_system_query.assert_called_once()
 
@@ -185,10 +195,16 @@ def test_fetch_mapping_from_environ_with_system(
 def test_fetch_mapping_from_environ_with_description(
     mocked_extract_dependency_mapping, mocked_extract_identifier,
     mocked_is_system_required, mocked_extract_command_mapping,
-    mocked_extract_target_path, mocked_python_request_mapping,
-    mocked_command_execute, mocked_system_query
+    mocked_extract_target_path, mocked_command_execute, mocked_system_query
 ):
     """Return a package mapping from environment with description."""
+    context = {
+        "environ": "__ENV__",
+        "python": {
+            "identifier": "2.8"
+        }
+    }
+
     mocked_command_execute.return_value = "Summary: This is a test"
     mocked_extract_dependency_mapping.return_value = {
         "package": {
@@ -203,21 +219,22 @@ def test_fetch_mapping_from_environ_with_description(
     mocked_is_system_required.return_value = False
     mocked_extract_command_mapping.return_value = {}
     mocked_extract_target_path.return_value = "/path/to/target"
-    mocked_python_request_mapping.return_value = "__PYTHON__"
 
-    mapping = qip.package.fetch_mapping_from_environ("foo", {})
+    mapping = qip.package.fetch_mapping_from_environ("foo", context)
     assert mapping == {
         "identifier": "Foo-0.1.0",
         "key": "foo",
         "name": "Foo",
         "version": "0.1.0",
-        "python": "__PYTHON__",
+        "python": {
+            "identifier": "2.8"
+        },
         "target": "/path/to/target",
         "description": "This is a test"
     }
 
     mocked_command_execute.assert_called_once_with(
-        "pip show --disable-pip-version-check 'foo' -v", {}, quiet=True
+        "pip show --disable-pip-version-check 'foo' -v", "__ENV__", quiet=True
     )
     mocked_system_query.assert_not_called()
 
@@ -225,10 +242,16 @@ def test_fetch_mapping_from_environ_with_description(
 def test_fetch_mapping_from_environ_with_location(
     mocked_extract_dependency_mapping, mocked_extract_identifier,
     mocked_is_system_required, mocked_extract_command_mapping,
-    mocked_extract_target_path, mocked_python_request_mapping,
-    mocked_command_execute, mocked_system_query
+    mocked_extract_target_path, mocked_command_execute, mocked_system_query
 ):
     """Return a package mapping from environment with location."""
+    context = {
+        "environ": "__ENV__",
+        "python": {
+            "identifier": "2.8"
+        }
+    }
+
     mocked_command_execute.return_value = "Location: /path/to/package"
     mocked_extract_dependency_mapping.return_value = {
         "package": {
@@ -243,21 +266,22 @@ def test_fetch_mapping_from_environ_with_location(
     mocked_is_system_required.return_value = False
     mocked_extract_command_mapping.return_value = {}
     mocked_extract_target_path.return_value = "/path/to/target"
-    mocked_python_request_mapping.return_value = "__PYTHON__"
 
-    mapping = qip.package.fetch_mapping_from_environ("foo", {})
+    mapping = qip.package.fetch_mapping_from_environ("foo", context)
     assert mapping == {
         "identifier": "Foo-0.1.0",
         "key": "foo",
         "name": "Foo",
         "version": "0.1.0",
-        "python": "__PYTHON__",
+        "python": {
+            "identifier": "2.8"
+        },
         "target": "/path/to/target",
         "location": "/path/to/package"
     }
 
     mocked_command_execute.assert_called_once_with(
-        "pip show --disable-pip-version-check 'foo' -v", {}, quiet=True
+        "pip show --disable-pip-version-check 'foo' -v", "__ENV__", quiet=True
     )
     mocked_system_query.assert_not_called()
 
@@ -265,10 +289,16 @@ def test_fetch_mapping_from_environ_with_location(
 def test_fetch_mapping_from_environ_with_commands(
     mocked_extract_dependency_mapping, mocked_extract_identifier,
     mocked_is_system_required, mocked_extract_command_mapping,
-    mocked_extract_target_path, mocked_python_request_mapping,
-    mocked_command_execute, mocked_system_query
+    mocked_extract_target_path, mocked_command_execute, mocked_system_query
 ):
     """Return a package mapping from environment with commands."""
+    context = {
+        "environ": "__ENV__",
+        "python": {
+            "identifier": "2.8"
+        }
+    }
+
     mocked_command_execute.return_value = ""
     mocked_extract_dependency_mapping.return_value = {
         "package": {
@@ -283,21 +313,22 @@ def test_fetch_mapping_from_environ_with_commands(
     mocked_is_system_required.return_value = False
     mocked_extract_command_mapping.return_value = {"foo": "python -m foo"}
     mocked_extract_target_path.return_value = "/path/to/target"
-    mocked_python_request_mapping.return_value = "__PYTHON__"
 
-    mapping = qip.package.fetch_mapping_from_environ("foo", {})
+    mapping = qip.package.fetch_mapping_from_environ("foo", context)
     assert mapping == {
         "identifier": "Foo-0.1.0",
         "key": "foo",
         "name": "Foo",
         "version": "0.1.0",
-        "python": "__PYTHON__",
+        "python": {
+            "identifier": "2.8"
+        },
         "target": "/path/to/target",
         "command": {"foo": "python -m foo"}
     }
 
     mocked_command_execute.assert_called_once_with(
-        "pip show --disable-pip-version-check 'foo' -v", {}, quiet=True
+        "pip show --disable-pip-version-check 'foo' -v", "__ENV__", quiet=True
     )
     mocked_system_query.assert_not_called()
 
@@ -305,10 +336,16 @@ def test_fetch_mapping_from_environ_with_commands(
 def test_fetch_mapping_from_environ_with_requirements(
     mocked_extract_dependency_mapping, mocked_extract_identifier,
     mocked_is_system_required, mocked_extract_command_mapping,
-    mocked_extract_target_path, mocked_python_request_mapping,
-    mocked_command_execute, mocked_system_query
+    mocked_extract_target_path, mocked_command_execute, mocked_system_query
 ):
     """Return a package mapping from environment with requirements."""
+    context = {
+        "environ": "__ENV__",
+        "python": {
+            "identifier": "2.8"
+        }
+    }
+
     mocked_command_execute.return_value = ""
     mocked_extract_dependency_mapping.return_value = {
         "package": {
@@ -326,15 +363,16 @@ def test_fetch_mapping_from_environ_with_requirements(
     mocked_is_system_required.return_value = False
     mocked_extract_command_mapping.return_value = {}
     mocked_extract_target_path.return_value = "/path/to/target"
-    mocked_python_request_mapping.return_value = "__PYTHON__"
 
-    mapping = qip.package.fetch_mapping_from_environ("foo", {})
+    mapping = qip.package.fetch_mapping_from_environ("foo", context)
     assert mapping == {
         "identifier": "Foo-0.1.0",
         "key": "foo",
         "name": "Foo",
         "version": "0.1.0",
-        "python": "__PYTHON__",
+        "python": {
+            "identifier": "2.8"
+        },
         "target": "/path/to/target",
         "requirements": [
             "bim >= 0.1.0, < 1",
@@ -343,7 +381,7 @@ def test_fetch_mapping_from_environ_with_requirements(
     }
 
     mocked_command_execute.assert_called_once_with(
-        "pip show --disable-pip-version-check 'foo' -v", {}, quiet=True
+        "pip show --disable-pip-version-check 'foo' -v", "__ENV__", quiet=True
     )
     mocked_system_query.assert_not_called()
 
@@ -470,14 +508,14 @@ def test_extract_command_mapping(metadata, expected):
 
 def test_extract_target_path():
     """Return the corresponding target path from package."""
-    path = qip.package.extract_target_path("Foo", "Foo-0.1.0")
+    path = qip.package.extract_target_path("Foo", "Foo-0.1.0", "2.8")
     assert path == "Foo/Foo-0.1.0-py28"
 
 
 def test_extract_target_path_with_system():
     """Return the corresponding target path from package with system."""
     path = qip.package.extract_target_path(
-        "Foo", "Foo-0.1.0", os_mapping={
+        "Foo", "Foo-0.1.0", "2.8", os_mapping={
             "name": "centos",
             "major_version": 7
         }

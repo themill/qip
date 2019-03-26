@@ -29,21 +29,24 @@ def export(
     :return: None.
 
     """
-    additional_variants = None
+    # Retrieve definition from installation package path if possible.
+    definition = qip.definition.retrieve(package_path, mapping)
+
+    # Extract previous namespace or set default.
+    namespace = definition.namespace if definition else qip.symbol.NAMESPACE
 
     # Extract additional variants from existing definition if possible.
+    additional_variants = None
+
     if definition_mapping is not None:
         try:
             _definition = wiz.fetch_definition(
-                "library::{}".format(mapping["request"]),
+                "{}::{}".format(namespace, mapping["request"]),
                 definition_mapping
             )
             additional_variants = _definition.variants
         except wiz.exception.RequestNotFound:
             pass
-
-    # Retrieve definition from installation package path if possible.
-    definition = qip.definition.retrieve(package_path, mapping)
 
     # Update definition or create a new definition.
     if definition is not None:
@@ -110,6 +113,23 @@ def retrieve(path, mapping):
         # Update definition with install-location, commands and requirements.
         definition = wiz.load_definition(definition_path)
 
+        if not definition.get("description"):
+            definition = definition.set("description", mapping["description"])
+
+        if not definition.get("version"):
+            definition = definition.set("version", mapping["version"])
+
+        if not definition.get("namespace"):
+            definition = definition.set("namespace", qip.symbol.NAMESPACE)
+
+        if not definition.get("system") and mapping.get("system"):
+            definition = definition.set(
+                "system", _process_system_mapping(mapping)
+            )
+
+        if mapping.get("command"):
+            definition = definition.update("command", mapping["command"])
+
         logger.info(
             "Wiz definition extracted from '{}'.".format(mapping["identifier"])
         )
@@ -136,7 +156,7 @@ def create(mapping, output_path, editable_mode=False, additional_variants=None):
         "identifier": mapping["key"],
         "version": mapping["version"],
         "description": mapping["description"],
-        "namespace": "library"
+        "namespace": qip.symbol.NAMESPACE
     }
 
     # Add commands mapping.
@@ -145,18 +165,7 @@ def create(mapping, output_path, editable_mode=False, additional_variants=None):
 
     # Add system constraint if necessary.
     if "system" in mapping.keys():
-        major_version = mapping["system"]["os"]["major_version"]
-        definition_data["system"] = {
-            "platform": mapping["system"]["platform"],
-            "arch": mapping["system"]["arch"],
-            "os": (
-                "{name} >= {min_version}, < {max_version}".format(
-                    name=mapping["system"]["os"]["name"],
-                    min_version=major_version,
-                    max_version=major_version + 1,
-                )
-            )
-        }
+        definition_data["system"] = _process_system_mapping(mapping)
 
     # Target package location if the installation is in editable mode.
     location_path = mapping.get("location", "")
@@ -172,7 +181,10 @@ def create(mapping, output_path, editable_mode=False, additional_variants=None):
     variants = []
 
     if additional_variants is not None:
-        variants = additional_variants
+        variants = sorted(
+            additional_variants,
+            key=lambda v: _to_inv_float(v.get("identifier"))
+        )
 
     _update_variants(
         variants, mapping, location_path,
@@ -225,10 +237,14 @@ def update(
         )
 
     variants = definition.variants
-    _update_variants(variants, mapping, package_path)
 
     if additional_variants is not None:
-        _update_variants(additional_variants, mapping, package_path)
+        variants = sorted(
+            variants + additional_variants,
+            key=lambda v: _to_inv_float(v.get("identifier"))
+        )
+
+    _update_variants(variants, mapping, package_path)
 
     return definition.set("variants", variants)
 
@@ -270,7 +286,7 @@ def _update_variants(variants, mapping, path, environ_mapping=None):
         if variant.identifier != identifier:
 
             # Update index for new variant.
-            if _is_superior(variant.identifier, identifier):
+            if _to_inv_float(identifier) > _to_inv_float(variant.identifier):
                 _index = index + 1
 
             continue
@@ -285,7 +301,7 @@ def _update_variants(variants, mapping, path, environ_mapping=None):
 
         # Add environment mapping if necessary
         if environ_mapping:
-            variant = variant.set("environ", environ_mapping)
+            variant = variant.update("environ", environ_mapping)
 
         del variants[index]
         variants.insert(index, variant)
@@ -305,30 +321,32 @@ def _update_variants(variants, mapping, path, environ_mapping=None):
     variants.insert(_index, variant)
 
 
-def _is_superior(identifier, variant_identifier):
-    """Indicate whether *identifier* is superior that *variant_identifier*.
+def _to_inv_float(text):
+    """Convert *text* to inverted float if possible. Return *text* otherwise."""
+    try:
+        return -float(text)
+    except ValueError:
+        return text
 
-    It is assumed that both identifier are Python version. False is returned
-    otherwise.
 
-    :param identifier: New variant identifier.
-    :param variant_identifier: Variant identifier analyzed.
+def _process_system_mapping(mapping):
+    """Compute 'system' keyword for :term:`Wiz` definition from *mapping*.
 
-    :return: Boolean value.
+    :param mapping: mapping of the python package built as returned by
+        :func:`qip.package.install`.
 
-    Example::
-
-        >>> _is_superior("2.7", "3.6")
-        False
-
-        >>> _is_superior("10.1", "2.1")
-        True
-
-        >>> _is_superior("2.7", "foo")
-        False
+    :return: system mapping.
 
     """
-    try:
-        return float(identifier) > float(variant_identifier)
-    except ValueError:
-        return False
+    major_version = mapping["system"]["os"]["major_version"]
+    return {
+        "platform": mapping["system"]["platform"],
+        "arch": mapping["system"]["arch"],
+        "os": (
+            "{name} >= {min_version}, < {max_version}".format(
+                name=mapping["system"]["os"]["name"],
+                min_version=major_version,
+                max_version=major_version + 1,
+            )
+        )
+    }
