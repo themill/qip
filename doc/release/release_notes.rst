@@ -112,6 +112,12 @@ Release Notes
         clarity.
 
     .. change:: changed
+        :tags: API, backwards-incompatible
+
+        Rename :mod:`qip.package_data.pip_query` to
+        :mod:`qip.package_data.package_info` for consistency.
+
+    .. change:: changed
         :tags: command-line
 
         Explicitly set the name of the program to "qip" instead of relying on
