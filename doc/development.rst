@@ -149,3 +149,64 @@ For example::
                 "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
             }
         }
+
+Development for multiple Python versions
+========================================
+
+By default any Python package is build with Python 2.7.
+If a package is required for multiple versions of Python, it should be build
+sequentially, using the :option:`--update <qip install --update>` flag, i.e.:
+
+    >>> qip install tensorflow
+    >>> qip install tensorflow --python "python==3.6.*" --update
+
+.. important::
+
+    Installs using :option:`--update <qip install --update>` need to use the
+    same :option:`--definition-path <qip install --definition-path>`, as it will
+    look for definitions to update in there.
+
+This will result in a definition like:
+
+.. code-block:: python
+    :emphasize-lines: 12, 23
+
+    {
+        "identifier": "tensorflow",
+        "version": "1.13.1",
+        "namespace": "library",
+        "description": "TensorFlow is an open source machine learning framework for everyone.",
+        "install-root": "/tmp/qip/packages",
+        "command": {
+            ...
+        },
+        "variants": [
+            {
+                "identifier": "3.6",
+                "install-location": "${INSTALL_ROOT}/tensorflow/tensorflow-1.13.1-py36/lib/python3.6/site-packages",
+                "environ": {
+                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+                },
+                "requirements": [
+                    "python >=3.6, <3.7",
+                    ...
+                ]
+            },
+            {
+                "identifier": "2.7",
+                "install-location": "${INSTALL_ROOT}/tensorflow/tensorflow-1.13.1-py27/lib/python2.7/site-packages",
+                "environ": {
+                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+                },
+                "requirements": [
+                    "python >=2.7, <2.8",
+                    ...
+                ]
+            }
+        ]
+    }
+
+This can also be used in editable mode, i.e::
+
+    >>> cd {PATH_TO}/shadow && qip install -e ."[dev]"
+    >>> wiz --add /tmp/qip/definitions use shadow -- pytest test
