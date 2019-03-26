@@ -28,7 +28,7 @@ def main(**kwargs):
 @click.option(
     "-o", "--output-path",
     help=(
-        "Destination for the package installation data. Default will be "
+        "Destination for the package installation data. Default is "
         "'<TEMPORARY_FOLDER>/qip/packages'"
     ),
     type=click.Path(),
@@ -37,7 +37,7 @@ def main(**kwargs):
 @click.option(
     "-d", "--definition-path",
     help=(
-        "Destination for the Wiz definitions extracted. Default will be "
+        "Destination for the Wiz definitions extracted. Default is "
         "'<TEMPORARY_FOLDER>/qip/definitions'"
     ),
     type=click.Path(),
