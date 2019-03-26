@@ -10,7 +10,7 @@ import qip.command
 
 
 #: Path to the python info script.
-PYTHON_INFO_SCRIPT = os.path.join(
+_PYTHON_INFO_SCRIPT = os.path.join(
     os.path.dirname(__file__), "package_data", "python_info.py"
 )
 
@@ -24,12 +24,14 @@ def fetch(python_target, mapping=None):
     :param mapping: optional custom environment mapping to be added to initial
         environment.
 
-    :return: mapping in the form of::
+    :return: environment mapping
 
-        {
-            "PATH": "/path/to/bin",
-            "PYTHONPATH": "/path/to/lib/site-packages",
-        }
+        It should be in the form of::
+
+            {
+                "PATH": "/path/to/bin",
+                "PYTHONPATH": "/path/to/lib/site-packages",
+            }
 
     Example::
 
@@ -62,17 +64,19 @@ def fetch_python_mapping(environ_mapping):
 
     :param environ_mapping: mapping of environment variables
 
-    :return: mapping in the form of::
+    :return: python mapping.
 
-        {
-            "identifier": "2.7",
-            "request": "python >= 2.7, < 2.8",
-            "installation-target": "lib/python2.7/site-packages"
-        }
+        It should be in the form of::
+
+            {
+                "identifier": "2.7",
+                "request": "python >= 2.7, < 2.8",
+                "installation-target": "lib/python2.7/site-packages"
+            }
 
     """
     result = qip.command.execute(
-        "python {}".format(PYTHON_INFO_SCRIPT), environ_mapping, quiet=True
+        "python {}".format(_PYTHON_INFO_SCRIPT), environ_mapping, quiet=True
     )
     try:
         mapping = json.loads(result)
