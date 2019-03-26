@@ -38,7 +38,7 @@ Release Notes
         information about the Python version within a context mapping that
         can used during the installation process.
 
-        The :envvar:`PYTHONPATH` environment variable is overridden to target
+        The :envvar:`PYTHONPATH` environment variable is set to target
         the :mod:`site-packages <python:site>` directory within the package
         installation path.
 
@@ -81,7 +81,7 @@ Release Notes
         <wiz:definition/variants>` which is targeting the Python minor version
         that was used for the package installation.
 
-        If this package is installed for another Python version, a new
+        When a package is installed for another Python version, a new
         :ref:`variant <wiz:definition/variants>` will be added if required. When
         a :class:`~wiz.definition.Definition` instance has several variants, it
         will be sorted to have the highest Python version first, provided that
