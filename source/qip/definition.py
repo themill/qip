@@ -69,8 +69,14 @@ def export(
 def retrieve(path, mapping):
     """Retrieve :term:`Wiz` definition from package *mapping* installed.
 
-    Return the :term:`Wiz` definition found in *path* or in the package source
-    location if available.
+    Return the :term:`Wiz` definition extracted from a
+    :file:`share/wiz/wiz.json` file found within the package installation
+    *path*.
+
+    If in editable mode, the :file:`wiz.json` file will be fetched from the root
+    location of the package instead.
+
+    The definition extracted will be
 
     :param path: path where python package has been installed.
     :param mapping: mapping of the python package built as returned by
@@ -110,26 +116,7 @@ def retrieve(path, mapping):
         if not os.path.exists(definition_path):
             continue
 
-        # Update definition with install-location, commands and requirements.
         definition = wiz.load_definition(definition_path)
-
-        if not definition.get("description"):
-            definition = definition.set("description", mapping["description"])
-
-        if not definition.get("version"):
-            definition = definition.set("version", mapping["version"])
-
-        if not definition.get("namespace"):
-            definition = definition.set("namespace", qip.symbol.NAMESPACE)
-
-        if not definition.get("system") and mapping.get("system"):
-            definition = definition.set(
-                "system", _process_system_mapping(mapping)
-            )
-
-        if mapping.get("command"):
-            definition = definition.update("command", mapping["command"])
-
         logger.info(
             "Wiz definition extracted from '{}'.".format(mapping["identifier"])
         )
@@ -222,8 +209,21 @@ def update(
     :return: Updated :class:`wiz.definition.Definition` instance.
 
     """
-    # Add commands to the root level.
-    if "command" in mapping.keys():
+    if not definition.get("description"):
+        definition = definition.set("description", mapping["description"])
+
+    if not definition.get("version"):
+        definition = definition.set("version", mapping["version"])
+
+    if not definition.get("namespace"):
+        definition = definition.set("namespace", qip.symbol.NAMESPACE)
+
+    if not definition.get("system") and mapping.get("system"):
+        definition = definition.set(
+            "system", _process_system_mapping(mapping)
+        )
+
+    if mapping.get("command"):
         definition = definition.update("command", mapping["command"])
 
     # Target package location if the installation is in editable mode.

@@ -262,273 +262,6 @@ def test_retrieve(
     mocked_wiz_load_definition.assert_any_call(path)
 
 
-def test_retrieve_without_description(
-    mocked_wiz_load_definition, temporary_directory, logger
-):
-    """Retrieve definition from package installed within description."""
-    path = os.path.join(temporary_directory, "share", "wiz", "Foo", "wiz.json")
-    _ensure_exists(path)
-
-    definition = wiz.definition.Definition({
-        "identifier": "foo",
-        "version": "0.2.3",
-        "namespace": "plugin",
-    })
-
-    mocked_wiz_load_definition.return_value = definition
-
-    mapping = {
-        "identifier": "Foo-0.2.3",
-        "name": "Foo",
-        "key": "foo",
-        "version": "0.2.3",
-        "description": "This is a cool library",
-    }
-
-    _definition = qip.definition.retrieve(temporary_directory, mapping)
-
-    assert _definition == wiz.definition.Definition({
-        "identifier": "foo",
-        "version": "0.2.3",
-        "namespace": "plugin",
-        "description": "This is a cool library",
-    })
-
-    logger.info.assert_called_once_with(
-        "Wiz definition extracted from 'Foo-0.2.3'."
-    )
-
-    mocked_wiz_load_definition.assert_any_call(path)
-
-
-def test_retrieve_without_version(
-    mocked_wiz_load_definition, temporary_directory, logger
-):
-    """Retrieve definition from package installed within version."""
-    path = os.path.join(temporary_directory, "share", "wiz", "Foo", "wiz.json")
-    _ensure_exists(path)
-
-    definition = wiz.definition.Definition({
-        "identifier": "foo",
-        "namespace": "plugin",
-        "description": "This is a library",
-    })
-
-    mocked_wiz_load_definition.return_value = definition
-
-    mapping = {
-        "identifier": "Foo-0.2.3",
-        "name": "Foo",
-        "key": "foo",
-        "version": "0.2.3",
-        "description": "This is a cool library",
-    }
-
-    _definition = qip.definition.retrieve(temporary_directory, mapping)
-
-    assert _definition == wiz.definition.Definition({
-        "identifier": "foo",
-        "version": "0.2.3",
-        "namespace": "plugin",
-        "description": "This is a library",
-    })
-
-    logger.info.assert_called_once_with(
-        "Wiz definition extracted from 'Foo-0.2.3'."
-    )
-
-    mocked_wiz_load_definition.assert_any_call(path)
-
-
-def test_retrieve_without_namespace(
-    mocked_wiz_load_definition, temporary_directory, logger
-):
-    """Retrieve definition from package installed within namespace."""
-    path = os.path.join(temporary_directory, "share", "wiz", "Foo", "wiz.json")
-    _ensure_exists(path)
-
-    definition = wiz.definition.Definition({
-        "identifier": "foo",
-        "version": "0.2.3",
-        "description": "This is a library",
-    })
-
-    mocked_wiz_load_definition.return_value = definition
-
-    mapping = {
-        "identifier": "Foo-0.2.3",
-        "name": "Foo",
-        "key": "foo",
-        "version": "0.2.3",
-        "description": "This is a cool library",
-    }
-
-    _definition = qip.definition.retrieve(temporary_directory, mapping)
-
-    assert _definition == wiz.definition.Definition({
-        "identifier": "foo",
-        "version": "0.2.3",
-        "namespace": "library",
-        "description": "This is a library",
-    })
-
-    logger.info.assert_called_once_with(
-        "Wiz definition extracted from 'Foo-0.2.3'."
-    )
-
-    mocked_wiz_load_definition.assert_any_call(path)
-
-
-def test_retrieve_with_system(
-    mocked_wiz_load_definition, temporary_directory, logger
-):
-    """Retrieve definition from package installed with system."""
-    path = os.path.join(temporary_directory, "share", "wiz", "Foo", "wiz.json")
-    _ensure_exists(path)
-
-    definition = wiz.definition.Definition({
-        "identifier": "foo",
-        "version": "0.2.3",
-        "namespace": "plugin",
-        "description": "This is a library"
-    })
-
-    mocked_wiz_load_definition.return_value = definition
-
-    mapping = {
-        "identifier": "Foo-0.2.3",
-        "name": "Foo",
-        "key": "foo",
-        "version": "0.2.3",
-        "description": "This is a cool library",
-        "system": {
-            "platform": "linux",
-            "arch": "x86_64",
-            "os": {
-                "name": "centos",
-                "major_version": 7
-            }
-        }
-    }
-
-    _definition = qip.definition.retrieve(temporary_directory, mapping)
-
-    assert _definition == wiz.definition.Definition({
-        "identifier": "foo",
-        "version": "0.2.3",
-        "namespace": "plugin",
-        "description": "This is a library",
-        "system": {
-            "platform": "linux",
-            "arch": "x86_64",
-            "os": "centos >= 7, < 8"
-        }
-    })
-
-    logger.info.assert_called_once_with(
-        "Wiz definition extracted from 'Foo-0.2.3'."
-    )
-
-    mocked_wiz_load_definition.assert_any_call(path)
-
-
-def test_retrieve_with_commands(
-    mocked_wiz_load_definition, temporary_directory, logger
-):
-    """Retrieve definition from package installed with commands."""
-    path = os.path.join(temporary_directory, "share", "wiz", "Foo", "wiz.json")
-    _ensure_exists(path)
-
-    definition = wiz.definition.Definition({
-        "identifier": "foo",
-        "version": "0.2.3",
-        "namespace": "plugin",
-        "description": "This is a library"
-    })
-
-    mocked_wiz_load_definition.return_value = definition
-
-    mapping = {
-        "identifier": "Foo-0.2.3",
-        "name": "Foo",
-        "key": "foo",
-        "version": "0.2.3",
-        "description": "This is a cool library",
-        "command": {
-            "foo": "python -m foo"
-        }
-    }
-
-    _definition = qip.definition.retrieve(temporary_directory, mapping)
-
-    assert _definition == wiz.definition.Definition({
-        "identifier": "foo",
-        "version": "0.2.3",
-        "namespace": "plugin",
-        "description": "This is a library",
-        "command": {
-            "foo": "python -m foo"
-        }
-    })
-
-    logger.info.assert_called_once_with(
-        "Wiz definition extracted from 'Foo-0.2.3'."
-    )
-
-    mocked_wiz_load_definition.assert_any_call(path)
-
-
-def test_retrieve_with_commands_updated(
-    mocked_wiz_load_definition, temporary_directory, logger
-):
-    """Retrieve definition from package installed with commands updated."""
-    path = os.path.join(temporary_directory, "share", "wiz", "Foo", "wiz.json")
-    _ensure_exists(path)
-
-    definition = wiz.definition.Definition({
-        "identifier": "foo",
-        "version": "0.2.3",
-        "namespace": "plugin",
-        "description": "This is a library",
-        "command": {
-            "test": "Test",
-            "foo": "FooX"
-        }
-    })
-
-    mocked_wiz_load_definition.return_value = definition
-
-    mapping = {
-        "identifier": "Foo-0.2.3",
-        "name": "Foo",
-        "key": "foo",
-        "version": "0.2.3",
-        "description": "This is a cool library",
-        "command": {
-            "foo": "python -m foo"
-        }
-    }
-
-    _definition = qip.definition.retrieve(temporary_directory, mapping)
-
-    assert _definition == wiz.definition.Definition({
-        "identifier": "foo",
-        "version": "0.2.3",
-        "namespace": "plugin",
-        "description": "This is a library",
-        "command": {
-            "foo": "python -m foo",
-            "test": "Test",
-        }
-    })
-
-    logger.info.assert_called_once_with(
-        "Wiz definition extracted from 'Foo-0.2.3'."
-    )
-
-    mocked_wiz_load_definition.assert_any_call(path)
-
-
 def test_retrieve_from_source_location(
     mocked_wiz_load_definition, temporary_directory, logger
 ):
@@ -540,11 +273,7 @@ def test_retrieve_from_source_location(
         "identifier": "foo",
         "version": "0.2.3",
         "namespace": "plugin",
-        "description": "This is a library",
-        "command": {
-            "test": "Test",
-            "foo": "FooX"
-        }
+        "description": "This is a library"
     })
 
     mocked_wiz_load_definition.return_value = definition
@@ -556,9 +285,6 @@ def test_retrieve_from_source_location(
         "version": "0.2.3",
         "description": "This is a cool library",
         "location": os.path.join(temporary_directory, "foo", "source"),
-        "command": {
-            "foo": "python -m foo"
-        }
     }
 
     _definition = qip.definition.retrieve(temporary_directory, mapping)
@@ -568,10 +294,6 @@ def test_retrieve_from_source_location(
         "version": "0.2.3",
         "namespace": "plugin",
         "description": "This is a library",
-        "command": {
-            "foo": "python -m foo",
-            "test": "Test",
-        }
     })
 
     logger.info.assert_called_once_with(
@@ -1012,9 +734,16 @@ def test_update():
     definition = wiz.definition.Definition({
         "identifier": "foo",
         "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
     })
 
     mapping = {
+        "identifier": "Foo-0.2.3",
+        "name": "Foo",
+        "key": "foo",
+        "version": "0.2.3",
+        "description": "This is a cool library",
         "target": "Foo/Foo-0.2.3",
         "python": {
             "identifier": "2.8",
@@ -1028,6 +757,8 @@ def test_update():
     assert _definition == wiz.definition.Definition({
         "identifier": "foo",
         "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
         "install-root": "/packages",
         "variants": [
             {
@@ -1043,11 +774,203 @@ def test_update():
     })
 
 
-def test_update_with_commands():
-    """Update definition with mapping with commands."""
+def test_update_without_description():
+    """Update definition without description."""
     definition = wiz.definition.Definition({
         "identifier": "foo",
         "version": "0.2.3",
+        "namespace": "plugin",
+    })
+
+    mapping = {
+        "identifier": "Foo-0.2.3",
+        "name": "Foo",
+        "key": "foo",
+        "version": "0.2.3",
+        "description": "This is a cool library",
+        "target": "Foo/Foo-0.2.3",
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9",
+            "library-path": "lib/python2.8/site-packages"
+        },
+    }
+
+    _definition = qip.definition.update(definition, mapping, "/packages")
+
+    assert _definition == wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a cool library",
+        "install-root": "/packages",
+        "variants": [
+            {
+                "identifier": "2.8",
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
+                ),
+                "requirements": [
+                    "python >=2.8, <2.9"
+                ]
+            }
+        ]
+    })
+
+
+def test_update_without_version():
+    """Update definition without version."""
+    definition = wiz.definition.Definition({
+        "identifier": "foo",
+        "namespace": "plugin",
+        "description": "This is a library",
+    })
+
+    mapping = {
+        "identifier": "Foo-0.2.3",
+        "name": "Foo",
+        "key": "foo",
+        "version": "0.2.3",
+        "description": "This is a cool library",
+        "target": "Foo/Foo-0.2.3",
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9",
+            "library-path": "lib/python2.8/site-packages"
+        },
+    }
+
+    _definition = qip.definition.update(definition, mapping, "/packages")
+
+    assert _definition == wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
+        "install-root": "/packages",
+        "variants": [
+            {
+                "identifier": "2.8",
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
+                ),
+                "requirements": [
+                    "python >=2.8, <2.9"
+                ]
+            }
+        ]
+    })
+
+
+def test_update_without_namespace():
+    """Update definition without namespace."""
+    definition = wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "description": "This is a library",
+    })
+
+    mapping = {
+        "identifier": "Foo-0.2.3",
+        "name": "Foo",
+        "key": "foo",
+        "version": "0.2.3",
+        "description": "This is a cool library",
+        "target": "Foo/Foo-0.2.3",
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9",
+            "library-path": "lib/python2.8/site-packages"
+        },
+    }
+
+    _definition = qip.definition.update(definition, mapping, "/packages")
+
+    assert _definition == wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "library",
+        "description": "This is a library",
+        "install-root": "/packages",
+        "variants": [
+            {
+                "identifier": "2.8",
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
+                ),
+                "requirements": [
+                    "python >=2.8, <2.9"
+                ]
+            }
+        ]
+    })
+
+
+def test_update_with_system():
+    """Update definition with system."""
+    definition = wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
+    })
+
+    mapping = {
+        "identifier": "Foo-0.2.3",
+        "name": "Foo",
+        "key": "foo",
+        "version": "0.2.3",
+        "description": "This is a cool library",
+        "target": "Foo/Foo-0.2.3",
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9",
+            "library-path": "lib/python2.8/site-packages"
+        },
+        "system": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "os": {
+                "name": "centos",
+                "major_version": 7
+            }
+        }
+    }
+
+    _definition = qip.definition.update(definition, mapping, "/packages")
+
+    assert _definition == wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
+        "install-root": "/packages",
+        "system": {
+            "platform": "linux",
+            "arch": "x86_64",
+            "os": "centos >= 7, < 8"
+        },
+        "variants": [
+            {
+                "identifier": "2.8",
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
+                ),
+                "requirements": [
+                    "python >=2.8, <2.9"
+                ]
+            }
+        ]
+    })
+
+
+def test_update_with_commands():
+    """Update definition with commands."""
+    definition = wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
     })
 
     mapping = {
@@ -1067,6 +990,8 @@ def test_update_with_commands():
     assert _definition == wiz.definition.Definition({
         "identifier": "foo",
         "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
         "install-root": "/packages",
         "command": {
             "foo": "python -m foo"
@@ -1086,10 +1011,12 @@ def test_update_with_commands():
 
 
 def test_update_with_commands_updated():
-    """Update definition with mapping with commands updated."""
+    """Update definition with commands updated."""
     definition = wiz.definition.Definition({
         "identifier": "foo",
         "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
         "command": {
             "test": "Test",
             "foo": "FooX"
@@ -1114,6 +1041,8 @@ def test_update_with_commands_updated():
         "identifier": "foo",
         "version": "0.2.3",
         "install-root": "/packages",
+        "namespace": "plugin",
+        "description": "This is a library",
         "command": {
             "test": "Test",
             "foo": "python -m foo"
@@ -1137,6 +1066,8 @@ def test_update_editable():
     definition = wiz.definition.Definition({
         "identifier": "foo",
         "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
     })
 
     mapping = {
@@ -1156,6 +1087,8 @@ def test_update_editable():
     assert _definition == wiz.definition.Definition({
         "identifier": "foo",
         "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
         "variants": [
             {
                 "identifier": "2.8",
@@ -1173,6 +1106,8 @@ def test_update_with_additional_variants_1():
     definition = wiz.definition.Definition({
         "identifier": "foo",
         "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
     })
 
     mapping = {
@@ -1212,6 +1147,8 @@ def test_update_with_additional_variants_1():
     assert _definition == wiz.definition.Definition({
         "identifier": "foo",
         "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
         "install-root": "/packages",
         "variants": [
             {
@@ -1244,6 +1181,8 @@ def test_update_with_additional_variants_2():
     definition = wiz.definition.Definition({
         "identifier": "foo",
         "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
     })
 
     mapping = {
@@ -1278,6 +1217,8 @@ def test_update_with_additional_variants_2():
     assert _definition == wiz.definition.Definition({
         "identifier": "foo",
         "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
         "install-root": "/packages",
         "variants": [
             {
