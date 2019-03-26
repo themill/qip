@@ -287,7 +287,8 @@ def is_system_required(metadata):
     Package `classifiers <https://pypi.org/classifiers/>`_ are retrieved from
     *metadata* to indicate if a specific operating system is required.
 
-    :param metadata: string resulting from the "pip show -v" command.
+    :param metadata: string resulting from the `pip show -v
+        <https://pip.pypa.io/en/stable/reference/pip_show/>`_ command.
 
     :return: Boolean value.
 
@@ -306,7 +307,12 @@ def is_system_required(metadata):
 def extract_command_mapping(metadata):
     """Extract command mapping from entry points within *metadata*.
 
-    :param metadata: string resulting from the "pip show -v" command.
+    Package `Entry-Points
+    <https://packaging.python.org/specifications/entry-points/>`_ are retrieved
+    from *metadata* to extract the corresponding commands.
+
+    :param metadata: string resulting from the `pip show -v
+        <https://pip.pypa.io/en/stable/reference/pip_show/>`_ command.
 
     :return: command mapping
 
@@ -314,7 +320,7 @@ def extract_command_mapping(metadata):
 
             {
                 "foo": "python -m foo",
-                "bar": "python -m bar"
+                "bar": "python -m bar.test"
             }
 
     """

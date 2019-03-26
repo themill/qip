@@ -4,6 +4,122 @@
 Release Notes
 *************
 
+.. release:: Upcoming
+
+    .. change:: new
+        :tags: command-line
+
+        Added :option:`qip install --python` to target a specific Python version
+        via a :term:`Wiz` request or a path to a Python executable.
+
+    .. change:: new
+        :tags: command-line
+
+        Added :option:`qip install --update` to update :term:`Wiz` definition(s)
+        that already exist in the :term:`Wiz` definitions output path with
+        additional Python variants
+
+    .. change:: new
+        :tags: API
+
+        Added :func:`qip.environ.fetch_python_mapping` to fetch information
+        related to the Python version used within the environment :func:`fetched
+        <qip.environ.fetch>`.
+
+        A :mod:`qip.package_data.python_info` script is run within a
+        subprocess to ensure that the Python version used by Qip could be
+        different than the one used for the installation.
+
+    .. change:: new
+        :tags: API
+
+        Added :func:`qip.fetch_context_mapping` to regroup all environment
+        variables :func:`fetched <qip.environ.fetch>` and a mapping containing
+        information about the Python version within a context mapping that
+        can used during the installation process.
+
+        The :envvar:`PYTHONPATH` environment variable is overridden to target
+        the :mod:`site-packages <python:site>` directory within the package
+        installation path.
+
+    .. change:: new
+        :tags: API
+
+        Added :func:`qip.definition.export` to create and export a :term:`Wiz`
+        definition for a specific Python package installed.
+
+    .. change:: new
+        :tags: API
+
+        Added :func:`qip.package.is_system_required` to indicate whether a
+        Python package is platform-specific. The logic was previously included
+        in :func:`qip.package.extract_metadata_mapping` which has now been
+        removed.
+
+    .. change:: new
+        :tags: API
+
+        Added :func:`qip.package.extract_command_mapping` to retrieve all
+        commands from a Python package. The logic was previously included
+        in :func:`qip.package.extract_metadata_mapping` which has now been
+        removed.
+
+    .. change:: new
+        :tags: API
+
+        Added :func:`qip.package.extract_target_path` to always build the
+        package folder destination with Python major and minor version in order
+        to prevent names clashes. The logic was previously included in
+        :func:`qip.package.fetch_mapping_from_environ`.
+
+    .. change:: changed
+        :tags: API, backwards-incompatible
+
+        Updated :mod:`qip.definition` to embed :ref:`environment
+        <wiz:definition/environ>` and :ref:`requirements
+        <wiz:definition/requirements>` keywords within a :ref:`variant
+        <wiz:definition/variants>` which is targeting the Python minor version
+        that was used for the package installation.
+
+        If this package is installed for another Python version, a new
+        :ref:`variant <wiz:definition/variants>` will be added if required. When
+        a :class:`~wiz.definition.Definition` instance has several variants, it
+        will be sorted to have the highest Python version first, provided that
+        the Python version is being used as a variant identifier.
+
+    .. change:: changed
+        :tags: API, backwards-incompatible
+
+        Move :func:`qip.fetch_environ` to :func:`qip.environ.fetch` and add
+        a "python_target" argument in order to target a specific Python version
+        via a :term:`Wiz` request or a path to a Python executable.
+
+    .. change:: changed
+        :tags: API, backwards-incompatible
+
+        Updated :func:`qip.definition.retrieve` to return a
+        :class:`~wiz.definition.Definition` instance from a :file:`wiz.json`
+        found in the Python package installation path without updating it as it
+        was previously the case.
+
+        The definition update is now handled by :func:`qip.definition.update`.
+
+    .. change:: changed
+        :tags: API, backwards-incompatible
+
+        Removed :func:`qip.package.extract_metadata_mapping` and moved logic
+        within :func:`qip.package.fetch_mapping_from_environ` instead for
+        clarity.
+
+    .. change:: changed
+        :tags: command-line
+
+        Explicitly set the name of the program to "qip" instead of relying on
+        :data:`sys.argv` in order to prevent "__main__.py" to be displayed when
+        the command is being run as follows::
+
+            python -m qip --help
+
 .. release:: 1.2.1
     :date: 2019-02-04
 
