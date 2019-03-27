@@ -7,8 +7,10 @@ Tutorial
 Installing a package
 ====================
 
-To install a package simply issue the `qip install` command and specify
-an output directory with :option:`--output-path <qip install --output-path>`.
+To install a package simply issue the `qip install` command and optionally
+specify an output directory for the package data with
+:option:`--output-path <qip install --output-path>` and for the definitions with
+:option:`--definition-path <qip install --definition-path>`.
 
 For example:
 

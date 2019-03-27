@@ -39,13 +39,12 @@ registry::
     A module can be installed without dependencies, especially if they are
     already available in a global registry.
     However, any requirement the module has, needs to be available in the
-    registries visible to :term:`Wiz`, when resolving the request, so additional
-    :option:`qip install --definition-path` might need to be set.
+    registries visible to :term:`Wiz`, when resolving the request.
 
 Definitions
 -----------
 Since it has been installed in editable mode, foo's definition needs have a
-PYTHONPATH set to the source code.
+:envvar:`PYTHONPATH` set to the source code.
 
 Default definition
 ^^^^^^^^^^^^^^^^^^
@@ -54,6 +53,7 @@ If foo is a module without a custom definition in its repository, a default one
 is being created, including:
 
 - :ref:`identifier <wiz:definition/identifier>`
+- :ref:`namespace <wiz:definition/namespace>`
 - :ref:`version <wiz:definition/version>`
 - :ref:`description <wiz:definition/description>` from the setup.py
 - entry points for :ref:`commands <wiz:definition/command>`
@@ -83,32 +83,62 @@ If foo is a module with a custom definition in its repository, :term:`Qip` will
 retrieve that and update:
 
 - :ref:`version <wiz:definition/version>`
+- :ref:`namespace <wiz:definition/namespace>`
 - :ref:`description <wiz:definition/description>` from the setup.py
 - append entry points for :ref:`commands <wiz:definition/command>`
 - append dependencies from the setup.py for :ref:`requirements <wiz:definition/requirements>`
 - path to the source as :ref:`install-location <wiz:definition/install_location>`
+- :envvar:`PYTHONPATH` in :ref:`environ <wiz:definition/environ>`
 
 However, it will keep:
 
 - :ref:`identifier <wiz:definition/identifier>`
-- :ref:`environ <wiz:definition/environ>`
 
-For example::
+For example, the custom definition :file:`wiz.json` could look like this::
 
     {
         "identifier": "foo",
         "command": {
-            "foo": "python -m foo"
+            "bar": "python -m foo -- special"
         },
         "environ": {
             "EXTRA": "1",
-            "PYTHONPATH": "/some/path:${INSTALL_LOCATION}:${PYTHONPATH}",
             "MAYA_SCRIPTS_PATH": "${INSTALL_LOCATION}/package_data/maya:${MAYA_SCRIPTS_PATH}"
         },
-        "install-location": "~/dev/foo/source",
         "requirements: [
-             "maya",
-             "bar"
+             "maya"
+        ]
+    }
+
+The resulting definition after the qip install could look like this::
+
+    {
+        "identifier": "foo",
+        "version": "1.0.0",
+        "namespace": "library",
+        "command": {
+            "foo": "python -m foo",
+            "bar": "python -m foo -- special"
+        },
+        "environ": {
+            "EXTRA": "1",
+            "MAYA_SCRIPTS_PATH": "${INSTALL_LOCATION}/package_data/maya:${MAYA_SCRIPTS_PATH}"
+        },
+        "variants": [
+            {
+                "identifier": "2.7"
+                "environ": {
+                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+                },
+                "requirements: [
+                    "python >=2.7, <2.8",
+                    "bar"
+                ]
+                "install-location": "~/dev/foo/source",
+            }
+        ]
+        "requirements: [
+             "maya"
         ]
     }
 
@@ -117,21 +147,6 @@ For example::
     This means, that the custom definition inside the repository only needs to
     include environment variables, requirements and command aliases, if they
     are special.
-
-    For example, this could be the ``wiz.json`` inside of foo for the example
-    above::
-
-        {
-            "identifier": "foo",
-            "environ": {
-                "EXTRA": "1",
-                "PYTHONPATH": "/some/path:${INSTALL_LOCATION}:${PYTHONPATH}",
-                "MAYA_SCRIPTS_PATH": "${INSTALL_LOCATION}/package_data/maya:${MAYA_SCRIPTS_PATH}"
-            },
-            "requirements: [
-                 "maya"
-            ]
-        }
 
 .. important::
 
