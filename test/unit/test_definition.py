@@ -100,7 +100,7 @@ def test_export_with_additional_variants(
     )
 
     mocked_wiz_fetch_definition.assert_called_once_with(
-        "library::foo[2.8] >=1, <2", "__MAPPING__"
+        "library::foo >= 1, < 2", "__MAPPING__"
     )
     mocked_retrieve.assert_called_once_with(package_path, mapping)
     mocked_update.assert_not_called()
@@ -138,7 +138,7 @@ def test_export_with_request_error(
     )
 
     mocked_wiz_fetch_definition.assert_called_once_with(
-        "library::foo[2.8] >=1, <2", "__MAPPING__"
+        "library::foo >= 1, < 2", "__MAPPING__"
     )
     mocked_retrieve.assert_called_once_with(package_path, mapping)
     mocked_update.assert_not_called()
@@ -209,7 +209,7 @@ def test_export_retrieved_and_additional_variants(
     )
 
     mocked_wiz_fetch_definition.assert_called_once_with(
-        "plugin::foo[2.8] >=1, <2", "__MAPPING__"
+        "plugin::foo >= 1, < 2", "__MAPPING__"
     )
     mocked_retrieve.assert_called_once_with(package_path, mapping)
     mocked_update.assert_called_once_with(
