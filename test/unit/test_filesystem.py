@@ -56,14 +56,14 @@ def test_remove_directory_content_fail(temporary_directory):
 def test_sanitise_value():
     """Sanitize value."""
     value = "/path/to/a-file/with: A F@#%ing Name!!!"
-    assert qip.filesystem.sanitise_value(value) == (
+    assert qip.filesystem.sanitize_value(value) == (
         "/path/to/a-file/with:_A_F__%ing_Name___"
     )
 
-    assert qip.filesystem.sanitise_value(value, substitution_character="-") == (
+    assert qip.filesystem.sanitize_value(value, substitution_character="-") == (
         "/path/to/a-file/with:-A-F--%ing-Name---"
     )
 
-    assert qip.filesystem.sanitise_value(value, case_sensitive=False) == (
+    assert qip.filesystem.sanitize_value(value, case_sensitive=False) == (
         "/path/to/a-file/with:_a_f__%ing_name___"
     )

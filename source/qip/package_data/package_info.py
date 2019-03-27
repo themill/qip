@@ -1,5 +1,6 @@
 # :coding: utf-8
 
+from __future__ import print_function
 import sys
 import re
 import json
@@ -16,8 +17,36 @@ except ImportError:
 REQUEST_PATTERN = re.compile(r"(.*)\[(\w*)\]")
 
 
-def display_package(name):
-    """Display package mapping from selected *name*."""
+def display_package_mapping(name):
+    """Display Python package information mapping from selected *name*.
+
+    :term:`Pip` Python API is being used to fetch useful information about a
+    package within an environment. The information is displayed as a
+    :term:`JSON` encoded mapping so that it can easily be retrieved via a
+    subprocess.
+
+    :param name: Python package name.
+
+    :return: None
+
+    Example::
+
+        >>> display_package_mapping("foo")
+
+        {
+            "package": {
+                "installed_version": "1.0.0",
+                "key": "foo",
+                "package_name": "Foo"
+            },
+            "requirements": [
+                "bim<3,>=2",
+                "baz",
+            ]
+        }
+
+
+    """
     # Query all installed packages.
     packages = get_installed_distributions(local_only=False)
 
@@ -50,26 +79,22 @@ def display_package(name):
             "package_name": package.project_name,
             "installed_version": package.version,
         },
-        "dependencies": []
+        "requirements": [
+            requirement.key + str(requirement.specifier)
+            for requirement in package.requires(extras=labels)
+        ]
     }
 
-    for requirement in package.requires(extras=labels):
-        result["dependencies"].append({
-            "key": requirement.key,
-            "package_name": requirement.project_name,
-            "required_version": requirement.key + str(requirement.specifier)
-        })
-
-    print json.dumps(result, sort_keys=True, indent=4)
+    print(json.dumps(result, sort_keys=True, indent=4))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        prog="pip-query",
-        description="Query information about an installed package",
+        prog="package-info",
+        description="Query information about an installed Python package",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
-    parser.add_argument("name", help="Package name to query.")
+    parser.add_argument("name", help="Python package name to query.")
     namespace = parser.parse_args()
 
-    sys.exit(display_package(namespace.name))
+    sys.exit(display_package_mapping(namespace.name))

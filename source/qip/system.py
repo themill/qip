@@ -8,20 +8,20 @@ from packaging.version import Version, InvalidVersion
 def query():
     """Return system mapping.
 
-    :returns: A system mapping
+    :raise RuntimeError: if platform is not supported.
 
-        The mapping will be in the form of::
+    :return: system mapping.
 
-            {
-                "platform": "linux",
-                "arch": "x86_64",
-                "os": {
-                    "name": "centos",
-                    "major_version": 7
-                }
+     It should be in the form of::
+
+        {
+            "platform": "linux",
+            "arch": "x86_64",
+            "os": {
+                "name": "centos",
+                "major_version": 7
             }
-
-    :raises RuntimeError: if platform is not supported.
+        }
 
     """
     name = _platform.system().lower()
@@ -47,7 +47,11 @@ def query():
 
 
 def query_linux():
-    """Return Linux system mapping."""
+    """Return Linux system mapping.
+
+    :return: system mapping.
+
+    """
     distribution, version, _ = _platform.linux_distribution(
         full_distribution_name=False
     )
@@ -63,7 +67,11 @@ def query_linux():
 
 
 def query_mac():
-    """Return mac system mapping."""
+    """Return mac system mapping.
+
+    :return: system mapping.
+
+    """
     return {
         "platform": "mac",
         "arch": _platform.machine(),
@@ -89,6 +97,8 @@ def query_windows():
 
         https://bugs.python.org/issue26513
 
+    :return: system mapping.
+
     """
     return {
         "platform": "windows",
@@ -101,6 +111,12 @@ def query_windows():
 
 
 def _extract_major_version(version):
-    """Extract major version of operating system request for *version*."""
+    """Extract major version of operating system request for *version*.
+
+    :param version: Version instance.
+
+    :return: Major version integer.
+
+    """
     version = Version(version)
     return int(version.base_version.split(".", 1)[0])

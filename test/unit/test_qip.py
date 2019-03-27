@@ -3,7 +3,6 @@
 import os
 import shutil
 import tempfile
-import wiz
 
 import click
 import pytest
@@ -52,9 +51,9 @@ def mocked_copy_to_destination(mocker):
 
 
 @pytest.fixture()
-def mocked_fetch_environ(mocker):
-    """Return mocked 'qip.fetch_environ' function"""
-    return mocker.patch.object(qip, "fetch_environ")
+def mocked_fetch_context_mapping(mocker):
+    """Return mocked 'qip.fetch_context_mapping' function"""
+    return mocker.patch.object(qip, "fetch_context_mapping")
 
 
 @pytest.fixture()
@@ -76,44 +75,42 @@ def mocked_package_install(mocker):
 
 
 @pytest.fixture()
-def mocked_definition_create(mocker):
-    """Return mocked 'qip.definition.create' function"""
-    return mocker.patch.object(qip.definition, "create")
+def mocked_definition_export(mocker):
+    """Return mocked 'qip.definition.export' function"""
+    return mocker.patch.object(qip.definition, "export")
 
 
 @pytest.fixture()
-def mocked_definition_retrieve(mocker):
-    """Return mocked 'qip.definition.retrieve' function"""
-    return mocker.patch.object(qip.definition, "retrieve")
+def mocked_fetch_environ(mocker):
+    """Return mocked 'qip.environ.fetch' function"""
+    return mocker.patch.object(qip.environ, "fetch")
 
 
 @pytest.fixture()
-def mocked_wiz_export_definition(mocker):
-    """Return mocked 'wiz.export_definition' function"""
-    return mocker.patch.object(wiz, "export_definition")
+def mocked_fetch_python_mapping(mocker):
+    """Return mocked 'qip.environ.fetch_python_mapping' function"""
+    return mocker.patch.object(qip.environ, "fetch_python_mapping")
 
 
-@pytest.fixture()
-def mocked_wiz_resolve_context(mocker):
-    """Return mocked 'wiz.resolve_context' function"""
-    return mocker.patch.object(wiz, "resolve_context")
-
-
-@pytest.mark.parametrize("options, overwrite, editable_mode", [
-    ({}, False, False),
-    ({"overwrite": True}, True, False),
-    ({"editable_mode": True}, False, True),
-], ids=[
-    "no-options",
-    "with-overwrite-packages",
-    "with-editable-mode",
-])
+@pytest.mark.parametrize(
+    "options, overwrite, editable_mode, python_target", [
+        ({}, False, False, "python==2.7.*"),
+        ({"overwrite": True}, True, False, "python==2.7.*"),
+        ({"editable_mode": True}, False, True, "python==2.7.*"),
+        ({"python_target": "/bin/python3"}, False, False, "/bin/python3")
+    ], ids=[
+        "no-options",
+        "with-overwrite-packages",
+        "with-editable-mode",
+        "with-python-target",
+    ]
+)
 def test_install(
     mocked_filesystem_ensure_directory, mocked_tempfile_mkdtemp,
-    mocked_fetch_environ, mocked_package_install, mocked_copy_to_destination,
-    mocked_definition_retrieve, mocked_definition_create,
-    mocked_wiz_export_definition, mocked_filesystem_remove_directory_content,
-    mocked_shutil_rmtree, options, overwrite, editable_mode
+    mocked_fetch_context_mapping, mocked_package_install,
+    mocked_copy_to_destination, mocked_definition_export,
+    mocked_filesystem_remove_directory_content, mocked_shutil_rmtree, options,
+    overwrite, editable_mode, python_target
 ):
     """Install packages."""
     packages = [
@@ -152,8 +149,14 @@ def test_install(
         }
     ]
 
+    context = {
+        "environ": {
+            "PYTHONPATH": "/path/to/site-packages"
+        }
+    }
+
     mocked_tempfile_mkdtemp.side_effect = ["/tmp1", "/tmp2"]
-    mocked_fetch_environ.return_value = "__ENVIRON__"
+    mocked_fetch_context_mapping.return_value = context
     mocked_package_install.side_effect = packages
 
     mocked_copy_to_destination.side_effect = [
@@ -166,32 +169,25 @@ def test_install(
 
     assert mocked_filesystem_ensure_directory.call_count == 2
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/install")
-    mocked_filesystem_ensure_directory.assert_any_call(
-        "/tmp2/lib/python2.7/site-packages"
-    )
+    mocked_filesystem_ensure_directory.assert_any_call("/path/to/site-packages")
 
-    mocked_fetch_environ.assert_called_once_with(
-        mapping={
-            "PYTHONPATH": "/tmp2/lib/python2.7/site-packages",
-            "PYTHONWARNINGS": "ignore:DEPRECATION"
-        }
-    )
+    mocked_fetch_context_mapping.assert_called_once_with("/tmp2", python_target)
 
     assert mocked_package_install.call_count == 4
     mocked_package_install.assert_any_call(
-        "foo", "/tmp2", "__ENVIRON__", "/tmp1",
+        "foo", "/tmp2", context, "/tmp1",
         editable_mode=editable_mode
     )
     mocked_package_install.assert_any_call(
-        "bar", "/tmp2", "__ENVIRON__", "/tmp1",
+        "bar", "/tmp2", context, "/tmp1",
         editable_mode=False
     )
     mocked_package_install.assert_any_call(
-        "bim >= 3, < 4", "/tmp2", "__ENVIRON__", "/tmp1",
+        "bim >= 3, < 4", "/tmp2", context, "/tmp1",
         editable_mode=False
     )
     mocked_package_install.assert_any_call(
-        "bar > 22", "/tmp2", "__ENVIRON__", "/tmp1",
+        "bar > 22", "/tmp2", context, "/tmp1",
         editable_mode=False
     )
 
@@ -209,9 +205,7 @@ def test_install(
         overwrite=overwrite
     )
 
-    mocked_definition_retrieve.assert_not_called()
-    mocked_definition_create.assert_not_called()
-    mocked_wiz_export_definition.assert_not_called()
+    mocked_definition_export.assert_not_called()
 
     assert mocked_filesystem_remove_directory_content.call_count == 3
     mocked_filesystem_remove_directory_content.assert_any_call("/tmp2")
@@ -221,21 +215,30 @@ def test_install(
     mocked_shutil_rmtree.assert_any_call("/tmp2")
 
 
-@pytest.mark.parametrize("options, overwrite, editable_mode", [
-    ({}, False, False),
-    ({"overwrite": True}, True, False),
-    ({"editable_mode": True}, False, True),
-], ids=[
-    "no-options",
-    "with-overwrite",
-    "with-editable-mode",
-])
+@pytest.mark.parametrize(
+    "options, overwrite, editable_mode, python_target, definition_mapping", [
+        ({}, False, False, "python==2.7.*", None),
+        ({"overwrite": True}, True, False, "python==2.7.*", None),
+        ({"editable_mode": True}, False, True, "python==2.7.*", None),
+        ({"python_target": "/bin/python3"}, False, False, "/bin/python3", None),
+        (
+            {"definition_mapping": "__MAPPING__"},
+            False, False, "python==2.7.*", "__MAPPING__"
+        ),
+    ], ids=[
+        "no-options",
+        "with-overwrite-packages",
+        "with-editable-mode",
+        "with-python-target",
+        "with-definition-mapping",
+    ]
+)
 def test_install_with_definition_path(
     mocked_filesystem_ensure_directory, mocked_tempfile_mkdtemp,
-    mocked_fetch_environ, mocked_package_install, mocked_copy_to_destination,
-    mocked_definition_retrieve, mocked_definition_create,
-    mocked_wiz_export_definition, mocked_filesystem_remove_directory_content,
-    mocked_shutil_rmtree, options, overwrite, editable_mode
+    mocked_fetch_context_mapping, mocked_package_install,
+    mocked_copy_to_destination, mocked_definition_export,
+    mocked_filesystem_remove_directory_content, mocked_shutil_rmtree, options,
+    overwrite, editable_mode, python_target, definition_mapping
 ):
     """Install packages with Wiz definitions."""
     packages = [
@@ -257,15 +260,19 @@ def test_install_with_definition_path(
         }
     ]
 
+    context = {
+        "environ": {
+            "PYTHONPATH": "/path/to/site-packages"
+        }
+    }
+
     mocked_tempfile_mkdtemp.side_effect = ["/tmp1", "/tmp2"]
-    mocked_fetch_environ.return_value = "__ENVIRON__"
+    mocked_fetch_context_mapping.return_value = context
     mocked_package_install.side_effect = packages
 
     mocked_copy_to_destination.side_effect = [
         (True, overwrite), (True, overwrite), (True, overwrite)
     ]
-    mocked_definition_retrieve.side_effect = ["__DATA1__", None, None]
-    mocked_definition_create.side_effect = ["__DATA2__", "__DATA3__"]
 
     qip.install(
         ["foo", "bar"], "/path/to/install",
@@ -278,28 +285,21 @@ def test_install_with_definition_path(
     assert mocked_filesystem_ensure_directory.call_count == 3
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/install")
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/definitions")
-    mocked_filesystem_ensure_directory.assert_any_call(
-        "/tmp2/lib/python2.7/site-packages"
-    )
+    mocked_filesystem_ensure_directory.assert_any_call("/path/to/site-packages")
 
-    mocked_fetch_environ.assert_called_once_with(
-        mapping={
-            "PYTHONPATH": "/tmp2/lib/python2.7/site-packages",
-            "PYTHONWARNINGS": "ignore:DEPRECATION"
-        }
-    )
+    mocked_fetch_context_mapping.assert_called_once_with("/tmp2", python_target)
 
     assert mocked_package_install.call_count == 3
     mocked_package_install.assert_any_call(
-        "foo", "/tmp2", "__ENVIRON__", "/tmp1",
+        "foo", "/tmp2", context, "/tmp1",
         editable_mode=editable_mode
     )
     mocked_package_install.assert_any_call(
-        "bar", "/tmp2", "__ENVIRON__", "/tmp1",
+        "bar", "/tmp2", context, "/tmp1",
         editable_mode=False
     )
     mocked_package_install.assert_any_call(
-        "bim >= 3, < 4", "/tmp2", "__ENVIRON__", "/tmp1",
+        "bim >= 3, < 4", "/tmp2", context, "/tmp1",
         editable_mode=False
     )
 
@@ -317,34 +317,22 @@ def test_install_with_definition_path(
         overwrite=overwrite
     )
 
-    assert mocked_definition_retrieve.call_count == 3
-    mocked_definition_retrieve.assert_any_call(
-        packages[0], "/tmp2", "/path/to/install", editable_mode=editable_mode
-    )
-    mocked_definition_retrieve.assert_any_call(
-        packages[1], "/tmp2", "/path/to/install", editable_mode=False
-    )
-    mocked_definition_retrieve.assert_any_call(
-        packages[2], "/tmp2", "/path/to/install", editable_mode=False
+    assert mocked_definition_export.call_count == 3
+    mocked_definition_export.assert_any_call(
+        "/path/to/definitions", packages[0], "/tmp2", "/path/to/install",
+        editable_mode=editable_mode,
+        definition_mapping=definition_mapping
     )
 
-    assert mocked_definition_create.call_count == 2
-    mocked_definition_create.assert_any_call(
-        packages[1], "/path/to/install", editable_mode=False
+    mocked_definition_export.assert_any_call(
+        "/path/to/definitions", packages[1], "/tmp2", "/path/to/install",
+        editable_mode=False,
+        definition_mapping=definition_mapping
     )
-    mocked_definition_create.assert_any_call(
-        packages[2], "/path/to/install", editable_mode=False
-    )
-
-    assert mocked_wiz_export_definition.call_count == 3
-    mocked_wiz_export_definition.assert_any_call(
-        "/path/to/definitions", "__DATA1__", overwrite=True
-    )
-    mocked_wiz_export_definition.assert_any_call(
-        "/path/to/definitions", "__DATA2__", overwrite=True
-    )
-    mocked_wiz_export_definition.assert_any_call(
-        "/path/to/definitions", "__DATA3__", overwrite=True
+    mocked_definition_export.assert_any_call(
+        "/path/to/definitions", packages[2], "/tmp2", "/path/to/install",
+        editable_mode=False,
+        definition_mapping=definition_mapping
     )
 
     assert mocked_filesystem_remove_directory_content.call_count == 3
@@ -355,21 +343,25 @@ def test_install_with_definition_path(
     mocked_shutil_rmtree.assert_any_call("/tmp2")
 
 
-@pytest.mark.parametrize("options, overwrite, editable_mode", [
-    ({}, False, False),
-    ({"overwrite": True}, True, False),
-    ({"editable_mode": True}, False, True),
-], ids=[
-    "no-options",
-    "with-overwrite",
-    "with-editable-mode",
-])
+@pytest.mark.parametrize(
+    "options, overwrite, editable_mode, python_target", [
+        ({}, False, False, "python==2.7.*"),
+        ({"overwrite": True}, True, False, "python==2.7.*"),
+        ({"editable_mode": True}, False, True, "python==2.7.*"),
+        ({"python_target": "/bin/python3"}, False, False, "/bin/python3")
+    ], ids=[
+        "no-options",
+        "with-overwrite-packages",
+        "with-editable-mode",
+        "with-python-target",
+    ]
+)
 def test_install_without_dependencies(
     mocked_filesystem_ensure_directory, mocked_tempfile_mkdtemp,
-    mocked_fetch_environ, mocked_package_install, mocked_copy_to_destination,
-    mocked_definition_retrieve, mocked_definition_create,
-    mocked_wiz_export_definition, mocked_filesystem_remove_directory_content,
-    mocked_shutil_rmtree, options, overwrite, editable_mode
+    mocked_fetch_context_mapping, mocked_package_install,
+    mocked_copy_to_destination, mocked_definition_export,
+    mocked_filesystem_remove_directory_content, mocked_shutil_rmtree, options,
+    overwrite, editable_mode, python_target
 ):
     """Install packages with dependencies."""
     packages = [
@@ -388,8 +380,14 @@ def test_install_without_dependencies(
         }
     ]
 
+    context = {
+        "environ": {
+            "PYTHONPATH": "/path/to/site-packages"
+        }
+    }
+
     mocked_tempfile_mkdtemp.side_effect = ["/tmp1", "/tmp2"]
-    mocked_fetch_environ.return_value = "__ENVIRON__"
+    mocked_fetch_context_mapping.return_value = context
     mocked_package_install.side_effect = packages
 
     mocked_copy_to_destination.side_effect = [
@@ -404,24 +402,17 @@ def test_install_without_dependencies(
 
     assert mocked_filesystem_ensure_directory.call_count == 2
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/install")
-    mocked_filesystem_ensure_directory.assert_any_call(
-        "/tmp2/lib/python2.7/site-packages"
-    )
+    mocked_filesystem_ensure_directory.assert_any_call("/path/to/site-packages")
 
-    mocked_fetch_environ.assert_called_once_with(
-        mapping={
-            "PYTHONPATH": "/tmp2/lib/python2.7/site-packages",
-            "PYTHONWARNINGS": "ignore:DEPRECATION"
-        }
-    )
+    mocked_fetch_context_mapping.assert_called_once_with("/tmp2", python_target)
 
     assert mocked_package_install.call_count == 2
     mocked_package_install.assert_any_call(
-        "foo", "/tmp2", "__ENVIRON__", "/tmp1",
+        "foo", "/tmp2", context, "/tmp1",
         editable_mode=editable_mode
     )
     mocked_package_install.assert_any_call(
-        "bar", "/tmp2", "__ENVIRON__", "/tmp1",
+        "bar", "/tmp2", context, "/tmp1",
         editable_mode=False
     )
 
@@ -435,9 +426,7 @@ def test_install_without_dependencies(
         overwrite=overwrite
     )
 
-    mocked_definition_retrieve.assert_not_called()
-    mocked_definition_create.assert_not_called()
-    mocked_wiz_export_definition.assert_not_called()
+    mocked_definition_export.assert_not_called()
 
     assert mocked_filesystem_remove_directory_content.call_count == 2
     mocked_filesystem_remove_directory_content.assert_any_call("/tmp2")
@@ -447,21 +436,25 @@ def test_install_without_dependencies(
     mocked_shutil_rmtree.assert_any_call("/tmp2")
 
 
-@pytest.mark.parametrize("options, overwrite, editable_mode", [
-    ({}, False, False),
-    ({"overwrite": True}, True, False),
-    ({"editable_mode": True}, False, True),
-], ids=[
-    "no-options",
-    "with-overwrite-packages",
-    "with-editable-mode",
-])
+@pytest.mark.parametrize(
+    "options, overwrite, editable_mode, python_target", [
+        ({}, False, False, "python==2.7.*"),
+        ({"overwrite": True}, True, False, "python==2.7.*"),
+        ({"editable_mode": True}, False, True, "python==2.7.*"),
+        ({"python_target": "/bin/python3"}, False, False, "/bin/python3")
+    ], ids=[
+        "no-options",
+        "with-overwrite-packages",
+        "with-editable-mode",
+        "with-python-target",
+    ]
+)
 def test_install_with_package_skipped(
     mocked_filesystem_ensure_directory, mocked_tempfile_mkdtemp,
-    mocked_fetch_environ, mocked_package_install, mocked_copy_to_destination,
-    mocked_definition_retrieve, mocked_definition_create,
-    mocked_wiz_export_definition, mocked_filesystem_remove_directory_content,
-    mocked_shutil_rmtree, options, overwrite, editable_mode
+    mocked_fetch_context_mapping, mocked_package_install,
+    mocked_copy_to_destination, mocked_definition_export,
+    mocked_filesystem_remove_directory_content, mocked_shutil_rmtree, options,
+    overwrite, editable_mode, python_target
 ):
     """Install packages with one package copy skipped."""
     packages = [
@@ -474,8 +467,14 @@ def test_install_with_package_skipped(
         }
     ]
 
+    context = {
+        "environ": {
+            "PYTHONPATH": "/path/to/site-packages"
+        }
+    }
+
     mocked_tempfile_mkdtemp.side_effect = ["/tmp1", "/tmp2"]
-    mocked_fetch_environ.return_value = "__ENVIRON__"
+    mocked_fetch_context_mapping.return_value = context
     mocked_package_install.side_effect = packages
 
     mocked_copy_to_destination.return_value = (False, overwrite)
@@ -486,20 +485,13 @@ def test_install_with_package_skipped(
 
     assert mocked_filesystem_ensure_directory.call_count == 2
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/install")
-    mocked_filesystem_ensure_directory.assert_any_call(
-        "/tmp2/lib/python2.7/site-packages"
-    )
+    mocked_filesystem_ensure_directory.assert_any_call("/path/to/site-packages")
 
-    mocked_fetch_environ.assert_called_once_with(
-        mapping={
-            "PYTHONPATH": "/tmp2/lib/python2.7/site-packages",
-            "PYTHONWARNINGS": "ignore:DEPRECATION"
-        }
-    )
+    mocked_fetch_context_mapping.assert_called_once_with("/tmp2", python_target)
 
     assert mocked_package_install.call_count == 1
     mocked_package_install.assert_any_call(
-        "foo", "/tmp2", "__ENVIRON__", "/tmp1",
+        "foo", "/tmp2", context, "/tmp1",
         editable_mode=editable_mode
     )
 
@@ -509,9 +501,8 @@ def test_install_with_package_skipped(
         overwrite=overwrite
     )
 
-    mocked_definition_retrieve.assert_not_called()
-    mocked_definition_create.assert_not_called()
-    mocked_wiz_export_definition.assert_not_called()
+    mocked_definition_export.assert_not_called()
+
     mocked_filesystem_remove_directory_content.assert_not_called()
 
     assert mocked_shutil_rmtree.call_count == 2
@@ -521,16 +512,21 @@ def test_install_with_package_skipped(
 
 def test_install_with_package_installation_error(
     mocked_filesystem_ensure_directory, mocked_tempfile_mkdtemp,
-    mocked_fetch_environ, mocked_package_install, mocked_copy_to_destination,
-    mocked_definition_retrieve, mocked_definition_create,
-    mocked_wiz_export_definition, mocked_filesystem_remove_directory_content,
-    mocked_shutil_rmtree, logger
+    mocked_fetch_context_mapping, mocked_package_install,
+    mocked_copy_to_destination, mocked_definition_export,
+    mocked_filesystem_remove_directory_content, mocked_shutil_rmtree, logger
 ):
     """Install packages with one package error which is skipped."""
     package = {"identifier": "Foo-0.2.3"}
 
+    context = {
+        "environ": {
+            "PYTHONPATH": "/path/to/site-packages"
+        }
+    }
+
     mocked_tempfile_mkdtemp.side_effect = ["/tmp1", "/tmp2"]
-    mocked_fetch_environ.return_value = "__ENVIRON__"
+    mocked_fetch_context_mapping.return_value = context
     mocked_package_install.side_effect = [RuntimeError("Oops"), package]
 
     mocked_copy_to_destination.return_value = (True, True)
@@ -541,24 +537,19 @@ def test_install_with_package_installation_error(
 
     assert mocked_filesystem_ensure_directory.call_count == 2
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/install")
-    mocked_filesystem_ensure_directory.assert_any_call(
-        "/tmp2/lib/python2.7/site-packages"
-    )
+    mocked_filesystem_ensure_directory.assert_any_call("/path/to/site-packages")
 
-    mocked_fetch_environ.assert_called_once_with(
-        mapping={
-            "PYTHONPATH": "/tmp2/lib/python2.7/site-packages",
-            "PYTHONWARNINGS": "ignore:DEPRECATION"
-        }
+    mocked_fetch_context_mapping.assert_called_once_with(
+        "/tmp2", "python==2.7.*"
     )
 
     assert mocked_package_install.call_count == 2
     mocked_package_install.assert_any_call(
-        "foo", "/tmp2", "__ENVIRON__", "/tmp1",
+        "foo", "/tmp2", context, "/tmp1",
         editable_mode=False
     )
     mocked_package_install.assert_any_call(
-        "bar", "/tmp2", "__ENVIRON__", "/tmp1",
+        "bar", "/tmp2", context, "/tmp1",
         editable_mode=False
     )
 
@@ -566,9 +557,7 @@ def test_install_with_package_installation_error(
         package, "/tmp2", "/path/to/install", overwrite=False
     )
 
-    mocked_definition_retrieve.assert_not_called()
-    mocked_definition_create.assert_not_called()
-    mocked_wiz_export_definition.assert_not_called()
+    mocked_definition_export.assert_not_called()
 
     assert mocked_filesystem_remove_directory_content.call_count == 1
     mocked_filesystem_remove_directory_content.assert_any_call("/tmp2")
@@ -787,7 +776,7 @@ def test_confirm_overwrite(mocked_click_prompt, answer, expected):
     mocked_click_prompt.return_value = answer
 
     result = qip._confirm_overwrite("foo")
-    
+
     assert result == expected
     mocked_click_prompt.assert_called_once_with(
         "Overwrite 'foo'? ([y]es, [n]o, [ya] yes to all, [na] no to all)",
@@ -798,25 +787,24 @@ def test_confirm_overwrite(mocked_click_prompt, answer, expected):
     )
 
 
-def test_fetch_environ(mocked_wiz_resolve_context):
-    """Fetch and return environment mapping."""
-    mocked_wiz_resolve_context.return_value = {"environ": "__ENVIRON__"}
+def test_fetch_context_mapping(
+    mocked_fetch_environ, mocked_fetch_python_mapping
+):
+    """Return context mapping containing environment and python mapping."""
+    mocked_fetch_environ.return_value = {
+        "PATH": "/path/to/bin",
+        "PYTHONPATH": "/path/to/lib",
+    }
+    mocked_fetch_python_mapping.return_value = {
+        "library-path": "lib/python2.7/site-packages"
+    }
 
-    environ = qip.fetch_environ()
-    assert environ == "__ENVIRON__"
-
-    mocked_wiz_resolve_context.assert_called_once_with(
-        ["python==2.7.*"], environ_mapping={}
-    )
-
-
-def test_fetch_environ_with_mapping(mocked_wiz_resolve_context):
-    """Fetch and return environment mapping with initial mapping."""
-    mocked_wiz_resolve_context.return_value = {"environ": "__ENVIRON__"}
-
-    environ = qip.fetch_environ(mapping="__INITIAL_MAPPING__")
-    assert environ == "__ENVIRON__"
-
-    mocked_wiz_resolve_context.assert_called_once_with(
-        ["python==2.7.*"], environ_mapping="__INITIAL_MAPPING__"
-    )
+    assert qip.fetch_context_mapping("/path", "python==2.7.*") == {
+        "environ": {
+            "PATH": "/path/to/bin",
+            "PYTHONPATH": "/path/lib/python2.7/site-packages",
+        },
+        "python": {
+            "library-path": "lib/python2.7/site-packages"
+        }
+    }

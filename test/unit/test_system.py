@@ -1,7 +1,7 @@
 # :coding: utf-8
 
 import platform
-from packaging.version import Version, InvalidVersion
+from packaging.version import InvalidVersion
 
 import pytest
 

@@ -24,11 +24,11 @@ with open(
 
 # Compute dependencies.
 INSTALL_REQUIRES = [
+    "click >= 7, < 8",
+    "mlog >= 0.0.6, < 1",
     "packaging >= 17.1, < 18",
     "pip >= 10, < 19",
-    "wiz >= 2, < 3",
-    "mlog >= 0.0.6, < 1",
-    "click >= 7, < 8"
+    "wiz >= 2, < 3"
 ]
 DOC_REQUIRES = [
     "sphinx >= 1.2.2, < 2",
@@ -42,7 +42,11 @@ TEST_REQUIRES = [
     "pytest >= 3.0.0, < 4",
     "pytest-mock >= 0.11, < 1",
     "pytest-xdist >= 1.1, < 2",
-    "pytest-cov >= 2, < 3"
+    "pytest-cov >= 2, < 3",
+
+    # Ensure that more-itertools is limited to v6 as later version don't work
+    # for python 2.7.
+    "more-itertools >= 4, < 6"
 ]
 
 setup(
