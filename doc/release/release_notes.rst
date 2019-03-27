@@ -4,6 +4,19 @@
 Release Notes
 *************
 
+.. release:: Upcoming
+
+    .. change:: fixed
+        :tags: API
+
+        Updated :func:`qip.definition.create` and :func:`qip.definition.update`
+        to add dependent Python packages as :ref:`requirements
+        <wiz:definition/requirements>` which target the same Python version
+        :ref:`variant <wiz:definition/variants>` (e.g. "foo[2.7]"). Previously,
+        calling a package installed for several Python versions from :term:`Wiz`
+        could take a long time as all variants would be tested in the resolution
+        graph.
+
 .. release:: 1.3.0
     :date: 2019-03-26
 
