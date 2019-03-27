@@ -84,12 +84,7 @@ def test_export_with_additional_variants(
         variants="__VARIANTS__"
     )
 
-    mapping = {
-        "request": "foo >= 1, < 2",
-        "python": {
-            "identifier": "2.8"
-        }
-    }
+    mapping = {"request": "foo >= 1, < 2"}
     path = "/definitions"
     package_path = "/path/lib/site-packages"
     output_path = "/packages"
@@ -122,12 +117,7 @@ def test_export_with_request_error(
     mocked_create.return_value = "__DEF__"
     mocked_wiz_fetch_definition.side_effect = wiz.exception.RequestNotFound
 
-    mapping = {
-        "request": "foo >= 1, < 2",
-        "python": {
-            "identifier": "2.8"
-        }
-    }
+    mapping = {"request": "foo >= 1, < 2"}
     path = "/definitions"
     package_path = "/path/lib/site-packages"
     output_path = "/packages"
@@ -193,12 +183,7 @@ def test_export_retrieved_and_additional_variants(
         variants="__VARIANTS__"
     )
 
-    mapping = {
-        "request": "foo >= 1, < 2",
-        "python": {
-            "identifier": "2.8"
-        }
-    }
+    mapping = {"request": "foo >= 1, < 2"}
     path = "/definitions"
     package_path = "/path/lib/site-packages"
     output_path = "/packages"
