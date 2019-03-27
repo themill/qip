@@ -40,12 +40,15 @@ def export(
 
     if definition_mapping is not None:
         try:
+            requirement = wiz.utility.get_requirement(mapping["request"])
+            requirement.name = "{}::{}".format(namespace, requirement.name)
+            requirement.extras = {mapping["python"]["identifier"]}
+
             _definition = wiz.fetch_definition(
-                "{}::{}".format(namespace, mapping["request"]),
-                definition_mapping
+                str(requirement), definition_mapping
             )
             additional_variants = _definition.variants
-        except wiz.exception.RequestNotFound:
+        except wiz.exception.WizError:
             pass
 
     # Update definition or create a new definition.
