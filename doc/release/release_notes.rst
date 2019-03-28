@@ -6,7 +6,7 @@ Release Notes
 
 .. release:: Upcoming
 
-    .. change:: fixed
+    .. change:: changed
         :tags: API
 
         Updated :func:`qip.definition.create` and :func:`qip.definition.update`
