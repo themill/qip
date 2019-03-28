@@ -279,6 +279,11 @@ def _update_variants(variants, mapping, path, environ_mapping=None):
         for _req in [python_request] + mapping.get("requirements", [])
     ]
 
+    # Ensure that all Python package requirements target the same python
+    # version.
+    for requirement in requirements[1:]:
+        requirement.extras = {mapping["python"]["identifier"]}
+
     # Index of new variant if necessary.
     _index = 0
 
