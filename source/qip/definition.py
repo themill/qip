@@ -244,7 +244,14 @@ def update(
             key=lambda v: _to_inv_float(v.get("identifier"))
         )
 
-    _update_variants(variants, mapping, package_path)
+    _update_variants(
+        variants, mapping, package_path,
+        environ_mapping={
+            "PYTHONPATH": "{}:${{PYTHONPATH}}".format(
+                qip.symbol.INSTALL_LOCATION
+            )
+        }
+    )
 
     return definition.set("variants", variants)
 
