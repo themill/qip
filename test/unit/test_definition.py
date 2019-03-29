@@ -766,6 +766,9 @@ def test_update():
                 "install-location": (
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
+                "environ": {
+                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+                },
                 "requirements": [
                     "python >=2.8, <2.9"
                 ]
@@ -810,6 +813,9 @@ def test_update_without_description():
                 "install-location": (
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
+                "environ": {
+                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+                },
                 "requirements": [
                     "python >=2.8, <2.9"
                 ]
@@ -854,6 +860,9 @@ def test_update_without_version():
                 "install-location": (
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
+                "environ": {
+                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+                },
                 "requirements": [
                     "python >=2.8, <2.9"
                 ]
@@ -898,6 +907,9 @@ def test_update_without_namespace():
                 "install-location": (
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
+                "environ": {
+                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+                },
                 "requirements": [
                     "python >=2.8, <2.9"
                 ]
@@ -956,6 +968,9 @@ def test_update_with_system():
                 "install-location": (
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
+                "environ": {
+                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+                },
                 "requirements": [
                     "python >=2.8, <2.9"
                 ]
@@ -1002,6 +1017,9 @@ def test_update_with_commands():
                 "install-location": (
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
+                "environ": {
+                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+                },
                 "requirements": [
                     "python >=2.8, <2.9"
                 ]
@@ -1053,6 +1071,9 @@ def test_update_with_commands_updated():
                 "install-location": (
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
+                "environ": {
+                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+                },
                 "requirements": [
                     "python >=2.8, <2.9"
                 ]
@@ -1093,6 +1114,9 @@ def test_update_editable():
             {
                 "identifier": "2.8",
                 "install-location": "/path/to/lib",
+                "environ": {
+                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+                },
                 "requirements": [
                     "python >=2.8, <2.9"
                 ]
@@ -1160,7 +1184,10 @@ def test_update_with_additional_variants_1():
                 "install-location": (
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
-                "environ": {"KEY28": "VALUE28"},
+                "environ": {
+                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}",
+                    "KEY28": "VALUE28"
+                },
                 "requirements": [
                     "python >=2.8, <2.9"
                 ]
@@ -1230,6 +1257,9 @@ def test_update_with_additional_variants_2():
                 "install-location": (
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
+                "environ": {
+                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+                },
                 "requirements": [
                     "python >=2.8, <2.9"
                 ]
