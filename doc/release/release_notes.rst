@@ -4,6 +4,15 @@
 Release Notes
 *************
 
+.. release:: Upcoming
+
+    .. change:: changed
+        :tags: API
+
+        Updated :func:`qip.definition.update` to add :envvar:`PYTHONPATH`
+        to the definition :ref:`variant <wiz:definition/variants>` for the
+        targeted Python version in order to include the installed package.
+
 .. release:: 1.4.0
     :date: 2019-03-28
 
