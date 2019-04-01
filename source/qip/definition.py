@@ -4,6 +4,7 @@ import os
 
 import mlog
 import wiz
+import wiz.environ
 import wiz.utility
 import wiz.exception
 
@@ -228,6 +229,13 @@ def update(
     environ_mapping = {
         "PYTHONPATH": "{}:${{PYTHONPATH}}".format(qip.symbol.INSTALL_LOCATION)
     }
+
+    python_path = definition.get("environ", {}).get("PYTHONPATH")
+    if python_path:
+        environ_mapping["PYTHONPATH"] = wiz.environ.substitute(
+            environ_mapping["PYTHONPATH"], {"PYTHONPATH": python_path}
+        )
+
     definition = definition.update("environ", environ_mapping)
 
     # Target package location if the installation is in editable mode.

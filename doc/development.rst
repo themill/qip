@@ -64,15 +64,22 @@ For example::
 
     {
         "identifier": "foo",
+        "namespace": "library",
         "command": {
             "foo": "python -m foo"
         },
         "environ": {
             "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
         },
-        "install-location": "~/dev/foo/source",
-        "requirements: [
-            "bar"
+        "variants": [
+            {
+                "identifier": "2.7"
+                "requirements: [
+                    "python >=2.7, <2.8",
+                    "library::bar"
+                ]
+                "install-location": "~/dev/foo/source",
+            }
         ]
     }
 
@@ -103,7 +110,7 @@ For example, the custom definition :file:`wiz.json` could look like this::
         },
         "environ": {
             "EXTRA": "1",
-            "MAYA_SCRIPTS_PATH": "${INSTALL_LOCATION}/package_data/maya:${MAYA_SCRIPTS_PATH}"
+            "PYTHONPATH": "${INSTALL_LOCATION}/package_data/maya:${PYTHONPATH}"
         },
         "requirements: [
              "maya"
@@ -122,14 +129,11 @@ The resulting definition after the qip install could look like this::
         },
         "environ": {
             "EXTRA": "1",
-            "MAYA_SCRIPTS_PATH": "${INSTALL_LOCATION}/package_data/maya:${MAYA_SCRIPTS_PATH}"
+            "PYTHONPATH": "${INSTALL_LOCATION}:${INSTALL_LOCATION}/package_data/maya:${PYTHONPATH}"
         },
         "variants": [
             {
                 "identifier": "2.7"
-                "environ": {
-                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
-                },
                 "requirements: [
                     "python >=2.7, <2.8",
                     "bar"
@@ -151,19 +155,10 @@ The resulting definition after the qip install could look like this::
 .. important::
 
     When retrieving a definition, it is being assumed that the developer
-    has set a :envvar:`PYTHONPATH` environment variable referencing
-    :envvar:`INSTALL_LOCATION` in either :ref:`environ <wiz:definition/environ>`
-    or in a :ref:`variant <wiz:definition/variants>` of the definition. It is
-    **NOT** being added automatically, to ensure that the developer remains
-    full control over the path order.
-
-    Example::
-
-        {
-            "environ": {
-                "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
-            }
-        }
+    has not set :envvar:`PYTHONPATH` environment variable referencing
+    :envvar:`INSTALL_LOCATION`. However, if it is necessary to add a custom
+    :envvar:`PYTHONPATH`, qip will prepend the :envvar:`INSTALL_LOCATION` before
+    the custom :envvar:`PYTHONPATH` value.
 
 Development for multiple Python versions
 ========================================
@@ -195,13 +190,13 @@ This will result in a definition like:
         "command": {
             ...
         },
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
         "variants": [
             {
                 "identifier": "3.6",
                 "install-location": "${INSTALL_ROOT}/tensorflow/tensorflow-1.13.1-py36/lib/python3.6/site-packages",
-                "environ": {
-                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
-                },
                 "requirements": [
                     "python >=3.6, <3.7",
                     ...
@@ -210,9 +205,6 @@ This will result in a definition like:
             {
                 "identifier": "2.7",
                 "install-location": "${INSTALL_ROOT}/tensorflow/tensorflow-1.13.1-py27/lib/python2.7/site-packages",
-                "environ": {
-                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
-                },
                 "requirements": [
                     "python >=2.7, <2.8",
                     ...
