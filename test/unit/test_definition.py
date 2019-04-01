@@ -328,15 +328,15 @@ def test_create(logger):
         "install-root": "/path/to/installed/package",
         "namespace": "library",
         "description": "This is a package",
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
         "variants": [
             {
                 "identifier": "2.8",
                 "install-location": (
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
-                "environ": {
-                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
-                },
                 "requirements": [
                     "python >=2.8, <2.9",
                 ]
@@ -382,6 +382,9 @@ def test_create_with_system(logger):
         "install-root": "/path/to/installed/package",
         "namespace": "library",
         "description": "This is a package",
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
         "system": {
             "platform": "linux",
             "arch": "x86_64",
@@ -393,9 +396,6 @@ def test_create_with_system(logger):
                 "install-location": (
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
-                "environ": {
-                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
-                },
                 "requirements": [
                     "python >=2.8, <2.9",
                 ]
@@ -437,15 +437,15 @@ def test_create_with_requirements(logger):
         "install-root": "/path/to/installed/package",
         "namespace": "library",
         "description": "This is a package",
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
         "variants": [
             {
                 "identifier": "2.8",
                 "install-location": (
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
-                "environ": {
-                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
-                },
                 "requirements": [
                     "python >=2.8, <2.9",
                     "bim[2.8] >= 3, < 4",
@@ -493,15 +493,15 @@ def test_create_with_commands(logger):
             "foo": "python -m foo",
             "test": "python -m foo.test",
         },
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
         "variants": [
             {
                 "identifier": "2.8",
                 "install-location": (
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
-                "environ": {
-                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
-                },
                 "requirements": [
                     "python >=2.8, <2.9"
                 ]
@@ -539,13 +539,13 @@ def test_create_editable_mode(logger):
         "version": "0.2.3",
         "namespace": "library",
         "description": "This is a package",
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
         "variants": [
             {
                 "identifier": "2.8",
                 "install-location": "/path/to/source",
-                "environ": {
-                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
-                },
                 "requirements": [
                     "python >=2.8, <2.9"
                 ]
@@ -613,6 +613,9 @@ def test_create_with_additional_variants_1(logger):
         "install-root": "/path/to/installed/package",
         "namespace": "library",
         "description": "This is a package",
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}",
+        },
         "variants": [
             {
                 "identifier": "3.6",
@@ -624,7 +627,6 @@ def test_create_with_additional_variants_1(logger):
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
                 "environ": {
-                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}",
                     "KEY28": "VALUE28"
                 },
                 "requirements": [
@@ -695,6 +697,9 @@ def test_create_with_additional_variants_2(logger):
         "install-root": "/path/to/installed/package",
         "namespace": "library",
         "description": "This is a package",
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}",
+        },
         "variants": [
             {
                 "identifier": "3.6",
@@ -705,9 +710,6 @@ def test_create_with_additional_variants_2(logger):
                 "install-location": (
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
-                "environ": {
-                    "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}",
-                },
                 "requirements": [
                     "python >=2.8, <2.9",
                     "bim[2.8] >= 3, < 4",
@@ -760,6 +762,57 @@ def test_update():
         "namespace": "plugin",
         "description": "This is a library",
         "install-root": "/packages",
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
+        "variants": [
+            {
+                "identifier": "2.8",
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
+                ),
+                "requirements": [
+                    "python >=2.8, <2.9"
+                ]
+            }
+        ]
+    })
+
+
+def test_update_with_pythonpath():
+    """Update definition with mapping."""
+    definition = wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
+    })
+
+    mapping = {
+        "identifier": "Foo-0.2.3",
+        "name": "Foo",
+        "key": "foo",
+        "version": "0.2.3",
+        "description": "This is a cool library",
+        "target": "Foo/Foo-0.2.3",
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9",
+            "library-path": "lib/python2.8/site-packages"
+        },
+    }
+
+    _definition = qip.definition.update(definition, mapping, "/packages")
+
+    assert _definition == wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
+        "install-root": "/packages",
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
         "variants": [
             {
                 "identifier": "2.8",
@@ -804,6 +857,9 @@ def test_update_without_description():
         "namespace": "plugin",
         "description": "This is a cool library",
         "install-root": "/packages",
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
         "variants": [
             {
                 "identifier": "2.8",
@@ -848,6 +904,9 @@ def test_update_without_version():
         "namespace": "plugin",
         "description": "This is a library",
         "install-root": "/packages",
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
         "variants": [
             {
                 "identifier": "2.8",
@@ -892,6 +951,9 @@ def test_update_without_namespace():
         "namespace": "library",
         "description": "This is a library",
         "install-root": "/packages",
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
         "variants": [
             {
                 "identifier": "2.8",
@@ -945,6 +1007,9 @@ def test_update_with_system():
         "namespace": "plugin",
         "description": "This is a library",
         "install-root": "/packages",
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
         "system": {
             "platform": "linux",
             "arch": "x86_64",
@@ -995,6 +1060,9 @@ def test_update_with_commands():
         "install-root": "/packages",
         "command": {
             "foo": "python -m foo"
+        },
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
         },
         "variants": [
             {
@@ -1047,6 +1115,9 @@ def test_update_with_commands_updated():
             "test": "Test",
             "foo": "python -m foo"
         },
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
         "variants": [
             {
                 "identifier": "2.8",
@@ -1089,6 +1160,9 @@ def test_update_editable():
         "version": "0.2.3",
         "namespace": "plugin",
         "description": "This is a library",
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
         "variants": [
             {
                 "identifier": "2.8",
@@ -1150,6 +1224,9 @@ def test_update_with_additional_variants_1():
         "namespace": "plugin",
         "description": "This is a library",
         "install-root": "/packages",
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}",
+        },
         "variants": [
             {
                 "identifier": "3.6",
@@ -1160,7 +1237,9 @@ def test_update_with_additional_variants_1():
                 "install-location": (
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
-                "environ": {"KEY28": "VALUE28"},
+                "environ": {
+                    "KEY28": "VALUE28"
+                },
                 "requirements": [
                     "python >=2.8, <2.9"
                 ]
@@ -1220,6 +1299,9 @@ def test_update_with_additional_variants_2():
         "namespace": "plugin",
         "description": "This is a library",
         "install-root": "/packages",
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
         "variants": [
             {
                 "identifier": "3.6",
