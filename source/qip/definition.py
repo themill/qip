@@ -143,7 +143,12 @@ def create(mapping, output_path, editable_mode=False, additional_variants=None):
         "identifier": mapping["key"],
         "version": mapping["version"],
         "description": mapping["description"],
-        "namespace": qip.symbol.NAMESPACE
+        "namespace": qip.symbol.NAMESPACE,
+        "environ": {
+            "PYTHONPATH": "{}:${{PYTHONPATH}}".format(
+                qip.symbol.INSTALL_LOCATION
+            )
+        }
     }
 
     # Add commands mapping.
@@ -173,14 +178,7 @@ def create(mapping, output_path, editable_mode=False, additional_variants=None):
             key=lambda v: _to_inv_float(v.get("identifier"))
         )
 
-    _update_variants(
-        variants, mapping, location_path,
-        environ_mapping={
-            "PYTHONPATH": "{}:${{PYTHONPATH}}".format(
-                qip.symbol.INSTALL_LOCATION
-            )
-        }
-    )
+    _update_variants(variants, mapping, location_path)
 
     definition_data["variants"] = variants
 
@@ -226,6 +224,12 @@ def update(
     if mapping.get("command"):
         definition = definition.update("command", mapping["command"])
 
+    # Update environ mapping
+    environ_mapping = {
+        "PYTHONPATH": "{}:${{PYTHONPATH}}".format(qip.symbol.INSTALL_LOCATION)
+    }
+    definition = definition.update("environ", environ_mapping)
+
     # Target package location if the installation is in editable mode.
     package_path = mapping.get("location", "")
 
@@ -244,19 +248,12 @@ def update(
             key=lambda v: _to_inv_float(v.get("identifier"))
         )
 
-    _update_variants(
-        variants, mapping, package_path,
-        environ_mapping={
-            "PYTHONPATH": "{}:${{PYTHONPATH}}".format(
-                qip.symbol.INSTALL_LOCATION
-            )
-        }
-    )
+    _update_variants(variants, mapping, package_path)
 
     return definition.set("variants", variants)
 
 
-def _update_variants(variants, mapping, path, environ_mapping=None):
+def _update_variants(variants, mapping, path):
     """Add variant corresponding to *identifier* to the *variant* list.
 
     Update existing variant if necessary or add new variant corresponding to the
@@ -267,8 +264,6 @@ def _update_variants(variants, mapping, path, environ_mapping=None):
     :param mapping: mapping of the python package built as returned by
         :func:`qip.package.install`.
     :param path: path where python package has been installed.
-    :param environ_mapping: could be an environment mapping to add to the
-        variant. Default is None.
 
     :return: None.
 
@@ -311,10 +306,6 @@ def _update_variants(variants, mapping, path, environ_mapping=None):
             "requirements", [_req for _req in requirements if _req in remaining]
         )
 
-        # Add environment mapping if necessary
-        if environ_mapping:
-            variant = variant.update("environ", environ_mapping)
-
         del variants[index]
         variants.insert(index, variant)
         return
@@ -325,10 +316,6 @@ def _update_variants(variants, mapping, path, environ_mapping=None):
         "install-location": path,
         "requirements": requirements
     }
-
-    # Add environment mapping if necessary
-    if environ_mapping:
-        variant["environ"] = environ_mapping
 
     variants.insert(_index, variant)
 
