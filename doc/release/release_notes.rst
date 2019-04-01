@@ -15,6 +15,13 @@ Release Notes
         was ambiguously named in the resulting package definition, which could
         lead :term:`Wiz` to not be able to resolve it properly
 
+    .. change:: changed
+        :tags: API
+
+        Updated :func:`qip.definition.update` to add :envvar:`PYTHONPATH`
+        to the definition :ref:`environment mapping <wiz:definition/environ>`
+        in order to include the installed package.
+
 .. release:: 1.4.0
     :date: 2019-03-28
 
