@@ -780,12 +780,15 @@ def test_update():
 
 
 def test_update_with_pythonpath():
-    """Update definition with mapping."""
+    """Update definition with existing PYTHONPATH from mapping."""
     definition = wiz.definition.Definition({
         "identifier": "foo",
         "version": "0.2.3",
         "namespace": "plugin",
         "description": "This is a library",
+        "environ": {
+            "PYTHONPATH": "/path/to/somewhere:${PYTHONPATH}"
+        }
     })
 
     mapping = {
@@ -811,7 +814,7 @@ def test_update_with_pythonpath():
         "description": "This is a library",
         "install-root": "/packages",
         "environ": {
-            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+            "PYTHONPATH": "${INSTALL_LOCATION}:/path/to/somewhere:${PYTHONPATH}"
         },
         "variants": [
             {

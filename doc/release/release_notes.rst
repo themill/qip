@@ -4,6 +4,12 @@
 Release Notes
 *************
 
+.. release:: Upcoming
+
+    Updated :func:`qip.definition.create` to append previous
+    :envvar:`PYTHONPATH` value to :envvar:`INSTALL_LOCATION` when creating the
+    package definition.
+
 .. release:: 1.5.0
     :date: 2019-04-01
 
