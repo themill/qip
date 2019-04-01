@@ -274,15 +274,7 @@ def _update_variants(variants, mapping, path, environ_mapping=None):
     python_request = mapping["python"]["request"]
 
     # Process all requirements to detect duplication.
-    requirements = [
-        wiz.utility.get_requirement(_req)
-        for _req in [python_request] + mapping.get("requirements", [])
-    ]
-
-    # Ensure that all Python package requirements target the same python
-    # version.
-    for requirement in requirements[1:]:
-        requirement.extras = {mapping["python"]["identifier"]}
+    requirements = _process_requirements(mapping, python_request)
 
     # Index of new variant if necessary.
     _index = 0
@@ -335,7 +327,7 @@ def _to_inv_float(text):
 
 
 def _process_system_mapping(mapping):
-    """Compute 'system' keyword for :term:`Wiz` definition from *mapping*.
+    """Compute 'system' keyword for the :term:`Wiz` definition from *mapping*.
 
     :param mapping: mapping of the python package built as returned by
         :func:`qip.package.install`.
@@ -355,3 +347,33 @@ def _process_system_mapping(mapping):
             )
         )
     }
+
+
+def _process_requirements(mapping, python_request):
+    """Compute 'requirements' keyword for the :term:`Wiz` definition.
+
+    :param mapping: mapping of the python package built as returned by
+        :func:`qip.package.install`.
+    :param python_request: Python version requirement (e.g.
+    "python >=2.7, <2.8")
+
+    :return: requirements list.
+
+    """
+    # Add the library namespace for all requirements fetched.
+    requests = [
+        "{}::{}".format(qip.symbol.NAMESPACE, request)
+        for request in mapping.get("requirements", [])
+    ]
+
+    # Create Requirement instance from all these requests.
+    requirements = [
+        wiz.utility.get_requirement(request)
+        for request in [python_request] + requests
+    ]
+
+    # Ensure that all package requirements target the same python version.
+    for requirement in requirements[1:]:
+        requirement.extras = {mapping["python"]["identifier"]}
+
+    return requirements

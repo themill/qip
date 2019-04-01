@@ -4,6 +4,17 @@
 Release Notes
 *************
 
+.. release:: Upcoming
+
+    .. change:: changed
+        :tags: definition
+
+        Updated :func:`qip.definition.create` and :func:`qip.definition.update`
+        to always add 'library' namespace to required Python packages fetched
+        from the *setup.py* configuration file. Previously, definitions
+        extracted could raise an error if a :term:`Wiz` package have the same
+        identifier.
+
 .. release:: 1.4.0
     :date: 2019-03-28
 

@@ -448,8 +448,8 @@ def test_create_with_requirements(logger):
                 },
                 "requirements": [
                     "python >=2.8, <2.9",
-                    "bim[2.8] >= 3, < 4",
-                    "bar[2.8]",
+                    "library::bim[2.8] >= 3, < 4",
+                    "library::bar[2.8]",
                 ]
             }
         ]
@@ -596,8 +596,8 @@ def test_create_with_additional_variants_1(logger):
                 "identifier": "2.8",
                 "environ": {"KEY28": "VALUE28"},
                 "requirements": [
-                    "bim[2.8] >= 3, < 4",
-                    "baz"
+                    "library::bim[2.8] >= 3, < 4",
+                    "library::baz"
                 ]
             }),
             wiz.definition._Variant({
@@ -628,10 +628,10 @@ def test_create_with_additional_variants_1(logger):
                     "KEY28": "VALUE28"
                 },
                 "requirements": [
-                    "bim[2.8] >= 3, < 4",
-                    "baz",
+                    "library::bim[2.8] >= 3, < 4",
+                    "library::baz",
                     "python >=2.8, <2.9",
-                    "bar[2.8]",
+                    "library::bar[2.8]",
                 ]
             },
             {
@@ -710,8 +710,8 @@ def test_create_with_additional_variants_2(logger):
                 },
                 "requirements": [
                     "python >=2.8, <2.9",
-                    "bim[2.8] >= 3, < 4",
-                    "bar[2.8]",
+                    "library::bim[2.8] >= 3, < 4",
+                    "library::bar[2.8]",
                 ]
             },
             {
