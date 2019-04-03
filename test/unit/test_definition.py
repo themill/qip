@@ -56,13 +56,12 @@ def test_export(
 
     mapping = {"request": "foo >= 1, < 2"}
     path = "/definitions"
-    package_path = "/path/lib/site-packages"
     output_path = "/packages"
 
-    qip.definition.export(path, mapping, package_path, output_path)
+    qip.definition.export(path, mapping, output_path)
 
     mocked_wiz_fetch_definition.assert_not_called()
-    mocked_retrieve.assert_called_once_with(package_path, mapping)
+    mocked_retrieve.assert_called_once_with(mapping)
     mocked_update.assert_not_called()
     mocked_create.assert_called_once_with(
         mapping, output_path, editable_mode=False,
@@ -86,18 +85,17 @@ def test_export_with_additional_variants(
 
     mapping = {"request": "foo >= 1, < 2"}
     path = "/definitions"
-    package_path = "/path/lib/site-packages"
     output_path = "/packages"
 
     qip.definition.export(
-        path, mapping, package_path, output_path,
+        path, mapping, output_path,
         definition_mapping="__MAPPING__"
     )
 
     mocked_wiz_fetch_definition.assert_called_once_with(
         "library::foo >= 1, < 2", "__MAPPING__"
     )
-    mocked_retrieve.assert_called_once_with(package_path, mapping)
+    mocked_retrieve.assert_called_once_with(mapping)
     mocked_update.assert_not_called()
     mocked_create.assert_called_once_with(
         mapping, output_path, editable_mode=False,
@@ -119,18 +117,17 @@ def test_export_with_request_error(
 
     mapping = {"request": "foo >= 1, < 2"}
     path = "/definitions"
-    package_path = "/path/lib/site-packages"
     output_path = "/packages"
 
     qip.definition.export(
-        path, mapping, package_path, output_path,
+        path, mapping, output_path,
         definition_mapping="__MAPPING__"
     )
 
     mocked_wiz_fetch_definition.assert_called_once_with(
         "library::foo >= 1, < 2", "__MAPPING__"
     )
-    mocked_retrieve.assert_called_once_with(package_path, mapping)
+    mocked_retrieve.assert_called_once_with(mapping)
     mocked_update.assert_not_called()
     mocked_create.assert_called_once_with(
         mapping, output_path, editable_mode=False,
@@ -153,13 +150,12 @@ def test_export_retrieved(
 
     mapping = {"request": "foo >= 1, < 2"}
     path = "/definitions"
-    package_path = "/path/lib/site-packages"
     output_path = "/packages"
 
-    qip.definition.export(path, mapping, package_path, output_path)
+    qip.definition.export(path, mapping, output_path)
 
     mocked_wiz_fetch_definition.assert_not_called()
-    mocked_retrieve.assert_called_once_with(package_path, mapping)
+    mocked_retrieve.assert_called_once_with(mapping)
     mocked_update.assert_called_once_with(
         definition, mapping, output_path, editable_mode=False,
         additional_variants=None
@@ -185,18 +181,17 @@ def test_export_retrieved_and_additional_variants(
 
     mapping = {"request": "foo >= 1, < 2"}
     path = "/definitions"
-    package_path = "/path/lib/site-packages"
     output_path = "/packages"
 
     qip.definition.export(
-        path, mapping, package_path, output_path,
+        path, mapping, output_path,
         definition_mapping="__MAPPING__"
     )
 
     mocked_wiz_fetch_definition.assert_called_once_with(
         "plugin::foo >= 1, < 2", "__MAPPING__"
     )
-    mocked_retrieve.assert_called_once_with(package_path, mapping)
+    mocked_retrieve.assert_called_once_with(mapping)
     mocked_update.assert_called_once_with(
         definition, mapping, output_path, editable_mode=False,
         additional_variants="__VARIANTS__"
@@ -211,11 +206,11 @@ def test_retrieve_non_existing(mocked_wiz_load_definition, logger):
     """Fail to update non existing definition from package mapping."""
     mapping = {
         "identifier": "Foo-0.2.3",
-        "name": "Foo",
-        "target": "Foo/Foo-0.2.3"
+        "module_name": "foo",
+        "location": "/path/to/lib"
     }
 
-    result = qip.definition.retrieve("/tmp_path", mapping)
+    result = qip.definition.retrieve(mapping)
     assert result is None
 
     mocked_wiz_load_definition.assert_not_called()
@@ -226,8 +221,17 @@ def test_retrieve(
     mocked_wiz_load_definition, temporary_directory, logger
 ):
     """Retrieve definition from package installed."""
-    path = os.path.join(temporary_directory, "share", "wiz", "Foo", "wiz.json")
-    _ensure_exists(path)
+    mapping = {
+        "identifier": "Foo-0.2.3",
+        "module_name": "foo",
+        "location": temporary_directory
+    }
+
+    path = os.path.join(temporary_directory, "foo", "package_data", "wiz.json")
+
+    os.makedirs(os.path.dirname(path))
+    with open(path, "w") as stream:
+        stream.write("")
 
     definition = wiz.definition.Definition({
         "identifier": "foo",
@@ -238,56 +242,7 @@ def test_retrieve(
 
     mocked_wiz_load_definition.return_value = definition
 
-    mapping = {
-        "identifier": "Foo-0.2.3",
-        "name": "Foo",
-        "key": "foo",
-        "version": "0.2.3",
-        "description": "This is a cool library",
-    }
-
-    _definition = qip.definition.retrieve(temporary_directory, mapping)
-
-    assert _definition == wiz.definition.Definition({
-        "identifier": "foo",
-        "version": "0.2.3",
-        "namespace": "plugin",
-        "description": "This is a library",
-    })
-
-    logger.info.assert_called_once_with(
-        "Wiz definition extracted from 'Foo-0.2.3'."
-    )
-
-    mocked_wiz_load_definition.assert_any_call(path)
-
-
-def test_retrieve_from_source_location(
-    mocked_wiz_load_definition, temporary_directory, logger
-):
-    """Retrieve definition from package installed with source location."""
-    path = os.path.join(temporary_directory, "foo", "wiz.json")
-    _ensure_exists(path)
-
-    definition = wiz.definition.Definition({
-        "identifier": "foo",
-        "version": "0.2.3",
-        "namespace": "plugin",
-        "description": "This is a library"
-    })
-
-    mocked_wiz_load_definition.return_value = definition
-
-    mapping = {
-        "identifier": "Foo-0.2.3",
-        "name": "Foo",
-        "key": "foo",
-        "version": "0.2.3",
-        "description": "This is a cool library",
-        "location": os.path.join(temporary_directory, "foo", "source"),
-    }
-
-    _definition = qip.definition.retrieve(temporary_directory, mapping)
+    _definition = qip.definition.retrieve(mapping)
 
     assert _definition == wiz.definition.Definition({
         "identifier": "foo",
@@ -1328,10 +1283,3 @@ def test_update_with_additional_variants_2():
             }
         ]
     })
-
-
-def _ensure_exists(path):
-    """Ensure that *path* file exists."""
-    os.makedirs(os.path.dirname(path))
-    with open(path, "w") as stream:
-        stream.write("")

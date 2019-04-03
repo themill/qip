@@ -116,6 +116,7 @@ def test_fetch_mapping_from_environ(
         "package": {
             "key": "foo",
             "package_name": "Foo",
+            "module_name": "foo",
             "installed_version": "0.1.0"
         },
         "requirements": []
@@ -131,6 +132,7 @@ def test_fetch_mapping_from_environ(
         "identifier": "Foo-0.1.0",
         "key": "foo",
         "name": "Foo",
+        "module_name": "foo",
         "version": "0.1.0",
         "python": {
             "identifier": "2.8"
@@ -162,6 +164,7 @@ def test_fetch_mapping_from_environ_with_system(
         "package": {
             "key": "foo",
             "package_name": "Foo",
+            "module_name": "foo",
             "installed_version": "0.1.0"
         },
         "requirements": []
@@ -178,6 +181,7 @@ def test_fetch_mapping_from_environ_with_system(
         "identifier": "Foo-0.1.0",
         "key": "foo",
         "name": "Foo",
+        "module_name": "foo",
         "version": "0.1.0",
         "python": {
             "identifier": "2.8"
@@ -210,6 +214,7 @@ def test_fetch_mapping_from_environ_with_description(
         "package": {
             "key": "foo",
             "package_name": "Foo",
+            "module_name": "foo",
             "installed_version": "0.1.0"
         },
         "requirements": []
@@ -225,6 +230,7 @@ def test_fetch_mapping_from_environ_with_description(
         "identifier": "Foo-0.1.0",
         "key": "foo",
         "name": "Foo",
+        "module_name": "foo",
         "version": "0.1.0",
         "python": {
             "identifier": "2.8"
@@ -257,6 +263,7 @@ def test_fetch_mapping_from_environ_with_location(
         "package": {
             "key": "foo",
             "package_name": "Foo",
+            "module_name": "foo",
             "installed_version": "0.1.0"
         },
         "requirements": []
@@ -272,6 +279,7 @@ def test_fetch_mapping_from_environ_with_location(
         "identifier": "Foo-0.1.0",
         "key": "foo",
         "name": "Foo",
+        "module_name": "foo",
         "version": "0.1.0",
         "python": {
             "identifier": "2.8"
@@ -304,6 +312,7 @@ def test_fetch_mapping_from_environ_with_commands(
         "package": {
             "key": "foo",
             "package_name": "Foo",
+            "module_name": "foo",
             "installed_version": "0.1.0"
         },
         "requirements": []
@@ -319,6 +328,7 @@ def test_fetch_mapping_from_environ_with_commands(
         "identifier": "Foo-0.1.0",
         "key": "foo",
         "name": "Foo",
+        "module_name": "foo",
         "version": "0.1.0",
         "python": {
             "identifier": "2.8"
@@ -351,6 +361,7 @@ def test_fetch_mapping_from_environ_with_requirements(
         "package": {
             "key": "foo",
             "package_name": "Foo",
+            "module_name": "foo",
             "installed_version": "0.1.0"
         },
         "requirements": [
@@ -369,6 +380,7 @@ def test_fetch_mapping_from_environ_with_requirements(
         "identifier": "Foo-0.1.0",
         "key": "foo",
         "name": "Foo",
+        "module_name": "foo",
         "version": "0.1.0",
         "python": {
             "identifier": "2.8"
@@ -427,6 +439,7 @@ def test_extract_identifier():
     mapping = {
         "key": "foo",
         "package_name": "Foo",
+        "module_name": "foo",
         "installed_version": "1.11",
     }
     identifier = qip.package.extract_identifier(mapping)
