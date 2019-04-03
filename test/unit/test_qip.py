@@ -319,18 +319,18 @@ def test_install_with_definition_path(
 
     assert mocked_definition_export.call_count == 3
     mocked_definition_export.assert_any_call(
-        "/path/to/definitions", packages[0], "/tmp2", "/path/to/install",
+        "/path/to/definitions", packages[0], "/path/to/install",
         editable_mode=editable_mode,
         definition_mapping=definition_mapping
     )
 
     mocked_definition_export.assert_any_call(
-        "/path/to/definitions", packages[1], "/tmp2", "/path/to/install",
+        "/path/to/definitions", packages[1], "/path/to/install",
         editable_mode=False,
         definition_mapping=definition_mapping
     )
     mocked_definition_export.assert_any_call(
-        "/path/to/definitions", packages[2], "/tmp2", "/path/to/install",
+        "/path/to/definitions", packages[2], "/path/to/install",
         editable_mode=False,
         definition_mapping=definition_mapping
     )

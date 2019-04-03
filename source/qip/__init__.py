@@ -126,7 +126,6 @@ def install(
                 qip.definition.export(
                     definition_path,
                     package_mapping,
-                    package_path,
                     output_path,
                     editable_mode=editable_mode,
                     definition_mapping=definition_mapping

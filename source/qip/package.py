@@ -176,6 +176,7 @@ def fetch_mapping_from_environ(name, context_mapping, extra=None):
         "identifier": extract_identifier(dependency_mapping["package"]),
         "key": dependency_mapping["package"]["key"],
         "name": dependency_mapping["package"]["package_name"],
+        "module_name": dependency_mapping["package"]["module_name"],
         "version": dependency_mapping["package"]["installed_version"],
         "python": context_mapping["python"]
     }
@@ -228,6 +229,7 @@ def extract_dependency_mapping(name, environ_mapping, extra=None):
                 "package": {
                     "key": "foo",
                     "package_name": "Foo",
+                    "module_name": "foo"
                     "installed_version": "0.1.0",
                 },
                 "requirements": [

@@ -12,15 +12,13 @@ import qip.symbol
 
 
 def export(
-    path, mapping, package_path, output_path, editable_mode=False,
-    definition_mapping=None
+    path, mapping, output_path, editable_mode=False, definition_mapping=None
 ):
     """Export :term:`Wiz` definition to *path* for package *mapping*.
 
     :param path: destination path for the :term:`Wiz` definition.
     :param mapping: mapping of the python package built as returned by
         :func:`qip.package.install`.
-    :param package_path: path where python package has been installed.
     :param output_path: root destination path for Python packages installation.
     :param editable_mode: indicate whether the Python package location should
         target the source installation package. Default is False.
@@ -31,7 +29,7 @@ def export(
 
     """
     # Retrieve definition from installation package path if possible.
-    definition = qip.definition.retrieve(package_path, mapping)
+    definition = qip.definition.retrieve(mapping)
 
     # Extract previous namespace or set default.
     namespace = definition.namespace if definition else qip.symbol.NAMESPACE
@@ -67,19 +65,13 @@ def export(
     wiz.export_definition(path, definition, overwrite=True)
 
 
-def retrieve(path, mapping):
+def retrieve(mapping):
     """Retrieve :term:`Wiz` definition from package *mapping* installed.
 
     Return the :term:`Wiz` definition extracted from a
-    :file:`share/wiz/wiz.json` file found within the package installation
+    :file:`package_data/wiz.json` file found within the package installation
     *path*.
 
-    If in editable mode, the :file:`wiz.json` file will be fetched from the root
-    location of the package instead.
-
-    The definition extracted will be
-
-    :param path: path where python package has been installed.
     :param mapping: mapping of the python package built as returned by
         :func:`qip.package.install`.
 
@@ -91,32 +83,21 @@ def retrieve(path, mapping):
 
     Example::
 
-        >>> retrieve("/path/to/package", mapping)
+        >>> retrieve(mapping)
         Definition({
             "identifier": "foo"
-            "definition-location": '/path/to/package/share/wiz/wiz.json',
+            "definition-location": '/location/foo/package_data/wiz.json',
             ...
         })
 
     """
     logger = mlog.Logger(__name__ + ".retrieve")
 
-    definition_paths = [
-        os.path.join(path, "share", "wiz", mapping["name"], "wiz.json")
-    ]
+    definition_path = os.path.join(
+        mapping["location"], mapping["module_name"], "package_data", "wiz.json"
+    )
 
-    # Necessary as editable mode does not create the 'share' directory.
-    if mapping.get("location"):
-        definition_paths.append(
-            os.path.abspath(
-                os.path.join(mapping.get("location"), "..", "wiz.json")
-            )
-        )
-
-    for definition_path in definition_paths:
-        if not os.path.exists(definition_path):
-            continue
-
+    if os.path.exists(definition_path):
         definition = wiz.load_definition(definition_path)
         logger.info(
             "Wiz definition extracted from '{}'.".format(mapping["identifier"])

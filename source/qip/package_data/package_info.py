@@ -5,16 +5,14 @@ import sys
 import re
 import json
 import argparse
-
-try:
-    from pip._internal.utils.misc import get_installed_distributions
-    from pip._internal.operations.freeze import FrozenRequirement
-except ImportError:
-    from pip import get_installed_distributions, FrozenRequirement
+import pkg_resources
 
 
 #: Compiled regular expression to detect request with extra option.
 REQUEST_PATTERN = re.compile(r"(.*)\[(\w*)\]")
+
+#: Metadata file containing the top-level Python module name.
+TOP_LEVEL_METADATA_FILE = "top_level.txt"
 
 
 def display_package_mapping(name):
@@ -37,7 +35,8 @@ def display_package_mapping(name):
             "package": {
                 "installed_version": "1.0.0",
                 "key": "foo",
-                "package_name": "Foo"
+                "package_name": "Foo",
+                "module_name": "foo"
             },
             "requirements": [
                 "bim<3,>=2",
@@ -47,9 +46,6 @@ def display_package_mapping(name):
 
 
     """
-    # Query all installed packages.
-    packages = get_installed_distributions(local_only=False)
-
     # Identify and extract 'extra' label from input *name* if necessary.
     match = REQUEST_PATTERN.match(name)
     labels = []
@@ -58,25 +54,20 @@ def display_package_mapping(name):
         labels = [match.group(2)]
         name = match.group(1)
 
-    # Compute key from name.
-    key = name.lower()
+    # Identify selected package.
+    package = pkg_resources.get_distribution(name.lower())
 
-    # Identify selected package within installed packages.
-    package = None
-
-    for _package in packages:
-        if _package.key == key:
-            package = _package
-            break
-
-    # Return now if the selected package could not be found in mapping.
-    if package is None:
-        return
+    # Module name should be fetched from the metadata, but we will use the
+    # package name if we cannot access the top_level.txt file.
+    module_name = package.project_name
+    if package.has_metadata(TOP_LEVEL_METADATA_FILE):
+        module_name = package.get_metadata(TOP_LEVEL_METADATA_FILE).strip()
 
     result = {
         "package": {
             "key": package.key,
             "package_name": package.project_name,
+            "module_name": module_name,
             "installed_version": package.version,
         },
         "requirements": [
