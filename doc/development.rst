@@ -160,6 +160,15 @@ The resulting definition after the qip install could look like this::
     :envvar:`PYTHONPATH`, qip will prepend the :envvar:`INSTALL_LOCATION` before
     the custom :envvar:`PYTHONPATH` value.
 
+
+The custom :file:`wiz.json` definition should be in located in
+``source/package_data`` of the repository.
+Packaging the :file:`wiz.json` inside the source ensures that it can be packaged
+easily with the package data and retrieved during install.
+
+.. warning::
+    Ensure that the :file:`MANIFEST.in` includes ``*.json`` files.
+
 Development for multiple Python versions
 ========================================
 
@@ -217,3 +226,4 @@ This can also be used in editable mode, i.e::
 
     >>> cd {PATH_TO}/shadow && qip install -e ."[dev]"
     >>> wiz --add /tmp/qip/definitions use shadow -- pytest test
+
