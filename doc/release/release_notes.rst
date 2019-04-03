@@ -4,7 +4,8 @@
 Release Notes
 *************
 
-.. release:: Upcoming
+.. release:: 1.7.0
+    :date: 2019-04-03
 
     .. change:: changed
         :tags: definition
