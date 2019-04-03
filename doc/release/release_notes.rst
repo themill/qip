@@ -4,6 +4,33 @@
 Release Notes
 *************
 
+.. release:: Upcoming
+
+    .. change:: changed
+        :tags: definition
+
+        Updated :func:`qip.definition.retrieve` to fetch custom :term:`Wiz`
+        definition from the package installation location::
+
+            <location>/foo/package_data/wiz.json
+
+        Previously, it was assumed that the :file:`wiz.json` file would be
+        located outside of the source (in :file:`share/wiz/wiz.json`), but it
+        was impossible to distribute within a `wheel distribution
+        <https://pythonwheels.com/>`_.
+
+    .. change:: changed
+        :tags: API, backwards-incompatible
+
+        Updated :func:`qip.definition.export` to remove the "package_path"
+        option as it is not needed anymore.
+
+    .. change:: changed
+        :tags: API, backwards-incompatible
+
+        Updated :func:`qip.definition.retrieve` to remove the "path" option as
+        it is not needed anymore.
+
 .. release:: 1.6.0
     :date: 2019-04-01
 
