@@ -22,14 +22,14 @@ Release Notes
     .. change:: changed
         :tags: API, backwards-incompatible
 
-        Updated :func:`qip.definition.export` to remove the "package_path"
-        option as it is not needed anymore.
+        Updated :func:`qip.definition.export` to remove the now redundant
+        "package_path" option.
 
     .. change:: changed
         :tags: API, backwards-incompatible
 
-        Updated :func:`qip.definition.retrieve` to remove the "path" option as
-        it is not needed anymore.
+        Updated :func:`qip.definition.retrieve` to remove the now redundant
+        "path" option.
 
 .. release:: 1.6.0
     :date: 2019-04-01
