@@ -10,9 +10,9 @@ Release Notes
 
         Updated :func:`qip.install` to always clear the content of the
         temporary installation directory before installing a package.
-        Previously, the temporary installation directory would be clear after
+        Previously, the temporary installation directory would be cleared after
         the installation, but this step would be skipped is the package
-        installation was discarded
+        installation was discarded.
 
     .. change:: fixed
 
