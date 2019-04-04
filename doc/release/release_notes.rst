@@ -16,8 +16,8 @@ Release Notes
 
     .. change:: fixed
 
-        Updated logs to prevent indicating to the user that a package is being
-        installed when it will be discarded.
+        Updated logging to avoid prints about a package being installed when it
+        is actually being discarded.
 
 .. release:: 1.7.0
     :date: 2019-04-03
