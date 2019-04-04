@@ -76,9 +76,6 @@ def install(
         context_mapping = fetch_context_mapping(package_path, python_target)
         library_path = context_mapping["environ"]["PYTHONPATH"]
 
-        # Needed for the editable mode.
-        qip.filesystem.ensure_directory(library_path)
-
         # Record requests and package installed to prevent duplications.
         installed_packages = set()
         installed_requests = set()
@@ -97,6 +94,9 @@ def install(
             # Clean up before installation.
             logger.debug("Clean up directory content before installation")
             qip.filesystem.remove_directory_content(package_path)
+
+            # Needed for the editable mode.
+            qip.filesystem.ensure_directory(library_path)
 
             try:
                 package_mapping = qip.package.install(
