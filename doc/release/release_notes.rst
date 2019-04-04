@@ -16,6 +16,12 @@ Release Notes
 
     .. change:: fixed
 
+        Updated :func:`qip.package.install` to use quotes when creating the
+        :term:`Pip` subprocess command with the request. Previously it would
+        fail to process a request with spaces (e.g. 'foo >= 1, < 2').
+
+    .. change:: fixed
+
         Updated logging to avoid prints about a package being installed when it
         is actually being discarded.
 

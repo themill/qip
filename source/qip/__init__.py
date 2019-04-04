@@ -109,7 +109,7 @@ def install(
                 if parent_identifier is not None:
                     prompt += " [from '{}']".format(parent_identifier)
 
-                logger.error("{}:\n\n{}".format(prompt, error))
+                logger.error("{}:\n{}".format(prompt, error))
                 continue
 
             if package_mapping["identifier"] in installed_packages:
@@ -158,7 +158,9 @@ def install(
         shutil.rmtree(cache_path)
 
     logger.info(
-        "Packages installed: {}".format(", ".join(sorted(installed_packages)))
+        "Packages installed: {}".format(
+            ", ".join(sorted(installed_packages, key=lambda s: s.lower()))
+        )
     )
 
 
