@@ -105,7 +105,11 @@ def install(
                 )
 
             except RuntimeError as error:
-                logger.error(str(error))
+                prompt = "Request '{}' has failed ".format(request)
+                if parent_identifier is not None:
+                    prompt += " [from '{}']".format(parent_identifier)
+
+                logger.error("{}:\n\n{}".format(prompt, error))
                 continue
 
             if package_mapping["identifier"] in installed_packages:
@@ -153,7 +157,9 @@ def install(
         shutil.rmtree(package_path)
         shutil.rmtree(cache_path)
 
-    logger.info("Packages installed: {}".format(", ".join(installed_packages)))
+    logger.info(
+        "Packages installed: {}".format(", ".join(sorted(installed_packages)))
+    )
 
 
 def copy_to_destination(
