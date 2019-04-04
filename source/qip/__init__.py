@@ -131,11 +131,8 @@ def install(
                 overwrite=overwrite
             )
 
-            if not success:
-                continue
-
             # Extract a wiz definition is requested.
-            if definition_path is not None:
+            if success and definition_path is not None:
                 qip.definition.export(
                     definition_path,
                     package_mapping,

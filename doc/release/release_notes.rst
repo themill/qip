@@ -6,6 +6,12 @@ Release Notes
 
 .. release:: Upcoming
 
+    .. change:: changed
+
+        Updated :func:`qip.install` to attempt to install packages require by
+        a package even if it is being skipped during the :func:`copy process
+        <copy_to_destination>`.
+
     .. change:: fixed
 
         Updated :func:`qip.install` to always clear the content of the
