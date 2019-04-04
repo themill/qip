@@ -599,7 +599,7 @@ def test_copy_to_destination(
     )
 
     logger.warning.assert_not_called()
-    logger.info.assert_called_once_with("... Installed 'Foo-0.2.3'.")
+    logger.info.assert_called_once_with("\tInstalled 'Foo-0.2.3'.")
 
 
 def test_copy_to_destination_with_system_restriction(
@@ -637,7 +637,7 @@ def test_copy_to_destination_with_system_restriction(
     )
 
     logger.warning.assert_not_called()
-    logger.info.assert_called_once_with("... Installed 'Foo-0.2.3'.")
+    logger.info.assert_called_once_with("\tInstalled 'Foo-0.2.3'.")
 
 
 def test_copy_to_destination_skip_existing(
@@ -706,7 +706,7 @@ def test_copy_to_destination_overwrite_existing(
     logger.warning.assert_called_once_with(
         "Overwrite 'Foo-0.2.3' which is already installed."
     )
-    logger.info.assert_called_once_with("... Installed 'Foo-0.2.3'.")
+    logger.info.assert_called_once_with("\tInstalled 'Foo-0.2.3'.")
 
 
 @pytest.mark.parametrize("overwrite, overwrite_next, expected", [

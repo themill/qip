@@ -202,7 +202,7 @@ def copy_to_destination(
     shutil.copytree(source_path, target)
     logger.debug("Source copied to '{}'".format(target))
 
-    logger.info("... Installed '{}'.".format(identifier))
+    logger.info("\tInstalled '{}'.".format(identifier))
 
     return True, overwrite_next
 

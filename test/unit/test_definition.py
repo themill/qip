@@ -252,7 +252,7 @@ def test_retrieve(
     })
 
     logger.info.assert_called_once_with(
-        "... Wiz definition extracted from 'Foo-0.2.3'."
+        "\tWiz definition extracted from 'Foo-0.2.3'."
     )
 
     mocked_wiz_load_definition.assert_any_call(path)
@@ -300,7 +300,7 @@ def test_create(logger):
     })
 
     logger.info.assert_called_once_with(
-        "... Wiz definition created for 'Foo-0.2.3'."
+        "\tWiz definition created for 'Foo-0.2.3'."
     )
 
 
@@ -359,7 +359,7 @@ def test_create_with_system(logger):
     })
 
     logger.info.assert_called_once_with(
-        "... Wiz definition created for 'Foo-0.2.3'."
+        "\tWiz definition created for 'Foo-0.2.3'."
     )
 
 
@@ -411,7 +411,7 @@ def test_create_with_requirements(logger):
     })
 
     logger.info.assert_called_once_with(
-        "... Wiz definition created for 'Foo-0.2.3'."
+        "\tWiz definition created for 'Foo-0.2.3'."
     )
 
 
@@ -465,7 +465,7 @@ def test_create_with_commands(logger):
     })
 
     logger.info.assert_called_once_with(
-        "... Wiz definition created for 'Foo-0.2.3'."
+        "\tWiz definition created for 'Foo-0.2.3'."
     )
 
 
@@ -509,7 +509,7 @@ def test_create_editable_mode(logger):
     })
 
     logger.info.assert_called_once_with(
-        "... Wiz definition created for 'Foo-0.2.3'."
+        "\tWiz definition created for 'Foo-0.2.3'."
     )
 
 
@@ -602,7 +602,7 @@ def test_create_with_additional_variants_1(logger):
     })
 
     logger.info.assert_called_once_with(
-        "... Wiz definition created for 'Foo-0.2.3'."
+        "\tWiz definition created for 'Foo-0.2.3'."
     )
 
 
@@ -682,7 +682,7 @@ def test_create_with_additional_variants_2(logger):
     })
 
     logger.info.assert_called_once_with(
-        "... Wiz definition created for 'Foo-0.2.3'."
+        "\tWiz definition created for 'Foo-0.2.3'."
     )
 
 
