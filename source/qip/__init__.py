@@ -94,6 +94,10 @@ def install(
             if request in installed_requests:
                 continue
 
+            # Clean up before installation.
+            logger.debug("Clean up directory content before installation")
+            qip.filesystem.remove_directory_content(package_path)
+
             try:
                 package_mapping = qip.package.install(
                     request, package_path, context_mapping, cache_path,
@@ -139,10 +143,6 @@ def install(
             if not no_dependencies:
                 for request in package_mapping.get("requirements", []):
                     queue.put(request)
-
-            # Clean up for next installation.
-            logger.debug("Clean up directory content")
-            qip.filesystem.remove_directory_content(package_path)
 
     finally:
         shutil.rmtree(package_path)
