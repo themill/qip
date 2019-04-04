@@ -83,7 +83,7 @@ def install(request, path, context_mapping, cache_path, editable_mode=False):
     if request.startswith("git@gitlab:"):
         request = "git+ssh://" + request.replace(":", "/")
 
-    logger.info("Installing '{}'...".format(request))
+    logger.debug("Installing '{}'...".format(request))
     result = qip.command.execute(
         "pip install "
         "--ignore-installed "
@@ -209,7 +209,6 @@ def fetch_mapping_from_environ(name, context_mapping, extra=None):
         os_mapping=mapping.get("system", {}).get("os"),
     )
 
-    logger.info("Fetched '{}'.".format(mapping["identifier"]))
     return mapping
 
 

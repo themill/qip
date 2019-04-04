@@ -87,10 +87,10 @@ def install(
         queue = _queue.Queue()
 
         for request in requests:
-            queue.put(request)
+            queue.put((request, None))
 
         while not queue.empty():
-            request = queue.get()
+            request, parent_identifier = queue.get()
             if request in installed_requests:
                 continue
 
@@ -110,6 +110,11 @@ def install(
 
             if package_mapping["identifier"] in installed_packages:
                 continue
+
+            prompt = "Requested '{}'".format(request)
+            if parent_identifier is not None:
+                prompt += " [from '{}'].".format(parent_identifier)
+            logger.info(prompt)
 
             installed_packages.add(package_mapping["identifier"])
             installed_requests.add(request)
@@ -142,11 +147,13 @@ def install(
             # dependencies.
             if not no_dependencies:
                 for request in package_mapping.get("requirements", []):
-                    queue.put(request)
+                    queue.put((request, package_mapping["identifier"]))
 
     finally:
         shutil.rmtree(package_path)
         shutil.rmtree(cache_path)
+
+    logger.info("Packages installed: {}".format(", ".join(installed_packages)))
 
 
 def copy_to_destination(
@@ -195,7 +202,7 @@ def copy_to_destination(
     shutil.copytree(source_path, target)
     logger.debug("Source copied to '{}'".format(target))
 
-    logger.info("Installed '{}'.".format(identifier))
+    logger.info("... Installed '{}'.".format(identifier))
 
     return True, overwrite_next
 
