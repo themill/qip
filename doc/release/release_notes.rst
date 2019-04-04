@@ -8,8 +8,8 @@ Release Notes
 
     .. change:: changed
 
-        Updated :func:`qip.install` to attempt to install packages require by
-        a package even if it is being skipped during the :func:`copy process
+        Updated :func:`qip.install` to continue installing required packages
+        even if the parent package is skipped during the :func:`copy process
         <copy_to_destination>`.
 
     .. change:: fixed
