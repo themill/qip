@@ -4,6 +4,33 @@
 Release Notes
 *************
 
+.. release:: Upcoming
+
+    .. change:: changed
+
+        Updated :func:`qip.install` to continue installing required packages
+        even if the parent package is skipped during the :func:`copy process
+        <copy_to_destination>`.
+
+    .. change:: fixed
+
+        Updated :func:`qip.install` to always clear the content of the
+        temporary installation directory before installing a package.
+        Previously, the temporary installation directory would be cleared after
+        the installation, but this step would be skipped is the package
+        installation was discarded.
+
+    .. change:: fixed
+
+        Updated :func:`qip.package.install` to use quotes when creating the
+        :term:`Pip` subprocess command with the request. Previously it would
+        fail to process a request with spaces (e.g. 'foo >= 1, < 2').
+
+    .. change:: fixed
+
+        Updated logging to avoid prints about a package being installed when it
+        is actually being discarded.
+
 .. release:: 1.7.0
     :date: 2019-04-03
 

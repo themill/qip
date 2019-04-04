@@ -100,7 +100,9 @@ def retrieve(mapping):
     if os.path.exists(definition_path):
         definition = wiz.load_definition(definition_path)
         logger.info(
-            "Wiz definition extracted from '{}'.".format(mapping["identifier"])
+            "\tWiz definition extracted from '{}'.".format(
+                mapping["identifier"]
+            )
         )
         return definition
 
@@ -166,7 +168,7 @@ def create(mapping, output_path, editable_mode=False, additional_variants=None):
 
     definition = wiz.definition.Definition(definition_data)
     logger.info(
-        "Wiz definition created for '{}'.".format(mapping["identifier"])
+        "\tWiz definition created for '{}'.".format(mapping["identifier"])
     )
     return definition
 

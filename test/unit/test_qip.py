@@ -167,7 +167,7 @@ def test_install(
 
     assert mocked_tempfile_mkdtemp.call_count == 2
 
-    assert mocked_filesystem_ensure_directory.call_count == 2
+    assert mocked_filesystem_ensure_directory.call_count == 5
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/install")
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/site-packages")
 
@@ -207,7 +207,7 @@ def test_install(
 
     mocked_definition_export.assert_not_called()
 
-    assert mocked_filesystem_remove_directory_content.call_count == 3
+    assert mocked_filesystem_remove_directory_content.call_count == 4
     mocked_filesystem_remove_directory_content.assert_any_call("/tmp2")
 
     assert mocked_shutil_rmtree.call_count == 2
@@ -282,7 +282,7 @@ def test_install_with_definition_path(
 
     assert mocked_tempfile_mkdtemp.call_count == 2
 
-    assert mocked_filesystem_ensure_directory.call_count == 3
+    assert mocked_filesystem_ensure_directory.call_count == 5
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/install")
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/definitions")
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/site-packages")
@@ -400,7 +400,7 @@ def test_install_without_dependencies(
 
     assert mocked_tempfile_mkdtemp.call_count == 2
 
-    assert mocked_filesystem_ensure_directory.call_count == 2
+    assert mocked_filesystem_ensure_directory.call_count == 3
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/install")
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/site-packages")
 
@@ -464,6 +464,15 @@ def test_install_with_package_skipped(
                 "bim >= 3, < 4",
                 "bar",
             ]
+        },
+        {
+            "identifier": "Bar-22.3",
+            "requirements": [
+                "foo",
+            ]
+        },
+        {
+            "identifier": "Bim-3.2.1",
         }
     ]
 
@@ -483,19 +492,19 @@ def test_install_with_package_skipped(
 
     assert mocked_tempfile_mkdtemp.call_count == 2
 
-    assert mocked_filesystem_ensure_directory.call_count == 2
+    assert mocked_filesystem_ensure_directory.call_count == 4
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/install")
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/site-packages")
 
     mocked_fetch_context_mapping.assert_called_once_with("/tmp2", python_target)
 
-    assert mocked_package_install.call_count == 1
+    assert mocked_package_install.call_count == 3
     mocked_package_install.assert_any_call(
         "foo", "/tmp2", context, "/tmp1",
         editable_mode=editable_mode
     )
 
-    assert mocked_copy_to_destination.call_count == 1
+    assert mocked_copy_to_destination.call_count == 3
     mocked_copy_to_destination.assert_any_call(
         packages[0], "/tmp2", "/path/to/install",
         overwrite=overwrite
@@ -503,7 +512,8 @@ def test_install_with_package_skipped(
 
     mocked_definition_export.assert_not_called()
 
-    mocked_filesystem_remove_directory_content.assert_not_called()
+    assert mocked_filesystem_remove_directory_content.call_count == 3
+    mocked_filesystem_remove_directory_content.assert_any_call("/tmp2")
 
     assert mocked_shutil_rmtree.call_count == 2
     mocked_shutil_rmtree.assert_any_call("/tmp1")
@@ -535,7 +545,7 @@ def test_install_with_package_installation_error(
 
     assert mocked_tempfile_mkdtemp.call_count == 2
 
-    assert mocked_filesystem_ensure_directory.call_count == 2
+    assert mocked_filesystem_ensure_directory.call_count == 3
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/install")
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/site-packages")
 
@@ -559,14 +569,14 @@ def test_install_with_package_installation_error(
 
     mocked_definition_export.assert_not_called()
 
-    assert mocked_filesystem_remove_directory_content.call_count == 1
+    assert mocked_filesystem_remove_directory_content.call_count == 2
     mocked_filesystem_remove_directory_content.assert_any_call("/tmp2")
 
     assert mocked_shutil_rmtree.call_count == 2
     mocked_shutil_rmtree.assert_any_call("/tmp1")
     mocked_shutil_rmtree.assert_any_call("/tmp2")
 
-    logger.error.assert_called_once_with("Oops")
+    logger.error.assert_called_once_with("Request 'foo' has failed :\nOops")
 
 
 def test_copy_to_destination(
@@ -598,7 +608,7 @@ def test_copy_to_destination(
     )
 
     logger.warning.assert_not_called()
-    logger.info.assert_called_once_with("Installed 'Foo-0.2.3'.")
+    logger.info.assert_called_once_with("\tInstalled 'Foo-0.2.3'.")
 
 
 def test_copy_to_destination_with_system_restriction(
@@ -636,7 +646,7 @@ def test_copy_to_destination_with_system_restriction(
     )
 
     logger.warning.assert_not_called()
-    logger.info.assert_called_once_with("Installed 'Foo-0.2.3'.")
+    logger.info.assert_called_once_with("\tInstalled 'Foo-0.2.3'.")
 
 
 def test_copy_to_destination_skip_existing(
@@ -705,7 +715,7 @@ def test_copy_to_destination_overwrite_existing(
     logger.warning.assert_called_once_with(
         "Overwrite 'Foo-0.2.3' which is already installed."
     )
-    logger.info.assert_called_once_with("Installed 'Foo-0.2.3'.")
+    logger.info.assert_called_once_with("\tInstalled 'Foo-0.2.3'.")
 
 
 @pytest.mark.parametrize("overwrite, overwrite_next, expected", [

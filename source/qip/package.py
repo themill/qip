@@ -83,7 +83,7 @@ def install(request, path, context_mapping, cache_path, editable_mode=False):
     if request.startswith("git@gitlab:"):
         request = "git+ssh://" + request.replace(":", "/")
 
-    logger.info("Installing '{}'...".format(request))
+    logger.debug("Installing '{}'...".format(request))
     result = qip.command.execute(
         "pip install "
         "--ignore-installed "
@@ -93,7 +93,7 @@ def install(request, path, context_mapping, cache_path, editable_mode=False):
         "--disable-pip-version-check "
         "--cache-dir {cache_dir} "
         "{editable_mode}" 
-        "{requirement}".format(
+        "'{requirement}'".format(
             editable_mode="-e " if editable_mode else "",
             destination=path,
             requirement=request,
@@ -209,7 +209,6 @@ def fetch_mapping_from_environ(name, context_mapping, extra=None):
         os_mapping=mapping.get("system", {}).get("os"),
     )
 
-    logger.info("Fetched '{}'.".format(mapping["identifier"]))
     return mapping
 
 

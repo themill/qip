@@ -76,9 +76,6 @@ def install(
         context_mapping = fetch_context_mapping(package_path, python_target)
         library_path = context_mapping["environ"]["PYTHONPATH"]
 
-        # Needed for the editable mode.
-        qip.filesystem.ensure_directory(library_path)
-
         # Record requests and package installed to prevent duplications.
         installed_packages = set()
         installed_requests = set()
@@ -87,12 +84,19 @@ def install(
         queue = _queue.Queue()
 
         for request in requests:
-            queue.put(request)
+            queue.put((request, None))
 
         while not queue.empty():
-            request = queue.get()
+            request, parent_identifier = queue.get()
             if request in installed_requests:
                 continue
+
+            # Clean up before installation.
+            logger.debug("Clean up directory content before installation")
+            qip.filesystem.remove_directory_content(package_path)
+
+            # Needed for the editable mode.
+            qip.filesystem.ensure_directory(library_path)
 
             try:
                 package_mapping = qip.package.install(
@@ -101,11 +105,20 @@ def install(
                 )
 
             except RuntimeError as error:
-                logger.error(str(error))
+                prompt = "Request '{}' has failed ".format(request)
+                if parent_identifier is not None:
+                    prompt += " [from '{}']".format(parent_identifier)
+
+                logger.error("{}:\n{}".format(prompt, error))
                 continue
 
             if package_mapping["identifier"] in installed_packages:
                 continue
+
+            prompt = "Requested '{}'".format(request)
+            if parent_identifier is not None:
+                prompt += " [from '{}'].".format(parent_identifier)
+            logger.info(prompt)
 
             installed_packages.add(package_mapping["identifier"])
             installed_requests.add(request)
@@ -118,11 +131,8 @@ def install(
                 overwrite=overwrite
             )
 
-            if not success:
-                continue
-
             # Extract a wiz definition is requested.
-            if definition_path is not None:
+            if success and definition_path is not None:
                 qip.definition.export(
                     definition_path,
                     package_mapping,
@@ -138,15 +148,17 @@ def install(
             # dependencies.
             if not no_dependencies:
                 for request in package_mapping.get("requirements", []):
-                    queue.put(request)
-
-            # Clean up for next installation.
-            logger.debug("Clean up directory content")
-            qip.filesystem.remove_directory_content(package_path)
+                    queue.put((request, package_mapping["identifier"]))
 
     finally:
         shutil.rmtree(package_path)
         shutil.rmtree(cache_path)
+
+    logger.info(
+        "Packages installed: {}".format(
+            ", ".join(sorted(installed_packages, key=lambda s: s.lower()))
+        )
+    )
 
 
 def copy_to_destination(
@@ -195,7 +207,7 @@ def copy_to_destination(
     shutil.copytree(source_path, target)
     logger.debug("Source copied to '{}'".format(target))
 
-    logger.info("Installed '{}'.".format(identifier))
+    logger.info("\tInstalled '{}'.".format(identifier))
 
     return True, overwrite_next
 

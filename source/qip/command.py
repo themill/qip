@@ -46,7 +46,7 @@ def execute(command, environ_mapping, quiet=False):
                 _line = line.rstrip()
                 logger.debug(_line.decode("latin"))
 
-        stderr = process.stderr.readlines()
+        stderr = "\n".join(process.stderr.readlines())
     else:
         output, stderr = process.communicate()
 
