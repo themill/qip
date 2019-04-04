@@ -207,7 +207,7 @@ def test_install(
 
     mocked_definition_export.assert_not_called()
 
-    assert mocked_filesystem_remove_directory_content.call_count == 3
+    assert mocked_filesystem_remove_directory_content.call_count == 4
     mocked_filesystem_remove_directory_content.assert_any_call("/tmp2")
 
     assert mocked_shutil_rmtree.call_count == 2
@@ -503,7 +503,8 @@ def test_install_with_package_skipped(
 
     mocked_definition_export.assert_not_called()
 
-    mocked_filesystem_remove_directory_content.assert_not_called()
+    assert mocked_filesystem_remove_directory_content.call_count == 1
+    mocked_filesystem_remove_directory_content.assert_any_call("/tmp2")
 
     assert mocked_shutil_rmtree.call_count == 2
     mocked_shutil_rmtree.assert_any_call("/tmp1")
@@ -559,7 +560,7 @@ def test_install_with_package_installation_error(
 
     mocked_definition_export.assert_not_called()
 
-    assert mocked_filesystem_remove_directory_content.call_count == 1
+    assert mocked_filesystem_remove_directory_content.call_count == 2
     mocked_filesystem_remove_directory_content.assert_any_call("/tmp2")
 
     assert mocked_shutil_rmtree.call_count == 2
@@ -598,7 +599,7 @@ def test_copy_to_destination(
     )
 
     logger.warning.assert_not_called()
-    logger.info.assert_called_once_with("Installed 'Foo-0.2.3'.")
+    logger.info.assert_called_once_with("... Installed 'Foo-0.2.3'.")
 
 
 def test_copy_to_destination_with_system_restriction(
@@ -636,7 +637,7 @@ def test_copy_to_destination_with_system_restriction(
     )
 
     logger.warning.assert_not_called()
-    logger.info.assert_called_once_with("Installed 'Foo-0.2.3'.")
+    logger.info.assert_called_once_with("... Installed 'Foo-0.2.3'.")
 
 
 def test_copy_to_destination_skip_existing(
@@ -705,7 +706,7 @@ def test_copy_to_destination_overwrite_existing(
     logger.warning.assert_called_once_with(
         "Overwrite 'Foo-0.2.3' which is already installed."
     )
-    logger.info.assert_called_once_with("Installed 'Foo-0.2.3'.")
+    logger.info.assert_called_once_with("... Installed 'Foo-0.2.3'.")
 
 
 @pytest.mark.parametrize("overwrite, overwrite_next, expected", [
