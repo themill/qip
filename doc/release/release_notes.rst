@@ -4,6 +4,18 @@
 Release Notes
 *************
 
+.. release:: Upcoming
+
+    .. change:: fixed
+
+        Updated :func:`qip.package.install` and
+        :func:`qip.package.fetch_mapping_from_environ` to execute :term:`Pip`
+        commands with `python -m pip
+        <https://docs.python.org/2/using/cmdline.html#cmdoption-m>`_ instead
+        of using the execution wrapper. Previously, it was picking up local
+        version of the :term:`Pip` execution wrapper instead of using the one
+        installed within the Python resolved environment.
+
 .. release:: 1.8.0
     :date: 2019-04-04
 
