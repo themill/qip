@@ -4,7 +4,8 @@
 Release Notes
 *************
 
-.. release:: Upcoming
+.. release:: 1.8.1
+    :date: 2020-04-01
 
     .. change:: fixed
 
