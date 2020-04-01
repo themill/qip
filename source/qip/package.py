@@ -85,7 +85,7 @@ def install(request, path, context_mapping, cache_path, editable_mode=False):
 
     logger.debug("Installing '{}'...".format(request))
     result = qip.command.execute(
-        "pip install "
+        "python -m pip install "
         "--ignore-installed "
         "--no-deps "
         "--prefix {destination} "
@@ -165,7 +165,7 @@ def fetch_mapping_from_environ(name, context_mapping, extra=None):
 
     # Run pip show command to find extra information from extended metadata.
     metadata = qip.command.execute(
-        "pip show "
+        "python -m pip show "
         "--disable-pip-version-check "
         "'{}' -v".format(name),
         context_mapping["environ"],
