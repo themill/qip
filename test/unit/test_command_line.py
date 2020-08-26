@@ -42,14 +42,10 @@ def test_no_arguments(mocked_install, mocked_fetch_definition_mapping):
 def test_install_no_arguments(mocked_install, mocked_fetch_definition_mapping):
     """Raise error for no arguments on install."""
     runner = CliRunner()
-    expected = ("Usage: install [OPTIONS] REQUESTS...\n"
-                "Try \"install --help\" for help.\n\n"
-                "Error: Missing argument \"REQUESTS...\".\n")
 
     result = runner.invoke(qip.command_line.install)
     assert result.exit_code == 2
     assert result.exception
-    assert result.output == expected
 
     mocked_install.assert_not_called()
     mocked_fetch_definition_mapping.assert_not_called()
