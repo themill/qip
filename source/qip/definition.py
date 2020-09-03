@@ -2,12 +2,12 @@
 
 import os
 
-import mlog
 import wiz
 import wiz.environ
 import wiz.utility
 import wiz.exception
 
+import qip.logging
 import qip.symbol
 
 
@@ -17,15 +17,17 @@ def export(
     """Export :term:`Wiz` definition to *path* for package *mapping*.
 
     :param path: destination path for the :term:`Wiz` definition.
+
     :param mapping: mapping of the python package built as returned by
         :func:`qip.package.install`.
+
     :param output_path: root destination path for Python packages installation.
+
     :param editable_mode: indicate whether the Python package location should
         target the source installation package. Default is False.
+
     :param definition_mapping: None or mapping regrouping all available
         definitions. Default is None.
-
-    :return: None.
 
     """
     # Retrieve definition from installation package path if possible.
@@ -91,7 +93,7 @@ def retrieve(mapping):
         })
 
     """
-    logger = mlog.Logger(__name__ + ".retrieve")
+    logger = qip.logging.Logger(__name__ + ".retrieve")
 
     definition_path = os.path.join(
         mapping["location"], mapping["module_name"], "package_data", "wiz.json"
@@ -112,16 +114,19 @@ def create(mapping, output_path, editable_mode=False, additional_variants=None):
 
     :param mapping: mapping of the python package built as returned by
         :func:`qip.package.install`.
+
     :param output_path: root destination path for Python packages installation.
+
     :param editable_mode: indicate whether the Python package location should
         target the source installation package. Default is False.
+
     :param additional_variants: None or list of variant mappings that should be
         added to the definition created. Default is None.
 
     :return: :class:`wiz.definition.Definition` instance created.
 
     """
-    logger = mlog.Logger(__name__ + ".create")
+    logger = qip.logging.Logger(__name__ + ".create")
 
     definition_data = {
         "identifier": mapping["key"],
@@ -159,7 +164,7 @@ def create(mapping, output_path, editable_mode=False, additional_variants=None):
     if additional_variants is not None:
         variants = sorted(
             additional_variants,
-            key=lambda v: _to_inv_float(v.get("identifier"))
+            key=lambda v: _to_inv_float(v["identifier"])
         )
 
     _update_variants(variants, mapping, location_path)
@@ -180,27 +185,31 @@ def update(
     """Update *definition* with *mapping*.
 
     :param definition: :class:`wiz.definition.Definition` instance.
+
     :param mapping: mapping of the python package built as returned by
         :func:`qip.package.install`.
+
     :param output_path: root destination path for Python packages installation.
+
     :param editable_mode: indicate whether the Python package location should
         target the source installation package. Default is False.
+
     :param additional_variants: None or list of variant mappings that should be
         added to the definition updated. Default is None.
 
     :return: Updated :class:`wiz.definition.Definition` instance.
 
     """
-    if not definition.get("description"):
+    if not definition.description:
         definition = definition.set("description", mapping["description"])
 
-    if not definition.get("version"):
+    if not definition.version:
         definition = definition.set("version", mapping["version"])
 
-    if not definition.get("namespace"):
+    if not definition.namespace:
         definition = definition.set("namespace", qip.symbol.NAMESPACE)
 
-    if not definition.get("system") and mapping.get("system"):
+    if not definition.system and mapping.get("system"):
         definition = definition.set(
             "system", _process_system_mapping(mapping)
         )
@@ -213,7 +222,7 @@ def update(
         "PYTHONPATH": "{}:${{PYTHONPATH}}".format(qip.symbol.INSTALL_LOCATION)
     }
 
-    python_path = definition.get("environ", {}).get("PYTHONPATH")
+    python_path = definition.environ.get("PYTHONPATH")
     if python_path:
         environ_mapping["PYTHONPATH"] = wiz.environ.substitute(
             environ_mapping["PYTHONPATH"], {"PYTHONPATH": python_path}
@@ -236,7 +245,7 @@ def update(
     if additional_variants is not None:
         variants = sorted(
             variants + additional_variants,
-            key=lambda v: _to_inv_float(v.get("identifier"))
+            key=lambda v: _to_inv_float(v["identifier"])
         )
 
     _update_variants(variants, mapping, package_path)
@@ -252,8 +261,10 @@ def _update_variants(variants, mapping, path):
     to the variant list so that the highest Python version is always first.
 
     :param variants: list of variant mappings to update.
+
     :param mapping: mapping of the python package built as returned by
         :func:`qip.package.install`.
+
     :param path: path where python package has been installed.
 
     :return: None.
@@ -273,21 +284,25 @@ def _update_variants(variants, mapping, path):
     _index = 0
 
     for index, variant in enumerate(variants):
-        if variant.identifier != identifier:
+        if variant["identifier"] != identifier:
 
             # Update index for new variant.
-            if _to_inv_float(identifier) > _to_inv_float(variant.identifier):
+            if _to_inv_float(identifier) > _to_inv_float(variant["identifier"]):
                 _index = index + 1
 
             continue
 
-        variant = variant.set("install-location", path)
+        variant["install-location"] = path
 
         # Add requirements that are not already in the definition.
-        remaining = set(requirements).difference(variant.requirements)
-        variant = variant.extend(
-            "requirements", [_req for _req in requirements if _req in remaining]
-        )
+        variant.setdefault("requirements", [])
+        variant["requirements"] += [
+            req for req in requirements
+            if not any(
+                req.replace(" ", "") == _req.replace(" ", "")
+                for _req in variant["requirements"]
+            )
+        ]
 
         del variants[index]
         variants.insert(index, variant)
@@ -339,26 +354,20 @@ def _process_requirements(mapping, python_request):
 
     :param mapping: mapping of the python package built as returned by
         :func:`qip.package.install`.
+
     :param python_request: Python version requirement (e.g.
-    "python >=2.7, <2.8")
+        "python >=2.7, <2.8")
 
     :return: requirements list.
 
     """
+    requests = [python_request]
+
     # Add the library namespace for all requirements fetched.
-    requests = [
-        "{}::{}".format(qip.symbol.NAMESPACE, request)
-        for request in mapping.get("requirements", [])
-    ]
-
-    # Create Requirement instance from all these requests.
-    requirements = [
-        wiz.utility.get_requirement(request)
-        for request in [python_request] + requests
-    ]
-
-    # Ensure that all package requirements target the same python version.
-    for requirement in requirements[1:]:
+    for request in mapping.get("requirements", []):
+        request = "{}::{}".format(qip.symbol.NAMESPACE, request)
+        requirement = wiz.utility.get_requirement(request)
         requirement.extras = {mapping["python"]["identifier"]}
+        requests.append(str(requirement))
 
-    return requirements
+    return requests

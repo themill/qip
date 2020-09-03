@@ -2,11 +2,11 @@
 
 import os
 import click
-import mlog
 import tempfile
 
 import wiz
 import qip
+import qip.logging
 from qip import __version__
 
 
@@ -15,13 +15,13 @@ from qip import __version__
 @click.option(
     "-v", "--verbosity",
     help="Set the logging output verbosity.",
-    type=click.Choice(mlog.levels),
+    type=click.Choice(qip.logging.levels),
     default="info"
 )
 def main(**kwargs):
     """Quarantine Installer for Python."""
-    mlog.configure()
-    mlog.root.handlers["stderr"].filterer.filterers[0].min = kwargs["verbosity"]
+    qip.logging.configure()
+    qip.logging.root.handlers["stderr"].filterer.min = kwargs["verbosity"]
 
 
 @main.command()
@@ -108,7 +108,7 @@ def install(**kwargs):
         qip install foo -p "python==3.6.*"
 
     """
-    logger = mlog.Logger(__name__ + ".install")
+    logger = qip.logging.Logger(__name__ + ".install")
 
     output_path = kwargs["output_path"]
     definition_path = kwargs["definition_path"]

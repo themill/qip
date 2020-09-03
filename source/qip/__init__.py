@@ -1,7 +1,5 @@
 # :coding: utf-8
 
-from __future__ import print_function
-
 import os
 import tempfile
 import shutil
@@ -11,12 +9,12 @@ except ImportError:
     import Queue as _queue
 
 import click
-import mlog
 
 import qip.definition
 import qip.package
 import qip.filesystem
 import qip.environ
+import qip.logging
 import qip.symbol
 
 from ._version import __version__
@@ -43,25 +41,31 @@ def install(
             ["git@gitlab:rnd/foo.git@dev"]
 
     :param output_path: root destination path for Python packages installation.
+
     :param definition_path: :term:`Wiz` definition extraction path. Default is
         None, which means that :term:`Wiz` definitions are not extracted.
+
     :param overwrite: indicate whether packages already installed and
         corresponding :term:`Wiz` definitions should be overwritten. If None, a
         user confirmation will be prompted. Default is False.
+
     :param no_dependencies: indicate whether package dependencies should be
         skipped. Default is False.
+
     :param editable_mode: indicate whether the Python package location should
         target the source installation package. Default is False.
+
     :param python_target: Target a specific Python version via a Wiz request or
         a path to a Python executable (e.g. "python==2.7.*" or
         "/path/to/bin/python"). Default is "python==2.7.*".
+
     :param definition_mapping: None or mapping regrouping all available
         :term:`Wiz` definitions. Default is None.
 
     :return: Boolean value.
 
     """
-    logger = mlog.Logger(__name__ + ".install")
+    logger = qip.logging.Logger(__name__ + ".install")
 
     qip.filesystem.ensure_directory(output_path)
     if definition_path is not None:
@@ -168,8 +172,11 @@ def copy_to_destination(
 
     :param mapping: mapping of the python package built as returned by
         :func:`qip.package.install`.
+
     :param source_path: path where the package was built.
+
     :param destination_path: path to install to.
+
     :param overwrite: indicate whether packages already installed should be
         overwritten. If None, a user confirmation will be prompted. Default is
         False.
@@ -178,7 +185,7 @@ def copy_to_destination(
         done and one indicating a new value for the *overwrite* option.
 
     """
-    logger = mlog.Logger(__name__ + ".copy_to_destination")
+    logger = qip.logging.Logger(__name__ + ".copy_to_destination")
 
     identifier = mapping["identifier"]
     target = os.path.join(destination_path, mapping["target"])

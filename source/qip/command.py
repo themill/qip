@@ -1,10 +1,9 @@
 # :coding: utf-8
 
-from __future__ import print_function
 import subprocess
 import shlex
 
-import mlog
+import qip.logging
 
 
 def execute(command, environ_mapping, quiet=False):
@@ -26,7 +25,7 @@ def execute(command, environ_mapping, quiet=False):
     :return: Command output.
 
     """
-    logger = mlog.Logger(__name__ + ".execute")
+    logger = qip.logging.Logger(__name__ + ".execute")
     logger.debug(command)
 
     process = subprocess.Popen(

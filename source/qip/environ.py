@@ -3,10 +3,10 @@
 import os
 import json
 
-import mlog
 import wiz
 
 import qip.command
+import qip.logging
 
 
 #: Path to the python info script.
@@ -21,6 +21,7 @@ def fetch(python_target, mapping=None):
     :param python_target: Target a specific Python version via a Wiz request or
         a path to a Python executable (e.g. "python==2.7.*" or
         "/path/to/bin/python").
+
     :param mapping: optional custom environment mapping to be added to initial
         environment.
 
@@ -39,7 +40,7 @@ def fetch(python_target, mapping=None):
         >>> fetch("/path/to/bin/python")
 
     """
-    logger = mlog.Logger(__name__ + ".fetch")
+    logger = qip.logging.Logger(__name__ + ".fetch")
     logger.debug("initial environment: {}".format(mapping))
 
     if mapping is None:
