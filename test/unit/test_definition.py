@@ -244,12 +244,12 @@ def test_retrieve(
 
     _definition = qip.definition.retrieve(mapping)
 
-    assert _definition == wiz.definition.Definition({
+    assert _definition.data() == {
         "identifier": "foo",
         "version": "0.2.3",
         "namespace": "plugin",
         "description": "This is a library",
-    })
+    }
 
     logger.info.assert_called_once_with(
         "\tWiz definition extracted from 'Foo-0.2.3'."
@@ -277,7 +277,7 @@ def test_create(logger):
     result = qip.definition.create(
         mapping, "/path/to/installed/package", editable_mode=False
     )
-    assert result == wiz.definition.Definition({
+    assert result.data() == {
         "identifier": "foo",
         "version": "0.2.3",
         "install-root": "/path/to/installed/package",
@@ -293,11 +293,11 @@ def test_create(logger):
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
                 "requirements": [
-                    "python >=2.8, <2.9",
+                    "python >= 2.8, <2.9",
                 ]
             }
         ]
-    })
+    }
 
     logger.info.assert_called_once_with(
         "\tWiz definition created for 'Foo-0.2.3'."
@@ -331,7 +331,7 @@ def test_create_with_system(logger):
     result = qip.definition.create(
         mapping, "/path/to/installed/package", editable_mode=False
     )
-    assert result == wiz.definition.Definition({
+    assert result.data() == {
         "identifier": "foo",
         "version": "0.2.3",
         "install-root": "/path/to/installed/package",
@@ -352,11 +352,11 @@ def test_create_with_system(logger):
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
                 "requirements": [
-                    "python >=2.8, <2.9",
+                    "python >= 2.8, <2.9",
                 ]
             }
         ]
-    })
+    }
 
     logger.info.assert_called_once_with(
         "\tWiz definition created for 'Foo-0.2.3'."
@@ -386,7 +386,7 @@ def test_create_with_requirements(logger):
     result = qip.definition.create(
         mapping, "/path/to/installed/package", editable_mode=False
     )
-    assert result == wiz.definition.Definition({
+    assert result.data() == {
         "identifier": "foo",
         "version": "0.2.3",
         "install-root": "/path/to/installed/package",
@@ -402,13 +402,13 @@ def test_create_with_requirements(logger):
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
                 "requirements": [
-                    "python >=2.8, <2.9",
-                    "library::bim[2.8] >= 3, < 4",
+                    "python >= 2.8, <2.9",
+                    "library::bim[2.8] >=3, <4",
                     "library::bar[2.8]",
                 ]
             }
         ]
-    })
+    }
 
     logger.info.assert_called_once_with(
         "\tWiz definition created for 'Foo-0.2.3'."
@@ -438,7 +438,7 @@ def test_create_with_commands(logger):
     result = qip.definition.create(
         mapping, "/path/to/installed/package", editable_mode=False
     )
-    assert result == wiz.definition.Definition({
+    assert result.data() == {
         "identifier": "foo",
         "version": "0.2.3",
         "install-root": "/path/to/installed/package",
@@ -458,11 +458,11 @@ def test_create_with_commands(logger):
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
                 "requirements": [
-                    "python >=2.8, <2.9"
+                    "python >= 2.8, <2.9"
                 ]
             }
         ]
-    })
+    }
 
     logger.info.assert_called_once_with(
         "\tWiz definition created for 'Foo-0.2.3'."
@@ -489,7 +489,7 @@ def test_create_editable_mode(logger):
     result = qip.definition.create(
         mapping, "/path/to/installed/package", editable_mode=True
     )
-    assert result == wiz.definition.Definition({
+    assert result.data() == {
         "identifier": "foo",
         "version": "0.2.3",
         "namespace": "library",
@@ -502,11 +502,11 @@ def test_create_editable_mode(logger):
                 "identifier": "2.8",
                 "install-location": "/path/to/source",
                 "requirements": [
-                    "python >=2.8, <2.9"
+                    "python >= 2.8, <2.9"
                 ]
             }
         ]
-    })
+    }
 
     logger.info.assert_called_once_with(
         "\tWiz definition created for 'Foo-0.2.3'."
@@ -537,32 +537,28 @@ def test_create_with_additional_variants_1(logger):
         mapping, "/path/to/installed/package",
         editable_mode=False,
         additional_variants=[
-            wiz.definition._Variant({
-                "definition": "__DEF__",
+            {
                 "identifier": "variant",
-            }),
-            wiz.definition._Variant({
-                "definition": "__DEF__",
+            },
+            {
                 "identifier": "3.6",
                 "environ": {"KEY36": "VALUE36"}
-            }),
-            wiz.definition._Variant({
-                "definition": "__DEF__",
+            },
+            {
                 "identifier": "2.8",
                 "environ": {"KEY28": "VALUE28"},
                 "requirements": [
                     "library::bim[2.8] >= 3, < 4",
                     "library::baz"
                 ]
-            }),
-            wiz.definition._Variant({
-                "definition": "__DEF__",
+            },
+            {
                 "identifier": "2.7",
                 "environ": {"KEY22": "VALUE22"}
-            })
+            }
         ]
     )
-    assert result == wiz.definition.Definition({
+    assert result.data() == {
         "identifier": "foo",
         "version": "0.2.3",
         "install-root": "/path/to/installed/package",
@@ -587,7 +583,7 @@ def test_create_with_additional_variants_1(logger):
                 "requirements": [
                     "library::bim[2.8] >= 3, < 4",
                     "library::baz",
-                    "python >=2.8, <2.9",
+                    "python >= 2.8, <2.9",
                     "library::bar[2.8]",
                 ]
             },
@@ -599,7 +595,7 @@ def test_create_with_additional_variants_1(logger):
                 "identifier": "variant",
             }
         ]
-    })
+    }
 
     logger.info.assert_called_once_with(
         "\tWiz definition created for 'Foo-0.2.3'."
@@ -630,23 +626,20 @@ def test_create_with_additional_variants_2(logger):
         mapping, "/path/to/installed/package",
         editable_mode=False,
         additional_variants=[
-            wiz.definition._Variant({
-                "definition": "__DEF__",
+            {
                 "identifier": "variant",
-            }),
-            wiz.definition._Variant({
-                "definition": "__DEF__",
+            },
+            {
                 "identifier": "3.6",
                 "environ": {"KEY36": "VALUE36"}
-            }),
-            wiz.definition._Variant({
-                "definition": "__DEF__",
+            },
+            {
                 "identifier": "2.7",
                 "environ": {"KEY22": "VALUE22"}
-            })
+            }
         ]
     )
-    assert result == wiz.definition.Definition({
+    assert result.data() == {
         "identifier": "foo",
         "version": "0.2.3",
         "install-root": "/path/to/installed/package",
@@ -666,8 +659,8 @@ def test_create_with_additional_variants_2(logger):
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
                 "requirements": [
-                    "python >=2.8, <2.9",
-                    "library::bim[2.8] >= 3, < 4",
+                    "python >= 2.8, <2.9",
+                    "library::bim[2.8] >=3, <4",
                     "library::bar[2.8]",
                 ]
             },
@@ -679,7 +672,7 @@ def test_create_with_additional_variants_2(logger):
                 "identifier": "variant",
             }
         ]
-    })
+    }
 
     logger.info.assert_called_once_with(
         "\tWiz definition created for 'Foo-0.2.3'."
@@ -709,9 +702,9 @@ def test_update():
         },
     }
 
-    _definition = qip.definition.update(definition, mapping, "/packages")
+    result = qip.definition.update(definition, mapping, "/packages")
 
-    assert _definition == wiz.definition.Definition({
+    assert result.data() == {
         "identifier": "foo",
         "version": "0.2.3",
         "namespace": "plugin",
@@ -727,11 +720,11 @@ def test_update():
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
                 "requirements": [
-                    "python >=2.8, <2.9"
+                    "python >= 2.8, <2.9"
                 ]
             }
         ]
-    })
+    }
 
 
 def test_update_with_pythonpath():
@@ -760,9 +753,9 @@ def test_update_with_pythonpath():
         },
     }
 
-    _definition = qip.definition.update(definition, mapping, "/packages")
+    result = qip.definition.update(definition, mapping, "/packages")
 
-    assert _definition == wiz.definition.Definition({
+    assert result.data() == {
         "identifier": "foo",
         "version": "0.2.3",
         "namespace": "plugin",
@@ -778,11 +771,11 @@ def test_update_with_pythonpath():
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
                 "requirements": [
-                    "python >=2.8, <2.9"
+                    "python >= 2.8, <2.9"
                 ]
             }
         ]
-    })
+    }
 
 
 def test_update_without_description():
@@ -807,9 +800,9 @@ def test_update_without_description():
         },
     }
 
-    _definition = qip.definition.update(definition, mapping, "/packages")
+    result = qip.definition.update(definition, mapping, "/packages")
 
-    assert _definition == wiz.definition.Definition({
+    assert result.data() == {
         "identifier": "foo",
         "version": "0.2.3",
         "namespace": "plugin",
@@ -825,11 +818,11 @@ def test_update_without_description():
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
                 "requirements": [
-                    "python >=2.8, <2.9"
+                    "python >= 2.8, <2.9"
                 ]
             }
         ]
-    })
+    }
 
 
 def test_update_without_version():
@@ -854,9 +847,9 @@ def test_update_without_version():
         },
     }
 
-    _definition = qip.definition.update(definition, mapping, "/packages")
+    result = qip.definition.update(definition, mapping, "/packages")
 
-    assert _definition == wiz.definition.Definition({
+    assert result.data() == {
         "identifier": "foo",
         "version": "0.2.3",
         "namespace": "plugin",
@@ -872,11 +865,11 @@ def test_update_without_version():
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
                 "requirements": [
-                    "python >=2.8, <2.9"
+                    "python >= 2.8, <2.9"
                 ]
             }
         ]
-    })
+    }
 
 
 def test_update_without_namespace():
@@ -901,9 +894,9 @@ def test_update_without_namespace():
         },
     }
 
-    _definition = qip.definition.update(definition, mapping, "/packages")
+    result = qip.definition.update(definition, mapping, "/packages")
 
-    assert _definition == wiz.definition.Definition({
+    assert result.data() == {
         "identifier": "foo",
         "version": "0.2.3",
         "namespace": "library",
@@ -919,11 +912,11 @@ def test_update_without_namespace():
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
                 "requirements": [
-                    "python >=2.8, <2.9"
+                    "python >= 2.8, <2.9"
                 ]
             }
         ]
-    })
+    }
 
 
 def test_update_with_system():
@@ -957,9 +950,9 @@ def test_update_with_system():
         }
     }
 
-    _definition = qip.definition.update(definition, mapping, "/packages")
+    result = qip.definition.update(definition, mapping, "/packages")
 
-    assert _definition == wiz.definition.Definition({
+    assert result.data() == {
         "identifier": "foo",
         "version": "0.2.3",
         "namespace": "plugin",
@@ -980,11 +973,11 @@ def test_update_with_system():
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
                 "requirements": [
-                    "python >=2.8, <2.9"
+                    "python >= 2.8, <2.9"
                 ]
             }
         ]
-    })
+    }
 
 
 def test_update_with_commands():
@@ -1008,9 +1001,9 @@ def test_update_with_commands():
         }
     }
 
-    _definition = qip.definition.update(definition, mapping, "/packages")
+    result = qip.definition.update(definition, mapping, "/packages")
 
-    assert _definition == wiz.definition.Definition({
+    assert result.data() == {
         "identifier": "foo",
         "version": "0.2.3",
         "namespace": "plugin",
@@ -1029,11 +1022,11 @@ def test_update_with_commands():
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
                 "requirements": [
-                    "python >=2.8, <2.9"
+                    "python >= 2.8, <2.9"
                 ]
             }
         ]
-    })
+    }
 
 
 def test_update_with_commands_updated():
@@ -1061,9 +1054,9 @@ def test_update_with_commands_updated():
         }
     }
 
-    _definition = qip.definition.update(definition, mapping, "/packages")
+    result = qip.definition.update(definition, mapping, "/packages")
 
-    assert _definition == wiz.definition.Definition({
+    assert result.data() == {
         "identifier": "foo",
         "version": "0.2.3",
         "install-root": "/packages",
@@ -1083,11 +1076,11 @@ def test_update_with_commands_updated():
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
                 "requirements": [
-                    "python >=2.8, <2.9"
+                    "python >= 2.8, <2.9"
                 ]
             }
         ]
-    })
+    }
 
 
 def test_update_editable():
@@ -1109,11 +1102,11 @@ def test_update_editable():
         },
     }
 
-    _definition = qip.definition.update(
+    result = qip.definition.update(
         definition, mapping, "/packages", editable_mode=True
     )
 
-    assert _definition == wiz.definition.Definition({
+    assert result.data() == {
         "identifier": "foo",
         "version": "0.2.3",
         "namespace": "plugin",
@@ -1126,11 +1119,11 @@ def test_update_editable():
                 "identifier": "2.8",
                 "install-location": "/path/to/lib",
                 "requirements": [
-                    "python >=2.8, <2.9"
+                    "python >= 2.8, <2.9"
                 ]
             }
         ]
-    })
+    }
 
 
 def test_update_with_additional_variants_1():
@@ -1151,32 +1144,28 @@ def test_update_with_additional_variants_1():
         },
     }
 
-    _definition = qip.definition.update(
+    result = qip.definition.update(
         definition, mapping, "/packages",
         additional_variants=[
-            wiz.definition._Variant({
-                "definition": "__DEF__",
+            {
                 "identifier": "variant",
-            }),
-            wiz.definition._Variant({
-                "definition": "__DEF__",
+            },
+            {
                 "identifier": "3.6",
                 "environ": {"KEY36": "VALUE36"}
-            }),
-            wiz.definition._Variant({
-                "definition": "__DEF__",
+            },
+            {
                 "identifier": "2.8",
                 "environ": {"KEY28": "VALUE28"}
-            }),
-            wiz.definition._Variant({
-                "definition": "__DEF__",
+            },
+            {
                 "identifier": "2.7",
                 "environ": {"KEY22": "VALUE22"}
-            })
+            }
         ]
     )
 
-    assert _definition == wiz.definition.Definition({
+    assert result.data() == {
         "identifier": "foo",
         "version": "0.2.3",
         "namespace": "plugin",
@@ -1199,7 +1188,7 @@ def test_update_with_additional_variants_1():
                     "KEY28": "VALUE28"
                 },
                 "requirements": [
-                    "python >=2.8, <2.9"
+                    "python >= 2.8, <2.9"
                 ]
             },
             {
@@ -1210,7 +1199,7 @@ def test_update_with_additional_variants_1():
                 "identifier": "variant",
             }
         ]
-    })
+    }
 
 
 def test_update_with_additional_variants_2():
@@ -1231,27 +1220,24 @@ def test_update_with_additional_variants_2():
         },
     }
 
-    _definition = qip.definition.update(
+    result = qip.definition.update(
         definition, mapping, "/packages",
         additional_variants=[
-            wiz.definition._Variant({
-                "definition": "__DEF__",
+            {
                 "identifier": "variant",
-            }),
-            wiz.definition._Variant({
-                "definition": "__DEF__",
+            },
+            {
                 "identifier": "3.6",
                 "environ": {"KEY36": "VALUE36"}
-            }),
-            wiz.definition._Variant({
-                "definition": "__DEF__",
+            },
+            {
                 "identifier": "2.7",
                 "environ": {"KEY22": "VALUE22"}
-            })
+            }
         ]
     )
 
-    assert _definition == wiz.definition.Definition({
+    assert result.data() == {
         "identifier": "foo",
         "version": "0.2.3",
         "namespace": "plugin",
@@ -1271,7 +1257,7 @@ def test_update_with_additional_variants_2():
                     "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
                 ),
                 "requirements": [
-                    "python >=2.8, <2.9"
+                    "python >= 2.8, <2.9"
                 ]
             },
             {
@@ -1282,4 +1268,4 @@ def test_update_with_additional_variants_2():
                 "identifier": "variant",
             }
         ]
-    })
+    }

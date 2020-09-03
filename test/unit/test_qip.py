@@ -6,7 +6,6 @@ import tempfile
 
 import click
 import pytest
-import mock
 
 import qip
 import qip.filesystem
@@ -780,7 +779,7 @@ def test_copy_to_destination_confirm_overwrite(
     "yes-to-all",
     "no-to-all",
 ])
-def test_confirm_overwrite(mocked_click_prompt, answer, expected):
+def test_confirm_overwrite(mocker, mocked_click_prompt, answer, expected):
     """Ask user to confirm overwrite existing package."""
     # User answered
     mocked_click_prompt.return_value = answer
@@ -793,7 +792,7 @@ def test_confirm_overwrite(mocked_click_prompt, answer, expected):
         default='n',
         show_choices=False,
         show_default=False,
-        type=mock.ANY
+        type=mocker.ANY
     )
 
 

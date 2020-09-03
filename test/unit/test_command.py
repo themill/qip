@@ -3,7 +3,6 @@
 import subprocess
 
 import pytest
-from mock import call
 
 import qip.command
 
@@ -21,7 +20,7 @@ def mocked_process(mocker):
     return mocker.Mock()
 
 
-def test_execute_verbose(mocked_subprocess, mocked_process, logger):
+def test_execute_verbose(mocker, mocked_subprocess, mocked_process, logger):
     """Execute a command verbose."""
     mocked_subprocess.return_value = mocked_process
     mocked_process.poll.side_effect = [None, None, None, False]
@@ -34,30 +33,32 @@ def test_execute_verbose(mocked_subprocess, mocked_process, logger):
     output = qip.command.execute(command, {})
 
     logger.debug.assert_has_calls([
-        call('line one'), call('line two'), call('line three')
+        mocker.call("line one"),
+        mocker.call("line two"),
+        mocker.call("line three")
     ], any_order=True)
-    assert output == 'line one\nline two\nline three\n'
+    assert output == "line one\nline two\nline three\n"
 
 
 def test_execute_quiet(mocked_subprocess, mocked_process, capsys):
     """Execute a command quiet."""
     mocked_subprocess.return_value = mocked_process
     mocked_process.communicate.return_value = (
-        'line one\nline two\nline three\n', ""
+        "line one\nline two\nline three\n", ""
     )
 
     command = "pip install foo"
     output = qip.command.execute(command, {}, quiet=True)
 
     stdout_message, _ = capsys.readouterr()
-    assert stdout_message == ''
-    assert output == 'line one\nline two\nline three\n'
+    assert stdout_message == ""
+    assert output == "line one\nline two\nline three\n"
 
 
 def test_execute_stderr(mocked_subprocess, mocked_process):
     """Fail to execute a command."""
     mocked_subprocess.return_value = mocked_process
-    mocked_process.communicate.return_value = ('', "stderr")
+    mocked_process.communicate.return_value = ("", "stderr")
     command = "pip install foo"
 
     with pytest.raises(RuntimeError) as error:
