@@ -3,9 +3,10 @@
 import json
 import os
 
+import wiz
+
 import qip.command
 import qip.logging
-import wiz
 
 #: Path to the python info script.
 _PYTHON_INFO_SCRIPT = os.path.join(

@@ -5,9 +5,10 @@ import tempfile
 import textwrap
 
 import click
+import wiz
+
 import qip
 import qip.logging
-import wiz
 from qip import __version__
 
 #: Click default context for all commands.

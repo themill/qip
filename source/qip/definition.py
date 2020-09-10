@@ -3,12 +3,13 @@
 import functools
 import os
 
-import qip.logging
 import wiz
 import wiz.environ
 import wiz.exception
 import wiz.symbol
 import wiz.utility
+
+import qip.logging
 
 #: Common namespace for all :term:`Wiz` definition.
 NAMESPACE = "library"

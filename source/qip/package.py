@@ -34,12 +34,16 @@ def install(request, path, context_mapping, cache_path, editable_mode=False):
             "git@gitlab:rnd/foo.git@dev"
 
     :param path: path to install Python packages to.
+
     :param context_mapping: contain environment mapping and python mapping, as
         returned from :func:`qip.fetch_context_mapping`.
+
     :param cache_path: Temporary directory for the pip cache.
+
     :param editable_mode: install in editable mode. Default is False.
 
     :raise RuntimeError: if :term:`Pip` fails to install Python package.
+
     :raise ValueError: if the Python package name can not be extracted from
         *request*.
 
@@ -117,8 +121,10 @@ def fetch_mapping_from_environ(name, context_mapping, extra=None):
     """Return a mapping with information about the Python package *name*.
 
     :param name: Python package name.
+
     :param context_mapping: contain environment mapping and python mapping, as
         returned from :func:`qip.fetch_context_mapping`.
+
     :param extra: None or extra requirement label (e.g. "test"). Default is
         None.
 
@@ -212,7 +218,9 @@ def extract_dependency_mapping(name, environ_mapping, extra=None):
     """Return mapping for Python package with all dependency requirements.
 
     :param name: Python package name.
+
     :param environ_mapping: mapping of environment variables.
+
     :param extra: None or extra requirement label (e.g. "test"). Default is
         None.
 
@@ -351,8 +359,11 @@ def extract_target_path(name, identifier, python_version, os_mapping=None):
     """Return the corresponding target path from package *mapping*.
 
     :param name: Python package name.
+
     :param identifier: Python package identifier.
+
     :param python_version: Python version identifier (e.g. "2.7").
+
     :param os_mapping: None or a mapping describing the operating system.
         Default is None.
 
