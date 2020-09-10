@@ -1,17 +1,25 @@
 # :coding: utf-8
 
 import os
-import click
 import tempfile
+import textwrap
 
-import wiz
-
+import click
 import qip
 import qip.logging
+import wiz
 from qip import __version__
 
+#: Click default context for all commands.
+CONTEXT_SETTINGS = dict(
+    max_content_width=80,
+    help_option_names=["-h", "--help"],
+)
 
-@click.group()
+
+@click.group(
+    context_settings=CONTEXT_SETTINGS
+)
 @click.version_option(version=__version__)
 @click.option(
     "-v", "--verbosity",
@@ -25,7 +33,30 @@ def main(**kwargs):
     qip.logging.root.handlers["stderr"].filterer.min = kwargs["verbosity"]
 
 
-@main.command()
+@main.command(
+    name="install",
+    help=textwrap.dedent(
+        """
+        Install one or several packages.
+    
+        Command example:
+
+        \b
+        >>> qip install .
+        >>> qip install /path/to/foo/
+        >>> qip install foo
+        >>> qip install foo bar
+        >>> qip install "foo==0.1.0"
+        >>> qip install "foo >= 7, < 8"
+        >>> qip install "git@gitlab:rnd/foo.git"
+        >>> qip install "git@gitlab:rnd/foo.git@0.1.0"
+        >>> qip install "git@gitlab:rnd/foo.git@dev"
+        >>> qip install foo -p "python==3.6.*"
+        """
+    ),
+    short_help="Install one or several packages.",
+    context_settings=CONTEXT_SETTINGS
+)
 @click.option(
     "-o", "--output-path",
     help=(
@@ -62,8 +93,8 @@ def main(**kwargs):
 @click.option(
     "--overwrite-installed/--skip-installed",
     help=(
-         "Indicate whether packages already installed should be overwritten "
-         "or skipped. By default, a user confirmation will be required."
+        "Indicate whether packages already installed should be overwritten "
+        "or skipped. By default, a user confirmation will be required."
     ),
     default=None
 )
@@ -92,23 +123,7 @@ def main(**kwargs):
     required=True
 )
 def install(**kwargs):
-    """Install a package.
-
-    Command example::
-
-        \b
-        qip install .
-        qip install /path/to/foo/
-        qip install foo
-        qip install foo bar
-        qip install "foo==0.1.0"
-        qip install "foo >= 7, < 8"
-        qip install "git@gitlab:rnd/foo.git"
-        qip install "git@gitlab:rnd/foo.git@0.1.0"
-        qip install "git@gitlab:rnd/foo.git@dev"
-        qip install foo -p "python==3.6.*"
-
-    """
+    """Install one or several packages."""
     logger = qip.logging.Logger(__name__ + ".install")
 
     output_path = kwargs["output_path"]
@@ -132,7 +147,7 @@ def install(**kwargs):
         definition_mapping = wiz.fetch_definition_mapping([definition_path])
 
     qip.install(
-        kwargs["requests"],  output_path,
+        kwargs["requests"], output_path,
         definition_path=definition_path,
         overwrite=kwargs["overwrite_installed"],
         no_dependencies=kwargs["no_dependencies"],
