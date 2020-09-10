@@ -1,11 +1,11 @@
 # :coding: utf-8
 
-import sys
-import re
-import json
 import argparse
-import pkg_resources
+import json
+import re
+import sys
 
+import pkg_resources
 
 #: Compiled regular expression to detect request with extra option.
 REQUEST_PATTERN = re.compile(r"(.*)\[(\w*)\]")

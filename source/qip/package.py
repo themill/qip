@@ -1,20 +1,17 @@
 # :coding: utf-8
 
-import re
 import json
 import os
-
-import wiz.filesystem
+import re
 
 import qip.command
 import qip.environ
-import qip.system
 import qip.logging
-
+import qip.system
+import wiz.filesystem
 
 #: Compiled regular expression to detect request with extra option.
 REQUEST_PATTERN = re.compile(r"(.*)\[(\w*)\]")
-
 
 #: Path to the Python package info script.
 _PACKAGE_INFO_SCRIPT = os.path.join(
@@ -91,7 +88,7 @@ def install(request, path, context_mapping, cache_path, editable_mode=False):
         "--no-warn-script-location "
         "--disable-pip-version-check "
         "--cache-dir {cache_dir} "
-        "{editable_mode}" 
+        "{editable_mode}"
         "'{requirement}'".format(
             editable_mode="-e " if editable_mode else "",
             destination=path,

@@ -18,7 +18,6 @@ import sawmill.handler.stream
 import sawmill.logger.classic
 import wiz.filesystem
 
-
 #: Top level handler responsible for relaying all logs to other handlers.
 root = sawmill.root
 
