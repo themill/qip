@@ -1,6 +1,7 @@
 # :coding: utf-8
 
 import os
+import functools
 
 import wiz
 import wiz.environ
@@ -164,7 +165,7 @@ def create(mapping, output_path, editable_mode=False, additional_variants=None):
     if additional_variants is not None:
         variants = sorted(
             additional_variants,
-            key=lambda v: _to_inv_float(v["identifier"])
+            key=functools.cmp_to_key(_compare_variants)
         )
 
     _update_variants(variants, mapping, location_path)
@@ -245,7 +246,7 @@ def update(
     if additional_variants is not None:
         variants = sorted(
             variants + additional_variants,
-            key=lambda v: _to_inv_float(v["identifier"])
+            key=functools.cmp_to_key(_compare_variants)
         )
 
     _update_variants(variants, mapping, package_path)
@@ -287,7 +288,7 @@ def _update_variants(variants, mapping, path):
         if variant["identifier"] != identifier:
 
             # Update index for new variant.
-            if _to_inv_float(identifier) > _to_inv_float(variant["identifier"]):
+            if _compare_variants({"identifier": identifier}, variant) > 0:
                 _index = index + 1
 
             continue
@@ -318,12 +319,48 @@ def _update_variants(variants, mapping, path):
     variants.insert(_index, variant)
 
 
-def _to_inv_float(text):
-    """Convert *text* to inverted float if possible. Return *text* otherwise."""
+def _compare_variants(variant1, variant2):
+    """Compare identifier values from variant mappings.
+
+    Both identifiers will be converted into a negative float if possible (e.g.
+    "2.7" will become -2.7). If one or both identifiers cannot be converted, the
+    string value  is kept.
+
+    If both identifiers are of the same type:
+
+    * Return -1 if *identifier2* if higher than *identifier1*.
+    * Return 1 if *identifier1* if higher than *identifier2*.
+    * Return 0 if *identifier1* if higher than *identifier2*.
+
+    If only *identifier1* is converted into a negative float, -1 is returned.
+
+    If only *identifier2* is converted into a negative float, 1 is returned.
+
+    :param variant1: Variant reference mapping.
+
+    :param variant2: Variant reference mapping to compare *variant1* with.
+
+    :return: Numerical value following the rules above (-1, 1 or 0).
+
+    """
     try:
-        return -float(text)
+        identifier1 = -float(variant1["identifier"])
     except ValueError:
-        return text
+        identifier1 = variant1["identifier"]
+
+    try:
+        identifier2 = -float(variant2["identifier"])
+    except ValueError:
+        identifier2 = variant2["identifier"]
+
+    if type(identifier1) == type(identifier2):
+        if identifier1 == identifier2:
+            return 0
+        return -1 if identifier1 < identifier2 else 1
+
+    elif isinstance(identifier1, float):
+        return -1
+    return 1
 
 
 def _process_system_mapping(mapping):

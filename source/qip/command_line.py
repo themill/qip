@@ -5,6 +5,7 @@ import click
 import tempfile
 
 import wiz
+
 import qip
 import qip.logging
 from qip import __version__

@@ -16,8 +16,8 @@ import sawmill.formatter.field
 import sawmill.formatter.mustache
 import sawmill.handler.stream
 import sawmill.logger.classic
+import wiz.filesystem
 
-import qip.filesystem
 
 #: Top level handler responsible for relaying all logs to other handlers.
 root = sawmill.root
@@ -51,7 +51,7 @@ def configure():
 
     # File handler
     logging_path_prefix = os.path.join(tempfile.gettempdir(), "qip", "logs")
-    qip.filesystem.ensure_directory(logging_path_prefix)
+    wiz.filesystem.ensure_directory(logging_path_prefix)
 
     pid = os.getpid()
     timestamp = datetime.datetime.now().strftime("%Y%m%d")

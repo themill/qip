@@ -1,9 +1,10 @@
 # :coding: utf-8
 
 import platform
-from packaging.version import InvalidVersion
 
+import distro
 import pytest
+from packaging.version import InvalidVersion
 
 import qip.system
 
@@ -22,8 +23,8 @@ def mocked_platform_machine(mocker):
 
 @pytest.fixture()
 def mocked_platform_linux(mocker):
-    """Mocked the platform.linux_distribution function."""
-    return mocker.patch.object(platform, "linux_distribution")
+    """Mocked the distro.linux_distribution function."""
+    return mocker.patch.object(distro, "linux_distribution")
 
 
 @pytest.fixture()

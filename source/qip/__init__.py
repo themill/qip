@@ -6,10 +6,10 @@ import shutil
 
 import six.moves
 import click
+import wiz.filesystem
 
 import qip.definition
 import qip.package
-import qip.filesystem
 import qip.environ
 import qip.logging
 import qip.symbol
@@ -64,9 +64,9 @@ def install(
     """
     logger = qip.logging.Logger(__name__ + ".install")
 
-    qip.filesystem.ensure_directory(output_path)
+    wiz.filesystem.ensure_directory(output_path)
     if definition_path is not None:
-        qip.filesystem.ensure_directory(definition_path)
+        wiz.filesystem.ensure_directory(definition_path)
 
     # Setup temporary folder for package installation.
     cache_path = tempfile.mkdtemp()
@@ -94,10 +94,11 @@ def install(
 
             # Clean up before installation.
             logger.debug("Clean up directory content before installation")
-            qip.filesystem.remove_directory_content(package_path)
+            shutil.rmtree(package_path)
+            wiz.filesystem.ensure_directory(package_path)
 
             # Needed for the editable mode.
-            qip.filesystem.ensure_directory(library_path)
+            wiz.filesystem.ensure_directory(library_path)
 
             try:
                 package_mapping = qip.package.install(
@@ -207,7 +208,7 @@ def copy_to_destination(
 
             return False, overwrite_next
 
-    qip.filesystem.ensure_directory(os.path.dirname(target))
+    wiz.filesystem.ensure_directory(os.path.dirname(target))
     shutil.copytree(source_path, target)
     logger.debug("Source copied to '{}'".format(target))
 

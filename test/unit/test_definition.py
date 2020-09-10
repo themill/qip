@@ -1,6 +1,7 @@
 # :coding: utf-8
 
 import os
+import functools
 
 import pytest
 import wiz
@@ -1269,3 +1270,40 @@ def test_update_with_additional_variants_2():
             }
         ]
     }
+
+
+@pytest.mark.parametrize("identifier1, identifier2, expected", [
+    ("2.7", "3.6", 1),
+    ("3.6", "2.7", -1),
+    ("abc", "def", -1),
+    ("def", "abc", 1),
+    ("2.7", "abc", -1),
+    ("abc", "2.7", 1),
+], ids=[
+    "float",
+    "float-inv",
+    "string",
+    "string-inv",
+    "float-right",
+    "float-left",
+])
+def test_compare_variants(identifier1, identifier2, expected):
+    """Compare identifier values from variant mappings."""
+    variant1 = {"identifier": identifier1}
+    variant2 = {"identifier": identifier2}
+
+    assert qip.definition._compare_variants(variant1, variant2) == expected
+
+    # If result is -1, variant order stays the same.
+    if expected == -1:
+        assert sorted(
+            [variant1, variant2],
+            key=functools.cmp_to_key(qip.definition._compare_variants)
+        ) == [variant1, variant2]
+
+    # If result is 1, variant order is inverted.
+    if expected == 1:
+        assert sorted(
+            [variant1, variant2],
+            key=functools.cmp_to_key(qip.definition._compare_variants)
+        ) == [variant2, variant1]

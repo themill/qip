@@ -5,8 +5,9 @@ import re
 import json
 import os
 
+import wiz.filesystem
+
 import qip.command
-import qip.filesystem
 import qip.environ
 import qip.system
 import qip.logging
@@ -271,7 +272,7 @@ def extract_identifier(mapping):
     :return: Corresponding identifier (e.g. "Foo-1.11", "Bar").
 
     """
-    identifier = qip.filesystem.sanitize_value(
+    identifier = wiz.filesystem.sanitize_value(
         "{name}-{version}".format(
             name=mapping["package_name"],
             version=mapping["installed_version"]
