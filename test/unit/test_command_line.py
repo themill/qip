@@ -1,19 +1,30 @@
 # :coding: utf-8
 
+import sys
 import os
 import tempfile
 
 import pytest
+from six.moves import reload_module
 
 import wiz
+import wiz.config
 import qip.command_line
 from click.testing import CliRunner
 
 
-@pytest.fixture()
-def mock_tempfile_gettempdir(mocker):
-    """Mock 'tempfile.gettempdir' function."""
-    return mocker.patch.object(tempfile, "gettempdir", return_value="/tmp")
+@pytest.fixture(autouse=True)
+def reset_configuration(mocker):
+    """Ensure that no personal configuration is fetched during tests."""
+    mocker.patch.object(os.path, "expanduser", return_value="__HOME__")
+
+    # Mock temporary directory path before reloading module to reset default
+    # values.
+    mocker.patch.object(tempfile, "gettempdir", return_value="/tmp")
+
+    # Reset configuration.
+    qip.command_line._CONFIG = wiz.config.fetch(refresh=True)
+    reload_module(qip.command_line)
 
 
 @pytest.fixture()
@@ -51,7 +62,6 @@ def test_install_no_arguments(mocked_install, mocked_fetch_definition_mapping):
     mocked_fetch_definition_mapping.assert_not_called()
 
 
-@pytest.mark.usefixtures("mock_tempfile_gettempdir")
 def test_missing_output(mocked_install, mocked_fetch_definition_mapping):
     """Error when user does not specify and output directory"""
     runner = CliRunner()
@@ -63,7 +73,7 @@ def test_missing_output(mocked_install, mocked_fetch_definition_mapping):
         editable_mode=False,
         no_dependencies=False,
         overwrite=None,
-        python_target="python==2.7.*",
+        python_target=sys.executable,
         definition_mapping=None
     )
     mocked_fetch_definition_mapping.assert_not_called()
@@ -86,7 +96,6 @@ def test_missing_output(mocked_install, mocked_fetch_definition_mapping):
     "git@gitlab:rnd/foo.git@0.1.0",
     "git@gitlab:rnd/foo.git@dev"
 ])
-@pytest.mark.usefixtures("mock_tempfile_gettempdir")
 def test_install_packages(
     mocked_install, mocked_fetch_definition_mapping, packages
 ):
@@ -102,7 +111,7 @@ def test_install_packages(
         editable_mode=False,
         no_dependencies=False,
         overwrite=None,
-        python_target="python==2.7.*",
+        python_target=sys.executable,
         definition_mapping=None
     )
     mocked_fetch_definition_mapping.assert_not_called()
@@ -125,13 +134,12 @@ def test_install_package_with_custom_paths(
         editable_mode=False,
         no_dependencies=False,
         overwrite=None,
-        python_target="python==2.7.*",
+        python_target=sys.executable,
         definition_mapping=None
     )
     mocked_fetch_definition_mapping.assert_not_called()
 
 
-@pytest.mark.usefixtures("mock_tempfile_gettempdir")
 def test_install_package_without_dependencies(
     mocked_install, mocked_fetch_definition_mapping
 ):
@@ -149,13 +157,12 @@ def test_install_package_without_dependencies(
         editable_mode=False,
         no_dependencies=True,
         overwrite=None,
-        python_target="python==2.7.*",
+        python_target=sys.executable,
         definition_mapping=None
     )
     mocked_fetch_definition_mapping.assert_not_called()
 
 
-@pytest.mark.usefixtures("mock_tempfile_gettempdir")
 def test_install_package_overwrite(
     mocked_install, mocked_fetch_definition_mapping
 ):
@@ -173,13 +180,12 @@ def test_install_package_overwrite(
         editable_mode=False,
         no_dependencies=False,
         overwrite=True,
-        python_target="python==2.7.*",
+        python_target=sys.executable,
         definition_mapping=None
     )
     mocked_fetch_definition_mapping.assert_not_called()
 
 
-@pytest.mark.usefixtures("mock_tempfile_gettempdir")
 def test_install_package_skip(
     mocked_install, mocked_fetch_definition_mapping
 ):
@@ -197,13 +203,12 @@ def test_install_package_skip(
         editable_mode=False,
         no_dependencies=False,
         overwrite=False,
-        python_target="python==2.7.*",
+        python_target=sys.executable,
         definition_mapping=None
     )
     mocked_fetch_definition_mapping.assert_not_called()
 
 
-@pytest.mark.usefixtures("mock_tempfile_gettempdir")
 def test_install_package_editable(
     mocked_install, mocked_fetch_definition_mapping
 ):
@@ -221,13 +226,12 @@ def test_install_package_editable(
         editable_mode=True,
         no_dependencies=False,
         overwrite=None,
-        python_target="python==2.7.*",
+        python_target=sys.executable,
         definition_mapping=None
     )
     mocked_fetch_definition_mapping.assert_not_called()
 
 
-@pytest.mark.usefixtures("mock_tempfile_gettempdir")
 def test_install_package_update(
     mocked_install, mocked_fetch_definition_mapping
 ):
@@ -247,7 +251,7 @@ def test_install_package_update(
         editable_mode=False,
         no_dependencies=False,
         overwrite=None,
-        python_target="python==2.7.*",
+        python_target=sys.executable,
         definition_mapping="__MAPPING__"
     )
     mocked_fetch_definition_mapping.assert_called_once_with(

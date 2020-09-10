@@ -1,15 +1,22 @@
 # :coding: utf-8
 
 import os
+import sys
 import tempfile
 import textwrap
 
 import click
-import wiz
-
 import qip
 import qip.logging
+import wiz
+import wiz.config
 from qip import __version__
+
+# Initiate logging handler to display potential warning when fetching config.
+wiz.logging.configure()
+
+#: Retrieve configuration mapping to initialize default values.
+_CONFIG = wiz.config.fetch()
 
 #: Click default context for all commands.
 CONTEXT_SETTINGS = dict(
@@ -66,6 +73,13 @@ def main(**kwargs):
     ),
     type=click.Path(),
     metavar="PATH",
+    default=(
+        _CONFIG.get("qip", {}).get(
+            "packages_output", os.path.join(
+                tempfile.gettempdir(), "qip", "packages"
+            )
+        )
+    ),
 )
 @click.option(
     "-d", "--definition-path",
@@ -75,6 +89,13 @@ def main(**kwargs):
     ),
     type=click.Path(),
     metavar="PATH",
+    default=(
+        _CONFIG.get("qip", {}).get(
+            "definitions_output", os.path.join(
+                tempfile.gettempdir(), "qip", "definitions"
+            )
+        )
+    ),
 )
 @click.option(
     "--update",
@@ -114,9 +135,9 @@ def main(**kwargs):
         "Target a specific Python version via a Wiz request or a path to a "
         "Python executable."
     ),
-    default="python==2.7.*",
     show_default=True,
     metavar="TARGET",
+    default=_CONFIG.get("qip", {}).get("python_target", sys.executable)
 )
 @click.argument(
     "requests",
@@ -129,16 +150,6 @@ def install(**kwargs):
 
     output_path = kwargs["output_path"]
     definition_path = kwargs["definition_path"]
-
-    if output_path is None:
-        output_path = os.path.join(
-            tempfile.gettempdir(), "qip", "packages"
-        )
-
-    if definition_path is None:
-        definition_path = os.path.join(
-            tempfile.gettempdir(), "qip", "definitions"
-        )
 
     # Fetch definition mapping from definition path if previously extracted
     # definitions should to create new definition.
