@@ -43,9 +43,9 @@ def execute(command, environ_mapping, quiet=False):
             for line in lines_iterator:
                 output += str(line)
                 _line = line.rstrip()
-                logger.debug(_line.decode("latin"))
+                logger.debug(_line)
 
-        stderr = "\n".join(process.stderr.readlines())
+        stderr = b"\n".join(process.stderr.readlines())
     else:
         output, stderr = process.communicate()
 
