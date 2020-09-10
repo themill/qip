@@ -1,15 +1,17 @@
 # :coding: utf-8
 
-import os
 import functools
-
-import wiz
-import wiz.environ
-import wiz.utility
-import wiz.exception
+import os
 
 import qip.logging
-import qip.symbol
+import wiz
+import wiz.environ
+import wiz.exception
+import wiz.symbol
+import wiz.utility
+
+#: Common namespace for all :term:`Wiz` definition.
+NAMESPACE = "library"
 
 
 def export(
@@ -35,7 +37,7 @@ def export(
     definition = qip.definition.retrieve(mapping)
 
     # Extract previous namespace or set default.
-    namespace = definition.namespace if definition else qip.symbol.NAMESPACE
+    namespace = definition.namespace if definition else NAMESPACE
 
     # Extract additional variants from existing definition if possible.
     additional_variants = None
@@ -133,10 +135,10 @@ def create(mapping, output_path, editable_mode=False, additional_variants=None):
         "identifier": mapping["key"],
         "version": mapping["version"],
         "description": mapping["description"],
-        "namespace": qip.symbol.NAMESPACE,
+        "namespace": NAMESPACE,
         "environ": {
-            "PYTHONPATH": "{}:${{PYTHONPATH}}".format(
-                qip.symbol.INSTALL_LOCATION
+            "PYTHONPATH": "${{{}}}:${{PYTHONPATH}}".format(
+                wiz.symbol.INSTALL_LOCATION
             )
         }
     }
@@ -155,7 +157,7 @@ def create(mapping, output_path, editable_mode=False, additional_variants=None):
     if not editable_mode:
         definition_data["install-root"] = output_path
         location_path = os.path.join(
-            qip.symbol.INSTALL_ROOT, mapping["target"],
+            "${{{}}}".format(wiz.symbol.INSTALL_ROOT), mapping["target"],
             mapping["python"]["library-path"]
         )
 
@@ -208,7 +210,7 @@ def update(
         definition = definition.set("version", mapping["version"])
 
     if not definition.namespace:
-        definition = definition.set("namespace", qip.symbol.NAMESPACE)
+        definition = definition.set("namespace", NAMESPACE)
 
     if not definition.system and mapping.get("system"):
         definition = definition.set(
@@ -220,7 +222,9 @@ def update(
 
     # Update environ mapping
     environ_mapping = {
-        "PYTHONPATH": "{}:${{PYTHONPATH}}".format(qip.symbol.INSTALL_LOCATION)
+        "PYTHONPATH": "${{{}}}:${{PYTHONPATH}}".format(
+            wiz.symbol.INSTALL_LOCATION
+        )
     }
 
     python_path = definition.environ.get("PYTHONPATH")
@@ -237,7 +241,7 @@ def update(
     if not editable_mode:
         definition = definition.set("install-root", output_path)
         package_path = os.path.join(
-            qip.symbol.INSTALL_ROOT, mapping["target"],
+            "${{{}}}".format(wiz.symbol.INSTALL_ROOT), mapping["target"],
             mapping["python"]["library-path"]
         )
 
@@ -402,7 +406,7 @@ def _process_requirements(mapping, python_request):
 
     # Add the library namespace for all requirements fetched.
     for request in mapping.get("requirements", []):
-        request = "{}::{}".format(qip.symbol.NAMESPACE, request)
+        request = "{}::{}".format(NAMESPACE, request)
         requirement = wiz.utility.get_requirement(request)
         requirement.extras = {mapping["python"]["identifier"]}
         requests.append(str(requirement))

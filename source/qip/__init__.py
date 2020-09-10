@@ -12,7 +12,6 @@ import qip.definition
 import qip.package
 import qip.environ
 import qip.logging
-import qip.symbol
 
 from qip._version import __version__
 
