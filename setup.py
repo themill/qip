@@ -30,6 +30,7 @@ INSTALL_REQUIRES = [
     "pip >= 10, < 19",
     "pystache >= 0.5.4, < 1",
     "sawmill >= 0.2.1, < 1",
+    "six >= 1.15.0, < 2",
     "wiz-env >= 3, < 4"
 ]
 DOC_REQUIRES = [

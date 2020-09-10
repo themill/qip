@@ -3,11 +3,8 @@
 import os
 import tempfile
 import shutil
-try:
-    import queue as _queue
-except ImportError:
-    import Queue as _queue
 
+import six.moves
 import click
 
 import qip.definition
@@ -17,7 +14,7 @@ import qip.environ
 import qip.logging
 import qip.symbol
 
-from ._version import __version__
+from qip._version import __version__
 
 
 def install(
@@ -85,7 +82,7 @@ def install(
         installed_requests = set()
 
         # Fill up queue with requirements extracted from requests.
-        queue = _queue.Queue()
+        queue = six.moves.queue.Queue()
 
         for request in requests:
             queue.put((request, None))
@@ -249,6 +246,7 @@ def fetch_context_mapping(path, python_target):
     """Return context mapping containing environment and python mapping.
 
     :param path: path where python package has been installed.
+
     :param python_target: Target a specific Python version via a Wiz request or
         a path to a Python executable (e.g. "python==2.7.*" or
         "/path/to/bin/python").
