@@ -1,6 +1,7 @@
 # :coding: utf-8
 
 import os
+import sys
 import shutil
 import tempfile
 
@@ -87,9 +88,9 @@ def mocked_fetch_python_mapping(mocker):
 
 @pytest.mark.parametrize(
     "options, overwrite, editable_mode, python_target", [
-        ({}, False, False, "python==2.7.*"),
-        ({"overwrite": True}, True, False, "python==2.7.*"),
-        ({"editable_mode": True}, False, True, "python==2.7.*"),
+        ({}, False, False, sys.executable),
+        ({"overwrite": True}, True, False, sys.executable),
+        ({"editable_mode": True}, False, True, sys.executable),
         ({"python_target": "/bin/python3"}, False, False, "/bin/python3")
     ], ids=[
         "no-options",
@@ -207,13 +208,13 @@ def test_install(
 
 @pytest.mark.parametrize(
     "options, overwrite, editable_mode, python_target, definition_mapping", [
-        ({}, False, False, "python==2.7.*", None),
-        ({"overwrite": True}, True, False, "python==2.7.*", None),
-        ({"editable_mode": True}, False, True, "python==2.7.*", None),
+        ({}, False, False, sys.executable, None),
+        ({"overwrite": True}, True, False, sys.executable, None),
+        ({"editable_mode": True}, False, True, sys.executable, None),
         ({"python_target": "/bin/python3"}, False, False, "/bin/python3", None),
         (
             {"definition_mapping": "__MAPPING__"},
-            False, False, "python==2.7.*", "__MAPPING__"
+            False, False, sys.executable, "__MAPPING__"
         ),
     ], ids=[
         "no-options",
@@ -333,9 +334,9 @@ def test_install_with_definition_path(
 
 @pytest.mark.parametrize(
     "options, overwrite, editable_mode, python_target", [
-        ({}, False, False, "python==2.7.*"),
-        ({"overwrite": True}, True, False, "python==2.7.*"),
-        ({"editable_mode": True}, False, True, "python==2.7.*"),
+        ({}, False, False, sys.executable),
+        ({"overwrite": True}, True, False, sys.executable),
+        ({"editable_mode": True}, False, True, sys.executable),
         ({"python_target": "/bin/python3"}, False, False, "/bin/python3")
     ], ids=[
         "no-options",
@@ -423,9 +424,9 @@ def test_install_without_dependencies(
 
 @pytest.mark.parametrize(
     "options, overwrite, editable_mode, python_target", [
-        ({}, False, False, "python==2.7.*"),
-        ({"overwrite": True}, True, False, "python==2.7.*"),
-        ({"editable_mode": True}, False, True, "python==2.7.*"),
+        ({}, False, False, sys.executable),
+        ({"overwrite": True}, True, False, sys.executable),
+        ({"editable_mode": True}, False, True, sys.executable),
         ({"python_target": "/bin/python3"}, False, False, "/bin/python3")
     ], ids=[
         "no-options",
@@ -533,7 +534,7 @@ def test_install_with_package_installation_error(
     mocked_filesystem_ensure_directory.assert_any_call("/tmp2")
 
     mocked_fetch_context_mapping.assert_called_once_with(
-        "/tmp2", "python==2.7.*"
+        "/tmp2", sys.executable
     )
 
     assert mocked_package_install.call_count == 2

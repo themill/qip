@@ -1,6 +1,7 @@
 # :coding: utf-8
 
 import os
+import sys
 import tempfile
 import shutil
 
@@ -18,7 +19,7 @@ from qip._version import __version__
 
 def install(
     requests, output_path, definition_path=None, overwrite=False,
-    no_dependencies=False, editable_mode=False, python_target="python==2.7.*",
+    no_dependencies=False, editable_mode=False, python_target=sys.executable,
     definition_mapping=None
 ):
     """Install packages to *output_path* from *requests*.
