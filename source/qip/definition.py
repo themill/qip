@@ -49,7 +49,7 @@ def export(
                 "{}::{}".format(namespace, mapping["request"]),
                 definition_mapping
             )
-            additional_variants = _definition.variants
+            additional_variants = [v.data() for v in _definition.variants]
         except wiz.exception.RequestNotFound:
             pass
 
