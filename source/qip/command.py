@@ -36,20 +36,20 @@ def execute(command, environ_mapping, quiet=False):
     )
 
     if not quiet:
-        output = ""
+        output = b""
 
         lines_iterator = iter(process.stdout.readline, b"")
         while process.poll() is None:
             for line in lines_iterator:
-                output += str(line)
+                output += line
                 _line = line.rstrip()
                 logger.debug(_line)
 
-        stderr = b"\n".join(process.stderr.readlines())
+        stderr = b"\n".join(process.stderr.readlines()).decode("utf-8")
     else:
         output, stderr = process.communicate()
 
     if len(stderr):
         raise RuntimeError(stderr)
 
-    return output
+    return output.decode("utf-8")
