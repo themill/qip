@@ -6,11 +6,11 @@ import tempfile
 
 import pytest
 from six.moves import reload_module
-
+from click.testing import CliRunner
 import wiz
 import wiz.config
+
 import qip.command_line
-from click.testing import CliRunner
 
 
 @pytest.fixture(autouse=True)
