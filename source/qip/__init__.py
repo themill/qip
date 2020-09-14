@@ -54,7 +54,8 @@ def install(
 
     :param python_target: Target a specific Python version via a Wiz request or
         a path to a Python executable (e.g. "python==2.7.*" or
-        "/path/to/bin/python"). Default is "python==2.7.*".
+        "/path/to/bin/python"). Default is the path to the current Python
+        executable.
 
     :param definition_mapping: None or mapping regrouping all available
         :term:`Wiz` definitions. Default is None.
