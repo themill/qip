@@ -1,7 +1,6 @@
 # :coding: utf-8
 
 import tempfile
-import os.path
 
 import pytest
 import wiz
@@ -14,12 +13,6 @@ import qip.command
 def mocked_mkdtemp(mocker):
     """Return mocked 'tempfile.mkdtemp' function"""
     return mocker.patch.object(tempfile, "mkdtemp")
-
-
-@pytest.fixture()
-def mocked_os_isfile(mocker):
-    """Return mocked 'wiz.resolve_context' function"""
-    return mocker.patch.object(os.path, "isfile")
 
 
 @pytest.fixture()
