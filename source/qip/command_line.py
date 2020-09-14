@@ -20,7 +20,7 @@ _CONFIG = wiz.config.fetch()
 
 #: Click default context for all commands.
 CONTEXT_SETTINGS = dict(
-    max_content_width=80,
+    max_content_width=90,
     help_option_names=["-h", "--help"],
 )
 
@@ -98,7 +98,7 @@ def main(**kwargs):
     ),
 )
 @click.option(
-    "--update",
+    "-u", "--update",
     help=(
         "Update Wiz definition(s) that already exist in the Wiz definitions "
         "output path with additional Python variants."
@@ -107,13 +107,13 @@ def main(**kwargs):
     default=False
 )
 @click.option(
-    "--no-dependencies",
+    "-N", "--no-dependencies",
     help="Install the specified package(s) without dependencies.",
     is_flag=True,
     default=False
 )
 @click.option(
-    "--overwrite-installed/--skip-installed",
+    "-f/-s", "--overwrite-installed/--skip-installed",
     help=(
         "Indicate whether packages already installed should be overwritten "
         "or skipped. By default, a user confirmation will be required."
