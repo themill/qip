@@ -81,7 +81,11 @@ def test_export_with_additional_variants(
     mocked_retrieve.return_value = None
     mocked_create.return_value = "__DEF__"
     mocked_wiz_fetch_definition.return_value = mocker.Mock(
-        variants="__VARIANTS__"
+        variants=[
+            mocker.Mock(**{"data.return_value": "__DATA1__"}),
+            mocker.Mock(**{"data.return_value": "__DATA2__"}),
+            mocker.Mock(**{"data.return_value": "__DATA3__"}),
+        ]
     )
 
     mapping = {"request": "foo >= 1, < 2"}
@@ -100,7 +104,7 @@ def test_export_with_additional_variants(
     mocked_update.assert_not_called()
     mocked_create.assert_called_once_with(
         mapping, output_path, editable_mode=False,
-        additional_variants="__VARIANTS__"
+        additional_variants=["__DATA1__", "__DATA2__", "__DATA3__"]
     )
     mocked_wiz_export_definition.assert_called_once_with(
         path, "__DEF__", overwrite=True
@@ -177,7 +181,11 @@ def test_export_retrieved_and_additional_variants(
     mocked_retrieve.return_value = definition
     mocked_update.return_value = "__DEF__"
     mocked_wiz_fetch_definition.return_value = mocker.Mock(
-        variants="__VARIANTS__"
+        variants=[
+            mocker.Mock(**{"data.return_value": "__DATA1__"}),
+            mocker.Mock(**{"data.return_value": "__DATA2__"}),
+            mocker.Mock(**{"data.return_value": "__DATA3__"}),
+        ]
     )
 
     mapping = {"request": "foo >= 1, < 2"}
@@ -195,7 +203,7 @@ def test_export_retrieved_and_additional_variants(
     mocked_retrieve.assert_called_once_with(mapping)
     mocked_update.assert_called_once_with(
         definition, mapping, output_path, editable_mode=False,
-        additional_variants="__VARIANTS__"
+        additional_variants=["__DATA1__", "__DATA2__", "__DATA3__"]
     )
     mocked_create.assert_not_called()
     mocked_wiz_export_definition.assert_called_once_with(
