@@ -13,7 +13,7 @@ def execute(command, environ_mapping, quiet=False):
 
         It should be in the form of::
 
-            "pip install foo"
+            "python -m pip install foo"
 
     :param environ_mapping: mapping with all environment variables that
         must be set for the *command* to run properly.
