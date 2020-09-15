@@ -4,7 +4,7 @@ Glossary
 
 .. glossary::
 
-    devpi
+    Devpi
         A powerful :term:`PyPI`-compatible server and a complimentary command
         line tool to drive packaging, testing and release activities with
         :term:`Python`.
@@ -29,13 +29,6 @@ Glossary
         Python programming language.
 
         .. seealso:: https://pypi.org/
-
-    VCS
-        Version control systems (VCS) are systems that records changes to a file
-        or set of files over time so that you can recall specific versions
-        later.
-
-        .. seealso:: https://en.wikipedia.org/wiki/Version_control
 
     Virtualenv
         A tool to create isolated Python environments.

@@ -8,23 +8,21 @@ Installing
 
 .. note::
 
-    Using `virtualenv-mill` is recommended when evaluating or running locally.
+    Using :term:`Virtualenv` is recommended when evaluating or running locally.
 
-Installation is simple with `pip <http://www.pip-installer.org/>`_::
+Installation is simple with :term:`Pip`::
 
-    pip install qip
-
-Assuming it's already been added to the devPi index.
+    pip install qip-installer
 
 Installing from source
 ======================
 
 You can also install manually from the source for more control. First obtain a
 copy of the source by either downloading the
-`zipball <http://gitlab/rnd/qip/repository/archive.zip?ref=master>`_ or
+`zipball <https://github.com/themill/qip/archive/master.zip>`_ or
 cloning the public repository::
 
-    git clone git@gitlab:rnd/qip.git
+    git clone git@github.com:themill/qip.git
 
 Then you can build and install the package into your current Python
 environment::
@@ -41,7 +39,7 @@ the project source and reflect any local changes made instantly::
     If you plan on building documentation and running tests, run the following
     command instead to install required extra packages for development::
 
-        pip install -e ".[dev]"
+        pip install -e .[dev]
 
 Alternatively, just build locally and manage yourself::
 
@@ -53,7 +51,7 @@ Building documentation from source
 Ensure you have installed the 'extra' packages required for building the
 documentation::
 
-    pip install -e ".[doc]"
+    pip install -e .[doc]
 
 Then you can build the documentation with the command::
 
@@ -68,7 +66,7 @@ Running tests against the source
 
 Ensure you have installed the 'extra' packages required for running the tests::
 
-    pip install -e ".[test]"
+    pip install -e .[test]
 
 Then run the tests as follows::
 
@@ -81,3 +79,4 @@ You can also generate a coverage report when running tests::
 View the generated report at::
 
     file:///path/to/qip/htmlcov/index.html
+

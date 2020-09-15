@@ -4,226 +4,227 @@
 Python Development
 ******************
 
-Development with Qip and Wiz
-============================
+Qip provide a few features to ease the development process.
 
-Allowing a Python module to be installed in editable mode, directly linking to
-the source code, is important for rapid development.
+.. _development/editable:
 
-To ensure that Qip/Wiz can provide the same functionality as pip installing
-into a :term:`Virtualenv`, Qip supports an editable mode.
+Editable mode
+=============
 
-For this example it is assumed that `foo` is a python module that is pip
-installable (includes a setup.py etc).
+Qip provides an editable mode to allow for rapid development when developing
+a Python package::
 
-Qip can install this module and its dependencies::
+    >>> qip install -e .
 
-    > cd foo
-    > qip install -e .
+.. seealso::
 
-The output packages can be found (by default) in::
+    `Pip "Editable" installs
+    <https://pip.pypa.io/en/stable/reference/pip_install/#editable-installs>`_
 
-    > cd /tmp/qip/packages
+Let's clone the popular `Pystache <https://github.com/defunkt/pystache>`_
+repository to demonstrate this feature::
 
-The output definitions can be found (by default) in::
+    >>> git clone https://github.com/defunkt/pystache.git
+    >>> cd ./pystache
+    >>> qip install -e .
 
-    > cd /tmp/qip/definitions
+The ``pystache`` definition will ensure that the :ref:`install-location
+<wiz:definition/install_location>` value will target the cloned repository:
 
-Foo and all its dependencies should now be available to :term:`Wiz` through this
-registry::
-
-    > wiz -add /tmp/qip/definitions use foo -- foo
-
-.. hint::
-
-    A module can be installed without dependencies, especially if they are
-    already available in a global registry.
-    However, any requirement the module has, needs to be available in the
-    registries visible to :term:`Wiz`, when resolving the request.
-
-Definitions
------------
-Since it has been installed in editable mode, foo's definition needs have a
-:envvar:`PYTHONPATH` set to the source code.
-
-Default definition
-^^^^^^^^^^^^^^^^^^
-
-If foo is a module without a custom definition in its repository, a default one
-is being created, including:
-
-- :ref:`identifier <wiz:definition/identifier>`
-- :ref:`namespace <wiz:definition/namespace>`
-- :ref:`version <wiz:definition/version>`
-- :ref:`description <wiz:definition/description>` from the setup.py
-- entry points for :ref:`commands <wiz:definition/command>`
-- dependencies from the setup.py for :ref:`requirements <wiz:definition/requirements>`
-- path to the source as :ref:`install-location <wiz:definition/install_location>`
-
-For example::
+.. code-block:: json
+    :emphasize-lines: 16
 
     {
-        "identifier": "foo",
+        "identifier": "pystache",
+        "version": "0.5.4",
         "namespace": "library",
+        "description": "Mustache for Python",
         "command": {
-            "foo": "python -m foo"
+            "pystache": "python -m pystache.commands.render",
+            "pystache-test": "python -m pystache.commands.test"
         },
         "environ": {
             "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
         },
         "variants": [
             {
-                "identifier": "2.7"
-                "requirements: [
-                    "python >=2.7, <2.8",
-                    "library::bar"
+                "identifier": "3.8",
+                "install-location": "/path/to/pystache/",
+                "requirements": [
+                    "python >= 3.8, < 3.9"
                 ]
-                "install-location": "~/dev/foo/source",
             }
         ]
     }
 
-Custom definition
-^^^^^^^^^^^^^^^^^^
+It is then possible to execute the following command::
 
-If foo is a module with a custom definition in its repository, :term:`Qip` will
-retrieve that and update:
+    >>> wiz -add /tmp/qip/definitions run pystache -- 'Hello {{world}}' '{"world": "everybody"}'
+    info: Start command: python -m pystache.commands.render 'Hello {{world}}' '{"world": "everybody"}'
+    Hello everybody
 
-- :ref:`version <wiz:definition/version>`
-- :ref:`namespace <wiz:definition/namespace>`
-- :ref:`description <wiz:definition/description>` from the setup.py
-- append entry points for :ref:`commands <wiz:definition/command>`
-- append dependencies from the setup.py for :ref:`requirements <wiz:definition/requirements>`
-- path to the source as :ref:`install-location <wiz:definition/install_location>`
-- :envvar:`PYTHONPATH` in :ref:`environ <wiz:definition/environ>`
+You can modify the :file:`pystache/commands/render.py` file to print a different
+output and ensure that it works as expected::
 
-However, it will keep:
+    diff --git a/pystache/commands/render.py b/pystache/commands/render.py
+    index 1a9c309..9738c5e 100644
+    --- a/pystache/commands/render.py
+    +++ b/pystache/commands/render.py
+    @@ -88,7 +88,7 @@ def main(sys_argv=sys.argv):
+             context = json.loads(context)
 
-- :ref:`identifier <wiz:definition/identifier>`
+         rendered = renderer.render(template, context)
+    -    print rendered
+    +    print "test " + rendered
 
-For example, the custom definition :file:`wiz.json` could look like this::
+The command will then return::
 
-    {
-        "identifier": "foo",
-        "command": {
-            "bar": "python -m foo -- special"
-        },
-        "environ": {
-            "EXTRA": "1",
-            "PYTHONPATH": "${INSTALL_LOCATION}/package_data/maya:${PYTHONPATH}"
-        },
-        "requirements: [
-             "maya"
-        ]
-    }
+    >>> wiz -add /tmp/qip/definitions run pystache -- 'Hello {{world}}' '{"world": "everybody"}'
+    info: Start command: python -m pystache.commands.render 'Hello {{world}}' '{"world": "everybody"}'
+    test Hello everybody
 
-The resulting definition after the qip install could look like this::
+.. _development/custom_definition:
 
-    {
-        "identifier": "foo",
-        "version": "1.0.0",
-        "namespace": "library",
-        "command": {
-            "foo": "python -m foo",
-            "bar": "python -m foo -- special"
-        },
-        "environ": {
-            "EXTRA": "1",
-            "PYTHONPATH": "${INSTALL_LOCATION}:${INSTALL_LOCATION}/package_data/maya:${PYTHONPATH}"
-        },
-        "variants": [
-            {
-                "identifier": "2.7"
-                "requirements: [
-                    "python >=2.7, <2.8",
-                    "bar"
-                ]
-                "install-location": "~/dev/foo/source",
-            }
-        ]
-        "requirements: [
-             "maya"
-        ]
-    }
+Custom Wiz definition
+=====================
 
-.. note::
+A default :term:`Wiz` definition will be created for each Python packages to
+install. It will contain:
 
-    This means, that the custom definition inside the repository only needs to
-    include environment variables, requirements and command aliases, if they
-    are special.
+* :ref:`identifier <wiz:definition/identifier>` based of the project name.
+* :ref:`version <wiz:definition/version>` based on the package version.
+* :ref:`description <wiz:definition/description>` based on the package description.
+* :ref:`commands <wiz:definition/command>` based on entry points defined in
+  :file:`setup.py`.
+* :ref:`requirements <wiz:definition/requirements>` based on package
+  dependencies.
+* :ref:`install-location <wiz:definition/install_location>` based on relative
+  library path.
 
-.. important::
-
-    When retrieving a definition, it is being assumed that the developer
-    has not set :envvar:`PYTHONPATH` environment variable referencing
-    :envvar:`INSTALL_LOCATION`. However, if it is necessary to add a custom
-    :envvar:`PYTHONPATH`, qip will prepend the :envvar:`INSTALL_LOCATION` before
-    the custom :envvar:`PYTHONPATH` value.
-
-
-The custom :file:`wiz.json` definition should be in located in
-``source/package_data`` of the repository.
-Packaging the :file:`wiz.json` inside the source ensures that it can be packaged
-easily with the package data and retrieved during install.
+It is possible to add a custom definition within the repository to extend this
+:term:`Wiz` definition. The custom definition should be included in the source
+code under :file:`package_data/wiz.json`.
 
 .. warning::
-    Ensure that the :file:`MANIFEST.in` includes ``*.json`` files.
 
-Development for multiple Python versions
-========================================
+    The custom definition must be a valid one. That means that it must contain
+    at least an :ref:`identifier <wiz:definition/identifier>`.
 
-By default any Python package is build with Python 2.7.
-If a package is required for multiple versions of Python, it should be build
-sequentially, using the :option:`--update <qip install --update>` flag, i.e.:
+Let's use again the `Pystache <https://github.com/defunkt/pystache>`_ repository
+to demonstrate this feature::
 
-    >>> qip install tensorflow
-    >>> qip install tensorflow --python "python==3.6.*" --update
+    >>> git clone https://github.com/defunkt/pystache.git
+    >>> cd ./pystache
 
-.. important::
+Add the following definition in :file:`pystache/package_data/wiz.json`
 
-    Installs using :option:`--update <qip install --update>` need to use the
-    same :option:`--definition-path <qip install --definition-path>`, as it will
-    look for definitions to update in there.
-
-This will result in a definition like:
-
-.. code-block:: python
-    :emphasize-lines: 12, 23
+.. code-block:: json
 
     {
-        "identifier": "tensorflow",
-        "version": "1.13.1",
-        "namespace": "library",
-        "description": "TensorFlow is an open source machine learning framework for everyone.",
-        "install-root": "/tmp/qip/packages",
+        "identifier": "pystache",
         "command": {
-            ...
-        },
+            "say_hello": "python -m pystache.commands.render 'Hello {{world}}' '{\"world\": \"everybody\"}'"
+        }
+    }
+
+Now install the definition as follows::
+
+    >>> qip install .
+
+It is then possible to execute the following command::
+
+    >>> wiz -add /tmp/qip/definitions run say_hello
+    info: Start command: python -m pystache.commands.render 'Hello {{world}}' '{"world": "everybody"}'
+    Hello everybody
+
+Using a custom definition could be particularly helpful when a Python package
+depends on a non-Python library.
+
+
+.. _development/custom_definition/dcc:
+
+Working with DCCs
+-----------------
+
+When writing a Python plugin for a Digital content creation tool, a custom
+:term:`Wiz` definition should be used to ease the development and deployment
+process.
+
+Here are a few usage examples:
+
+* `Maya (Autodesk) <https://www.autodesk.com/products/maya/overview>`_
+
+.. code-block:: json
+
+    {
+        "identifier": "foo",
+        "namespace": "maya",
         "environ": {
-            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+            "MAYA_PLUG_IN_PATH": "${INSTALL_LOCATION}/foo/package_data/maya/plugin:${MAYA_PLUG_IN_PATH}",
+            "MAYA_SCRIPT_PATH": "${INSTALL_LOCATION}/foo/package_data/maya/script/mel:${MAYA_SCRIPT_PATH}",
+            "PYTHONPATH": "${INSTALL_LOCATION}/foo/package_data/maya/script/python:${PYTHONPATH}"
         },
-        "variants": [
-            {
-                "identifier": "3.6",
-                "install-location": "${INSTALL_ROOT}/tensorflow/tensorflow-1.13.1-py36/lib/python3.6/site-packages",
-                "requirements": [
-                    "python >=3.6, <3.7",
-                    ...
-                ]
-            },
-            {
-                "identifier": "2.7",
-                "install-location": "${INSTALL_ROOT}/tensorflow/tensorflow-1.13.1-py27/lib/python2.7/site-packages",
-                "requirements": [
-                    "python >=2.7, <2.8",
-                    ...
-                ]
-            }
+        "requirements": [
+            "maya"
         ]
     }
 
-This can also be used in editable mode, i.e::
+* `Flame (Autodesk) <https://www.autodesk.com/products/flame/overview>`_
 
-    >>> cd {PATH_TO}/shadow && qip install -e ."[dev]"
-    >>> wiz --add /tmp/qip/definitions use shadow -- pytest test
+.. code-block:: json
 
+    {
+        "identifier": "foo",
+        "namespace": "flame",
+        "environ": {
+            "DL_PYTHON_HOOK_PATH": "${INSTALL_LOCATION}/foo/package_data/python:${DL_PYTHON_HOOK_PATH}"
+        },
+        "requirements": [
+            "flame"
+        ]
+    }
+
+* `Nuke (Foundry) <https://www.foundry.com/products/nuke>`_
+
+.. code-block:: json
+
+    {
+        "identifier": "foo",
+        "namespace": "nuke",
+        "environ": {
+            "NUKE_PATH": "${INSTALL_LOCATION}/foo/package_data/nuke:${NUKE_PATH}"
+        },
+        "requirements": [
+            "nuke"
+        ]
+    }
+
+* `Houdini (SideFX) <https://www.sidefx.com/products/houdini>`_
+
+.. code-block:: json
+
+    {
+        "identifier": "foo",
+        "namespace": "houdini",
+        "environ": {
+            "HOUDINI_PATH": "${INSTALL_LOCATION}/foo/package_data/houdini:${HOUDINI_PATH}"
+        },
+        "requirements": [
+            "houdini"
+        ]
+    }
+
+* `RV (Shotgun) <https://www.shotgunsoftware.com/rv>`_
+
+.. code-block:: json
+
+    {
+        "identifier": "foo",
+        "namespace": "rv",
+        "environ": {
+            "RV_SUPPORT_PATH": "${INSTALL_LOCATION}/foo/package_data/rv:${RV_SUPPORT_PATH}"
+        },
+        "requirements": [
+            "rv"
+        ]
+    }

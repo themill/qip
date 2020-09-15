@@ -365,7 +365,7 @@ Release Notes
         :tags: command-line
 
         Added :option:`qip install --editable` to install local projects or
-        :term:`VCS` projects in :ref:`editable mode <editable-installs>`.
+        VCS projects in :ref:`editable mode <editable-installs>`.
 
     .. change:: new
         :tags: command-line

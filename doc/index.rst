@@ -1,18 +1,18 @@
 .. _main:
 
 ###
-qip
+Qip
 ###
-
-Quarantined Installer for Python
 
 .. toctree::
     :maxdepth: 1
 
     introduction
     installing
-    tutorial
+    getting_started
+    configuration
     development
+    deployment
     command_line
     api_reference/index
     release/index
