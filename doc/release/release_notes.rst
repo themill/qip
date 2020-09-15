@@ -4,6 +4,18 @@
 Release Notes
 *************
 
+.. release:: Upcoming
+
+    .. change:: new
+
+        Added configuration to run unit tests on `Travis
+        <https://travis-ci.org/themill/qip>`_
+
+    .. change:: new
+
+        Added configuration to build documentation on `ReadTheDocs
+        <https://qip.readthedocs.io/en/stable/>`_
+
 .. release:: 2.0.0
     :date: 2020-09-14
 
