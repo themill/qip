@@ -3,7 +3,6 @@
 import subprocess
 
 import pytest
-from mock import call
 
 import qip.command
 
@@ -26,38 +25,41 @@ def test_execute_verbose(mocked_subprocess, mocked_process, logger):
     mocked_subprocess.return_value = mocked_process
     mocked_process.poll.side_effect = [None, None, None, False]
     mocked_process.stdout.readline.side_effect = [
-        "line one\n", "line two\n", "line three\n"
+        b"line one\n", b"line two\n", b"line three\n"
     ]
     mocked_process.stderr.readlines.return_value = []
 
     command = "pip install foo"
     output = qip.command.execute(command, {})
 
-    logger.debug.assert_has_calls([
-        call('line one'), call('line two'), call('line three')
-    ], any_order=True)
-    assert output == 'line one\nline two\nline three\n'
+    assert logger.debug.call_count == 4
+    logger.debug.assert_any_call("pip install foo")
+    logger.debug.assert_any_call("line one")
+    logger.debug.assert_any_call("line two")
+    logger.debug.assert_any_call("line three")
+
+    assert output == "line one\nline two\nline three\n"
 
 
 def test_execute_quiet(mocked_subprocess, mocked_process, capsys):
     """Execute a command quiet."""
     mocked_subprocess.return_value = mocked_process
     mocked_process.communicate.return_value = (
-        'line one\nline two\nline three\n', ""
+        b"line one\nline two\nline three\n", b""
     )
 
     command = "pip install foo"
     output = qip.command.execute(command, {}, quiet=True)
 
     stdout_message, _ = capsys.readouterr()
-    assert stdout_message == ''
-    assert output == 'line one\nline two\nline three\n'
+    assert stdout_message == ""
+    assert output == "line one\nline two\nline three\n"
 
 
 def test_execute_stderr(mocked_subprocess, mocked_process):
     """Fail to execute a command."""
     mocked_subprocess.return_value = mocked_process
-    mocked_process.communicate.return_value = ('', "stderr")
+    mocked_process.communicate.return_value = (b"", b"stderr")
     command = "pip install foo"
 
     with pytest.raises(RuntimeError) as error:

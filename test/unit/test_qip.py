@@ -1,15 +1,15 @@
 # :coding: utf-8
 
 import os
+import sys
 import shutil
 import tempfile
 
 import click
 import pytest
-import mock
+import wiz.filesystem
 
 import qip
-import qip.filesystem
 import qip.package
 import qip.definition
 
@@ -58,14 +58,8 @@ def mocked_fetch_context_mapping(mocker):
 
 @pytest.fixture()
 def mocked_filesystem_ensure_directory(mocker):
-    """Return mocked 'qip.filesystem.ensure_directory' function"""
-    return mocker.patch.object(qip.filesystem, "ensure_directory")
-
-
-@pytest.fixture()
-def mocked_filesystem_remove_directory_content(mocker):
-    """Return mocked 'qip.filesystem.remove_directory_content' function"""
-    return mocker.patch.object(qip.filesystem, "remove_directory_content")
+    """Return mocked 'wiz.filesystem.ensure_directory' function"""
+    return mocker.patch.object(wiz.filesystem, "ensure_directory")
 
 
 @pytest.fixture()
@@ -94,9 +88,9 @@ def mocked_fetch_python_mapping(mocker):
 
 @pytest.mark.parametrize(
     "options, overwrite, editable_mode, python_target", [
-        ({}, False, False, "python==2.7.*"),
-        ({"overwrite": True}, True, False, "python==2.7.*"),
-        ({"editable_mode": True}, False, True, "python==2.7.*"),
+        ({}, False, False, sys.executable),
+        ({"overwrite": True}, True, False, sys.executable),
+        ({"editable_mode": True}, False, True, sys.executable),
         ({"python_target": "/bin/python3"}, False, False, "/bin/python3")
     ], ids=[
         "no-options",
@@ -109,8 +103,7 @@ def test_install(
     mocked_filesystem_ensure_directory, mocked_tempfile_mkdtemp,
     mocked_fetch_context_mapping, mocked_package_install,
     mocked_copy_to_destination, mocked_definition_export,
-    mocked_filesystem_remove_directory_content, mocked_shutil_rmtree, options,
-    overwrite, editable_mode, python_target
+    mocked_shutil_rmtree, options, overwrite, editable_mode, python_target
 ):
     """Install packages."""
     packages = [
@@ -167,9 +160,10 @@ def test_install(
 
     assert mocked_tempfile_mkdtemp.call_count == 2
 
-    assert mocked_filesystem_ensure_directory.call_count == 5
+    assert mocked_filesystem_ensure_directory.call_count == 9
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/install")
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/site-packages")
+    mocked_filesystem_ensure_directory.assert_any_call("/tmp2")
 
     mocked_fetch_context_mapping.assert_called_once_with("/tmp2", python_target)
 
@@ -207,23 +201,20 @@ def test_install(
 
     mocked_definition_export.assert_not_called()
 
-    assert mocked_filesystem_remove_directory_content.call_count == 4
-    mocked_filesystem_remove_directory_content.assert_any_call("/tmp2")
-
-    assert mocked_shutil_rmtree.call_count == 2
+    assert mocked_shutil_rmtree.call_count == 6
     mocked_shutil_rmtree.assert_any_call("/tmp1")
     mocked_shutil_rmtree.assert_any_call("/tmp2")
 
 
 @pytest.mark.parametrize(
     "options, overwrite, editable_mode, python_target, definition_mapping", [
-        ({}, False, False, "python==2.7.*", None),
-        ({"overwrite": True}, True, False, "python==2.7.*", None),
-        ({"editable_mode": True}, False, True, "python==2.7.*", None),
+        ({}, False, False, sys.executable, None),
+        ({"overwrite": True}, True, False, sys.executable, None),
+        ({"editable_mode": True}, False, True, sys.executable, None),
         ({"python_target": "/bin/python3"}, False, False, "/bin/python3", None),
         (
             {"definition_mapping": "__MAPPING__"},
-            False, False, "python==2.7.*", "__MAPPING__"
+            False, False, sys.executable, "__MAPPING__"
         ),
     ], ids=[
         "no-options",
@@ -237,8 +228,8 @@ def test_install_with_definition_path(
     mocked_filesystem_ensure_directory, mocked_tempfile_mkdtemp,
     mocked_fetch_context_mapping, mocked_package_install,
     mocked_copy_to_destination, mocked_definition_export,
-    mocked_filesystem_remove_directory_content, mocked_shutil_rmtree, options,
-    overwrite, editable_mode, python_target, definition_mapping
+    mocked_shutil_rmtree, options, overwrite, editable_mode, python_target,
+    definition_mapping
 ):
     """Install packages with Wiz definitions."""
     packages = [
@@ -282,10 +273,11 @@ def test_install_with_definition_path(
 
     assert mocked_tempfile_mkdtemp.call_count == 2
 
-    assert mocked_filesystem_ensure_directory.call_count == 5
+    assert mocked_filesystem_ensure_directory.call_count == 8
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/install")
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/definitions")
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/site-packages")
+    mocked_filesystem_ensure_directory.assert_any_call("/tmp2")
 
     mocked_fetch_context_mapping.assert_called_once_with("/tmp2", python_target)
 
@@ -335,19 +327,16 @@ def test_install_with_definition_path(
         definition_mapping=definition_mapping
     )
 
-    assert mocked_filesystem_remove_directory_content.call_count == 3
-    mocked_filesystem_remove_directory_content.assert_any_call("/tmp2")
-
-    assert mocked_shutil_rmtree.call_count == 2
+    assert mocked_shutil_rmtree.call_count == 5
     mocked_shutil_rmtree.assert_any_call("/tmp1")
     mocked_shutil_rmtree.assert_any_call("/tmp2")
 
 
 @pytest.mark.parametrize(
     "options, overwrite, editable_mode, python_target", [
-        ({}, False, False, "python==2.7.*"),
-        ({"overwrite": True}, True, False, "python==2.7.*"),
-        ({"editable_mode": True}, False, True, "python==2.7.*"),
+        ({}, False, False, sys.executable),
+        ({"overwrite": True}, True, False, sys.executable),
+        ({"editable_mode": True}, False, True, sys.executable),
         ({"python_target": "/bin/python3"}, False, False, "/bin/python3")
     ], ids=[
         "no-options",
@@ -360,8 +349,7 @@ def test_install_without_dependencies(
     mocked_filesystem_ensure_directory, mocked_tempfile_mkdtemp,
     mocked_fetch_context_mapping, mocked_package_install,
     mocked_copy_to_destination, mocked_definition_export,
-    mocked_filesystem_remove_directory_content, mocked_shutil_rmtree, options,
-    overwrite, editable_mode, python_target
+    mocked_shutil_rmtree, options, overwrite, editable_mode, python_target
 ):
     """Install packages with dependencies."""
     packages = [
@@ -400,9 +388,10 @@ def test_install_without_dependencies(
 
     assert mocked_tempfile_mkdtemp.call_count == 2
 
-    assert mocked_filesystem_ensure_directory.call_count == 3
+    assert mocked_filesystem_ensure_directory.call_count == 5
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/install")
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/site-packages")
+    mocked_filesystem_ensure_directory.assert_any_call("/tmp2")
 
     mocked_fetch_context_mapping.assert_called_once_with("/tmp2", python_target)
 
@@ -428,19 +417,16 @@ def test_install_without_dependencies(
 
     mocked_definition_export.assert_not_called()
 
-    assert mocked_filesystem_remove_directory_content.call_count == 2
-    mocked_filesystem_remove_directory_content.assert_any_call("/tmp2")
-
-    assert mocked_shutil_rmtree.call_count == 2
+    assert mocked_shutil_rmtree.call_count == 4
     mocked_shutil_rmtree.assert_any_call("/tmp1")
     mocked_shutil_rmtree.assert_any_call("/tmp2")
 
 
 @pytest.mark.parametrize(
     "options, overwrite, editable_mode, python_target", [
-        ({}, False, False, "python==2.7.*"),
-        ({"overwrite": True}, True, False, "python==2.7.*"),
-        ({"editable_mode": True}, False, True, "python==2.7.*"),
+        ({}, False, False, sys.executable),
+        ({"overwrite": True}, True, False, sys.executable),
+        ({"editable_mode": True}, False, True, sys.executable),
         ({"python_target": "/bin/python3"}, False, False, "/bin/python3")
     ], ids=[
         "no-options",
@@ -453,8 +439,7 @@ def test_install_with_package_skipped(
     mocked_filesystem_ensure_directory, mocked_tempfile_mkdtemp,
     mocked_fetch_context_mapping, mocked_package_install,
     mocked_copy_to_destination, mocked_definition_export,
-    mocked_filesystem_remove_directory_content, mocked_shutil_rmtree, options,
-    overwrite, editable_mode, python_target
+    mocked_shutil_rmtree, options, overwrite, editable_mode, python_target
 ):
     """Install packages with one package copy skipped."""
     packages = [
@@ -492,9 +477,10 @@ def test_install_with_package_skipped(
 
     assert mocked_tempfile_mkdtemp.call_count == 2
 
-    assert mocked_filesystem_ensure_directory.call_count == 4
+    assert mocked_filesystem_ensure_directory.call_count == 7
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/install")
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/site-packages")
+    mocked_filesystem_ensure_directory.assert_any_call("/tmp2")
 
     mocked_fetch_context_mapping.assert_called_once_with("/tmp2", python_target)
 
@@ -512,10 +498,7 @@ def test_install_with_package_skipped(
 
     mocked_definition_export.assert_not_called()
 
-    assert mocked_filesystem_remove_directory_content.call_count == 3
-    mocked_filesystem_remove_directory_content.assert_any_call("/tmp2")
-
-    assert mocked_shutil_rmtree.call_count == 2
+    assert mocked_shutil_rmtree.call_count == 5
     mocked_shutil_rmtree.assert_any_call("/tmp1")
     mocked_shutil_rmtree.assert_any_call("/tmp2")
 
@@ -524,7 +507,7 @@ def test_install_with_package_installation_error(
     mocked_filesystem_ensure_directory, mocked_tempfile_mkdtemp,
     mocked_fetch_context_mapping, mocked_package_install,
     mocked_copy_to_destination, mocked_definition_export,
-    mocked_filesystem_remove_directory_content, mocked_shutil_rmtree, logger
+    mocked_shutil_rmtree, logger
 ):
     """Install packages with one package error which is skipped."""
     package = {"identifier": "Foo-0.2.3"}
@@ -545,12 +528,13 @@ def test_install_with_package_installation_error(
 
     assert mocked_tempfile_mkdtemp.call_count == 2
 
-    assert mocked_filesystem_ensure_directory.call_count == 3
+    assert mocked_filesystem_ensure_directory.call_count == 5
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/install")
     mocked_filesystem_ensure_directory.assert_any_call("/path/to/site-packages")
+    mocked_filesystem_ensure_directory.assert_any_call("/tmp2")
 
     mocked_fetch_context_mapping.assert_called_once_with(
-        "/tmp2", "python==2.7.*"
+        "/tmp2", sys.executable
     )
 
     assert mocked_package_install.call_count == 2
@@ -569,10 +553,7 @@ def test_install_with_package_installation_error(
 
     mocked_definition_export.assert_not_called()
 
-    assert mocked_filesystem_remove_directory_content.call_count == 2
-    mocked_filesystem_remove_directory_content.assert_any_call("/tmp2")
-
-    assert mocked_shutil_rmtree.call_count == 2
+    assert mocked_shutil_rmtree.call_count == 4
     mocked_shutil_rmtree.assert_any_call("/tmp1")
     mocked_shutil_rmtree.assert_any_call("/tmp2")
 
@@ -780,7 +761,7 @@ def test_copy_to_destination_confirm_overwrite(
     "yes-to-all",
     "no-to-all",
 ])
-def test_confirm_overwrite(mocked_click_prompt, answer, expected):
+def test_confirm_overwrite(mocker, mocked_click_prompt, answer, expected):
     """Ask user to confirm overwrite existing package."""
     # User answered
     mocked_click_prompt.return_value = answer
@@ -793,7 +774,7 @@ def test_confirm_overwrite(mocked_click_prompt, answer, expected):
         default='n',
         show_choices=False,
         show_default=False,
-        type=mock.ANY
+        type=mocker.ANY
     )
 
 

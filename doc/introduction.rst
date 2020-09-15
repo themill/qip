@@ -4,32 +4,28 @@
 Introduction
 ************
 
-qip is a Quarantine Installer for Python.
+Qip is a Quarantine Installer for Python built over :term:`Pip` and :term:`Wiz`.
 
-It is capable of installing packages to specific locations in an isolated
-manner. Each package has a top level directory under the install directory.
-Inside this directory are the versions for each package.
+It uses :term:`Pip` commands to query and install Python packages with its
+dependencies to specific locations in an isolated manner.
 
-Qip does this by wrapping :term:`Pip` commands to query and install packages.
-When installing a package Qip will resolve the package's dependencies and
-install those too.
+.. code-block:: bash
 
-The purpose for this is to enable :term:`Wiz` to resolve clean environments
-using only the packages required and not relying on bundled :term:`Python`
-contexts.
+    >>> qip install scipy
+    info: Requested 'scipy'
+    info: 	Installed 'scipy-1.5.2'.
+    info: 	Wiz definition created for 'scipy-1.5.2'.
+    info: Requested 'numpy>=1.14.5' [from 'scipy-1.5.2'].
+    info: 	Installed 'numpy-1.19.2'.
+    info: 	Wiz definition created for 'numpy-1.19.2'.
+    info: Packages installed: numpy-1.19.2, scipy-1.5.2
+    info: Package output directory: '/tmp/qip/packages'
+    info: Definition output directory: '/tmp/qip/definitions'
 
-A package installation result will for example look like this:
+A :term:`Wiz` definition is created for each package installed in order to
+safely use it within a protected environment.
 
-.. code::
+.. code-block:: bash
 
-    <output directory>
-    ├── flask
-    │   └── flask-1.0.2
-    │       ├── bin
-    │       └── lib
-    │           └── python2.7
-    │               └── site-packages
-    │                   ├── flask
-    │                   │   └── json
-    │                   └── Flask-1.0.2.dist-info
+    >>> wiz -add /tmp/qip/definitions use scipy -- python
 

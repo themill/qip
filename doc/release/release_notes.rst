@@ -4,6 +4,73 @@
 Release Notes
 *************
 
+.. release:: Upcoming
+
+    .. change:: changed
+
+        Project name has been changed to ``qip-installer`` to guarantee a unique
+        name on `Pypi <https://pypi.org/>`_.
+
+    .. change:: changed
+
+        Updated dependency to the major version 3 of :term:`Wiz`.
+
+    .. change:: changed
+
+        Updated the following modules to add compatibility with python 3.7 and
+        3.8:
+
+        * :mod:`qip`
+        * :mod:`qip.definition`
+        * :mod:`qip.system`
+
+    .. change:: new
+
+        Added following short options:
+
+        * :option:`qip install -N` for :option:`qip install --no-dependencies`
+        * :option:`qip install -u` for :option:`qip install --update`
+        * :option:`qip install -f` for :option:`qip install --overwrite-installed`
+        * :option:`qip install -s` for :option:`qip install --skip-installed`
+
+    .. change:: changed
+
+        Updated :ref:`command_line` so that default values can be defined using
+        :term:`Wiz` configuration file.
+
+        ..  seealso:: :ref:`configuration`
+
+    .. change:: changed
+
+        Updated default value for :option:`-p/--python <qip install --python>`
+        to use current :data:`Python executable <sys.executable>` instead of
+        "python==2.7.*".
+
+    .. change:: fixed
+
+        Updated :func:`qip.environ.fetch` to link Python executable into an
+        isolated temporary folder before using it and create an additional
+        "python" symlink if needed. It is to ensure that no other Python
+        executables installed in the same location is being accidentally picked
+        up.
+
+    .. change:: changed
+
+        Removed :mod:`qip.filesystem` and :mod:`qip.symbol` and use logic from
+        :mod:`wiz.filesystem` and :mod:`wiz.symbol` instead.
+
+    .. change:: changed
+
+        Removed ``mlog`` dependency and added :mod:`qip.logging` using
+        :mod:`sawmill` directly to have more flexibility to configure the
+        :class:`qip.logging.Logger` instance.
+
+    .. change:: changed
+
+        Updated repository to use `versup
+        <https://versup.readthedocs.io/en/latest/>`_ the help with the release
+        process.
+
 .. release:: 1.8.1
     :date: 2020-04-01
 
@@ -365,7 +432,7 @@ Release Notes
         :tags: command-line
 
         Added :option:`qip install --editable` to install local projects or
-        :term:`VCS` projects in :ref:`editable mode <editable-installs>`.
+        VCS projects in :ref:`editable mode <editable-installs>`.
 
     .. change:: new
         :tags: command-line

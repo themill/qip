@@ -141,7 +141,8 @@ def test_fetch_mapping_from_environ(
     }
 
     mocked_command_execute.assert_called_once_with(
-        "pip show --disable-pip-version-check 'foo' -v", "__ENV__", quiet=True
+        "python -m pip show --disable-pip-version-check 'foo' -v", "__ENV__",
+        quiet=True
     )
     mocked_system_query.assert_not_called()
 
@@ -191,7 +192,8 @@ def test_fetch_mapping_from_environ_with_system(
     }
 
     mocked_command_execute.assert_called_once_with(
-        "pip show --disable-pip-version-check 'foo' -v", "__ENV__", quiet=True
+        "python -m pip show --disable-pip-version-check 'foo' -v", "__ENV__",
+        quiet=True
     )
     mocked_system_query.assert_called_once()
 
@@ -240,7 +242,8 @@ def test_fetch_mapping_from_environ_with_description(
     }
 
     mocked_command_execute.assert_called_once_with(
-        "pip show --disable-pip-version-check 'foo' -v", "__ENV__", quiet=True
+        "python -m pip show --disable-pip-version-check 'foo' -v", "__ENV__",
+        quiet=True
     )
     mocked_system_query.assert_not_called()
 
@@ -289,7 +292,8 @@ def test_fetch_mapping_from_environ_with_location(
     }
 
     mocked_command_execute.assert_called_once_with(
-        "pip show --disable-pip-version-check 'foo' -v", "__ENV__", quiet=True
+        "python -m pip show --disable-pip-version-check 'foo' -v", "__ENV__",
+        quiet=True
     )
     mocked_system_query.assert_not_called()
 
@@ -338,7 +342,8 @@ def test_fetch_mapping_from_environ_with_commands(
     }
 
     mocked_command_execute.assert_called_once_with(
-        "pip show --disable-pip-version-check 'foo' -v", "__ENV__", quiet=True
+        "python -m pip show --disable-pip-version-check 'foo' -v", "__ENV__",
+        quiet=True
     )
     mocked_system_query.assert_not_called()
 
@@ -393,7 +398,8 @@ def test_fetch_mapping_from_environ_with_requirements(
     }
 
     mocked_command_execute.assert_called_once_with(
-        "pip show --disable-pip-version-check 'foo' -v", "__ENV__", quiet=True
+        "python -m pip show --disable-pip-version-check 'foo' -v", "__ENV__",
+        quiet=True
     )
     mocked_system_query.assert_not_called()
 

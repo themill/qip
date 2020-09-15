@@ -2,6 +2,7 @@
 
 import platform as _platform
 
+import distro
 from packaging.version import Version, InvalidVersion
 
 
@@ -52,7 +53,7 @@ def query_linux():
     :return: system mapping.
 
     """
-    distribution, version, _ = _platform.linux_distribution(
+    distribution, version, _ = distro.linux_distribution(
         full_distribution_name=False
     )
 

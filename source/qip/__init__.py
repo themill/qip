@@ -1,30 +1,25 @@
 # :coding: utf-8
 
-from __future__ import print_function
-
 import os
+import sys
 import tempfile
 import shutil
-try:
-    import queue as _queue
-except ImportError:
-    import Queue as _queue
 
+import six.moves
 import click
-import mlog
+import wiz.filesystem
 
 import qip.definition
 import qip.package
-import qip.filesystem
 import qip.environ
-import qip.symbol
+import qip.logging
 
-from ._version import __version__
+from qip._version import __version__
 
 
 def install(
     requests, output_path, definition_path=None, overwrite=False,
-    no_dependencies=False, editable_mode=False, python_target="python==2.7.*",
+    no_dependencies=False, editable_mode=False, python_target=sys.executable,
     definition_mapping=None
 ):
     """Install packages to *output_path* from *requests*.
@@ -43,29 +38,36 @@ def install(
             ["git@gitlab:rnd/foo.git@dev"]
 
     :param output_path: root destination path for Python packages installation.
+
     :param definition_path: :term:`Wiz` definition extraction path. Default is
         None, which means that :term:`Wiz` definitions are not extracted.
+
     :param overwrite: indicate whether packages already installed and
         corresponding :term:`Wiz` definitions should be overwritten. If None, a
         user confirmation will be prompted. Default is False.
+
     :param no_dependencies: indicate whether package dependencies should be
         skipped. Default is False.
+
     :param editable_mode: indicate whether the Python package location should
         target the source installation package. Default is False.
+
     :param python_target: Target a specific Python version via a Wiz request or
         a path to a Python executable (e.g. "python==2.7.*" or
-        "/path/to/bin/python"). Default is "python==2.7.*".
+        "/path/to/bin/python"). Default is the path to the current Python
+        executable.
+
     :param definition_mapping: None or mapping regrouping all available
         :term:`Wiz` definitions. Default is None.
 
     :return: Boolean value.
 
     """
-    logger = mlog.Logger(__name__ + ".install")
+    logger = qip.logging.Logger(__name__ + ".install")
 
-    qip.filesystem.ensure_directory(output_path)
+    wiz.filesystem.ensure_directory(output_path)
     if definition_path is not None:
-        qip.filesystem.ensure_directory(definition_path)
+        wiz.filesystem.ensure_directory(definition_path)
 
     # Setup temporary folder for package installation.
     cache_path = tempfile.mkdtemp()
@@ -81,7 +83,7 @@ def install(
         installed_requests = set()
 
         # Fill up queue with requirements extracted from requests.
-        queue = _queue.Queue()
+        queue = six.moves.queue.Queue()
 
         for request in requests:
             queue.put((request, None))
@@ -93,10 +95,11 @@ def install(
 
             # Clean up before installation.
             logger.debug("Clean up directory content before installation")
-            qip.filesystem.remove_directory_content(package_path)
+            shutil.rmtree(package_path)
+            wiz.filesystem.ensure_directory(package_path)
 
             # Needed for the editable mode.
-            qip.filesystem.ensure_directory(library_path)
+            wiz.filesystem.ensure_directory(library_path)
 
             try:
                 package_mapping = qip.package.install(
@@ -168,8 +171,11 @@ def copy_to_destination(
 
     :param mapping: mapping of the python package built as returned by
         :func:`qip.package.install`.
+
     :param source_path: path where the package was built.
+
     :param destination_path: path to install to.
+
     :param overwrite: indicate whether packages already installed should be
         overwritten. If None, a user confirmation will be prompted. Default is
         False.
@@ -178,7 +184,7 @@ def copy_to_destination(
         done and one indicating a new value for the *overwrite* option.
 
     """
-    logger = mlog.Logger(__name__ + ".copy_to_destination")
+    logger = qip.logging.Logger(__name__ + ".copy_to_destination")
 
     identifier = mapping["identifier"]
     target = os.path.join(destination_path, mapping["target"])
@@ -203,7 +209,7 @@ def copy_to_destination(
 
             return False, overwrite_next
 
-    qip.filesystem.ensure_directory(os.path.dirname(target))
+    wiz.filesystem.ensure_directory(os.path.dirname(target))
     shutil.copytree(source_path, target)
     logger.debug("Source copied to '{}'".format(target))
 
@@ -242,6 +248,7 @@ def fetch_context_mapping(path, python_target):
     """Return context mapping containing environment and python mapping.
 
     :param path: path where python package has been installed.
+
     :param python_target: Target a specific Python version via a Wiz request or
         a path to a Python executable (e.g. "python==2.7.*" or
         "/path/to/bin/python").

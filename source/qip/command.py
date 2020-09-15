@@ -1,10 +1,9 @@
 # :coding: utf-8
 
-from __future__ import print_function
-import subprocess
 import shlex
+import subprocess
 
-import mlog
+import qip.logging
 
 
 def execute(command, environ_mapping, quiet=False):
@@ -14,7 +13,7 @@ def execute(command, environ_mapping, quiet=False):
 
         It should be in the form of::
 
-            "pip install foo"
+            "python -m pip install foo"
 
     :param environ_mapping: mapping with all environment variables that
         must be set for the *command* to run properly.
@@ -26,7 +25,7 @@ def execute(command, environ_mapping, quiet=False):
     :return: Command output.
 
     """
-    logger = mlog.Logger(__name__ + ".execute")
+    logger = qip.logging.Logger(__name__ + ".execute")
     logger.debug(command)
 
     process = subprocess.Popen(
@@ -42,13 +41,17 @@ def execute(command, environ_mapping, quiet=False):
         lines_iterator = iter(process.stdout.readline, b"")
         while process.poll() is None:
             for line in lines_iterator:
-                output += str(line)
-                _line = line.rstrip()
-                logger.debug(_line.decode("latin"))
+                output += line.decode("utf-8")
+                _line = line.rstrip().decode("utf-8")
+                logger.debug(_line)
 
-        stderr = "\n".join(process.stderr.readlines())
+        stderr = b"\n".join(process.stderr.readlines()).decode("utf-8")
     else:
         output, stderr = process.communicate()
+
+        # Decode process output for display
+        output = output.decode("utf-8")
+        stderr = stderr.decode("utf-8")
 
     if len(stderr):
         raise RuntimeError(stderr)

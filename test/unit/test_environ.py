@@ -1,6 +1,6 @@
 # :coding: utf-8
 
-import os.path
+import tempfile
 
 import pytest
 import wiz
@@ -10,9 +10,9 @@ import qip.command
 
 
 @pytest.fixture()
-def mocked_os_isfile(mocker):
-    """Return mocked 'wiz.resolve_context' function"""
-    return mocker.patch.object(os.path, "isfile")
+def mocked_mkdtemp(mocker):
+    """Return mocked 'tempfile.mkdtemp' function"""
+    return mocker.patch.object(tempfile, "mkdtemp")
 
 
 @pytest.fixture()
@@ -27,7 +27,7 @@ def mocked_command_execute(mocker):
     return mocker.patch.object(qip.command, "execute")
 
 
-def test_fetch_environ(mocked_wiz_resolve_context):
+def test_fetch_environ(mocked_mkdtemp, mocked_wiz_resolve_context):
     """Fetch and return environment mapping."""
     mocked_wiz_resolve_context.return_value = {"environ": "__ENVIRON__"}
 
@@ -37,9 +37,10 @@ def test_fetch_environ(mocked_wiz_resolve_context):
     mocked_wiz_resolve_context.assert_called_once_with(
         ["python==2.7.*"], environ_mapping={}
     )
+    mocked_mkdtemp.assert_not_called()
 
 
-def test_fetch_environ_with_mapping(mocked_wiz_resolve_context):
+def test_fetch_environ_with_mapping(mocked_mkdtemp, mocked_wiz_resolve_context):
     """Fetch and return environment mapping with initial mapping."""
     mocked_wiz_resolve_context.return_value = {"environ": "__ENVIRON__"}
 
@@ -49,16 +50,18 @@ def test_fetch_environ_with_mapping(mocked_wiz_resolve_context):
     mocked_wiz_resolve_context.assert_called_once_with(
         ["python==2.7.*"], environ_mapping="__INITIAL_MAPPING__"
     )
+    mocked_mkdtemp.assert_not_called()
 
 
-def test_fetch_environ_with_python_path(mocked_wiz_resolve_context):
+def test_fetch_environ_with_python_path(
+    temporary_directory, mocked_mkdtemp, mocked_wiz_resolve_context
+):
     """Fetch and return environment mapping with python path."""
     mocked_wiz_resolve_context.return_value = {"environ": "__ENVIRON__"}
+    mocked_mkdtemp.return_value = temporary_directory
 
     environ = qip.environ.fetch("/bin/python")
-    assert environ == {
-        "PATH": "/bin:${PATH}"
-    }
+    assert environ == {"PATH": "{}:${{PATH}}".format(temporary_directory)}
 
     mocked_wiz_resolve_context.assert_not_called()
 

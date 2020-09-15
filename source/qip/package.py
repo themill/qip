@@ -1,21 +1,17 @@
 # :coding: utf-8
 
-from __future__ import print_function
-import re
 import json
 import os
-
-import mlog
+import re
 
 import qip.command
-import qip.filesystem
 import qip.environ
+import qip.logging
 import qip.system
-
+import wiz.filesystem
 
 #: Compiled regular expression to detect request with extra option.
 REQUEST_PATTERN = re.compile(r"(.*)\[(\w*)\]")
-
 
 #: Path to the Python package info script.
 _PACKAGE_INFO_SCRIPT = os.path.join(
@@ -38,12 +34,16 @@ def install(request, path, context_mapping, cache_path, editable_mode=False):
             "git@gitlab:rnd/foo.git@dev"
 
     :param path: path to install Python packages to.
+
     :param context_mapping: contain environment mapping and python mapping, as
         returned from :func:`qip.fetch_context_mapping`.
+
     :param cache_path: Temporary directory for the pip cache.
+
     :param editable_mode: install in editable mode. Default is False.
 
     :raise RuntimeError: if :term:`Pip` fails to install Python package.
+
     :raise ValueError: if the Python package name can not be extracted from
         *request*.
 
@@ -78,7 +78,7 @@ def install(request, path, context_mapping, cache_path, editable_mode=False):
             }
 
     """
-    logger = mlog.Logger(__name__ + ".install")
+    logger = qip.logging.Logger(__name__ + ".install")
 
     if request.startswith("git@gitlab:"):
         request = "git+ssh://" + request.replace(":", "/")
@@ -92,7 +92,7 @@ def install(request, path, context_mapping, cache_path, editable_mode=False):
         "--no-warn-script-location "
         "--disable-pip-version-check "
         "--cache-dir {cache_dir} "
-        "{editable_mode}" 
+        "{editable_mode}"
         "'{requirement}'".format(
             editable_mode="-e " if editable_mode else "",
             destination=path,
@@ -121,8 +121,10 @@ def fetch_mapping_from_environ(name, context_mapping, extra=None):
     """Return a mapping with information about the Python package *name*.
 
     :param name: Python package name.
+
     :param context_mapping: contain environment mapping and python mapping, as
         returned from :func:`qip.fetch_context_mapping`.
+
     :param extra: None or extra requirement label (e.g. "test"). Default is
         None.
 
@@ -156,7 +158,7 @@ def fetch_mapping_from_environ(name, context_mapping, extra=None):
             }
 
     """
-    logger = mlog.Logger(__name__ + ".fetch_mapping_from_environ")
+    logger = qip.logging.Logger(__name__ + ".fetch_mapping_from_environ")
 
     # Extract package information and its dependency.
     dependency_mapping = extract_dependency_mapping(
@@ -216,7 +218,9 @@ def extract_dependency_mapping(name, environ_mapping, extra=None):
     """Return mapping for Python package with all dependency requirements.
 
     :param name: Python package name.
+
     :param environ_mapping: mapping of environment variables.
+
     :param extra: None or extra requirement label (e.g. "test"). Default is
         None.
 
@@ -272,7 +276,7 @@ def extract_identifier(mapping):
     :return: Corresponding identifier (e.g. "Foo-1.11", "Bar").
 
     """
-    identifier = qip.filesystem.sanitize_value(
+    identifier = wiz.filesystem.sanitize_value(
         "{name}-{version}".format(
             name=mapping["package_name"],
             version=mapping["installed_version"]
@@ -355,8 +359,11 @@ def extract_target_path(name, identifier, python_version, os_mapping=None):
     """Return the corresponding target path from package *mapping*.
 
     :param name: Python package name.
+
     :param identifier: Python package identifier.
+
     :param python_version: Python version identifier (e.g. "2.7").
+
     :param os_mapping: None or a mapping describing the operating system.
         Default is None.
 
