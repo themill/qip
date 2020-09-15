@@ -17,3 +17,10 @@ Migrate to 2.0.0
 Project name has been changed to ``qip-installer`` to guarantee a unique name on
 `Pypi <https://pypi.org/>`_.
 
+.. rubric:: API
+
+Following modules have been removed as logic can be used from the :mod:`wiz`
+library instead:
+
+* :mod:`qip.filesystem`
+* :mod:`qip.symbol`
