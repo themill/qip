@@ -2,6 +2,16 @@
 Qip
 ###
 
+.. image:: https://img.shields.io/pypi/v/qip-installer.svg
+    :target: https://pypi.python.org/pypi/qip-installer
+
+.. image:: https://travis-ci.org/themill/qip.svg?branch=master
+    :target: https://travis-ci.org/themill/qip
+
+.. image:: https://readthedocs.org/projects/qip/badge/?version=latest
+    :target: https://qip.readthedocs.io/en/stable/?badge=latest
+    :alt: Documentation Status
+
 Qip is a Quarantine Installer for Python built over `Pip <https://pip.pypa.io>`_
 and `Wiz <https://wiz.readthedocs.io/en/stable/index.html>`_.
 
