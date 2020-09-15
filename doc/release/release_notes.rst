@@ -65,6 +65,12 @@ Release Notes
         :mod:`sawmill` directly to have more flexibility to configure the
         :class:`qip.logging.Logger` instance.
 
+    .. change:: changed
+
+        Updated repository to use `versup
+        <https://versup.readthedocs.io/en/latest/>`_ the help with the release
+        process.
+
 .. release:: 1.8.1
     :date: 2020-04-01
 
