@@ -9,7 +9,7 @@ Qip
     :target: https://travis-ci.org/themill/qip
 
 .. image:: https://readthedocs.org/projects/qip/badge/?version=latest
-    :target: https://qip.readthedocs.io/en/stable/?badge=latest
+    :target: https://qip.readthedocs.io/en/stable
     :alt: Documentation Status
 
 Qip is a Quarantine Installer for Python built over `Pip <https://pip.pypa.io>`_
