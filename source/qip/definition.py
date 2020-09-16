@@ -46,7 +46,9 @@ def export(
     if definition_mapping is not None:
         try:
             _definition = wiz.fetch_definition(
-                "{}::{}".format(namespace, mapping["request"]),
+                "{}::{}=={}".format(
+                    namespace, mapping["key"], mapping["version"]
+                ),
                 definition_mapping
             )
             additional_variants = [v.data() for v in _definition.variants]

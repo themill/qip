@@ -88,7 +88,7 @@ def test_export_with_additional_variants(
         ]
     )
 
-    mapping = {"request": "foo >= 1, < 2"}
+    mapping = {"key": "foo", "version": "0.1.0"}
     path = "/definitions"
     output_path = "/packages"
 
@@ -98,7 +98,7 @@ def test_export_with_additional_variants(
     )
 
     mocked_wiz_fetch_definition.assert_called_once_with(
-        "library::foo >= 1, < 2", "__MAPPING__"
+        "library::foo==0.1.0", "__MAPPING__"
     )
     mocked_retrieve.assert_called_once_with(mapping)
     mocked_update.assert_not_called()
@@ -120,7 +120,7 @@ def test_export_with_request_error(
     mocked_create.return_value = "__DEF__"
     mocked_wiz_fetch_definition.side_effect = wiz.exception.RequestNotFound
 
-    mapping = {"request": "foo >= 1, < 2"}
+    mapping = {"key": "foo", "version": "0.1.0"}
     path = "/definitions"
     output_path = "/packages"
 
@@ -130,7 +130,7 @@ def test_export_with_request_error(
     )
 
     mocked_wiz_fetch_definition.assert_called_once_with(
-        "library::foo >= 1, < 2", "__MAPPING__"
+        "library::foo==0.1.0", "__MAPPING__"
     )
     mocked_retrieve.assert_called_once_with(mapping)
     mocked_update.assert_not_called()
@@ -188,7 +188,7 @@ def test_export_retrieved_and_additional_variants(
         ]
     )
 
-    mapping = {"request": "foo >= 1, < 2"}
+    mapping = {"key": "foo", "version": "0.1.0"}
     path = "/definitions"
     output_path = "/packages"
 
@@ -198,7 +198,7 @@ def test_export_retrieved_and_additional_variants(
     )
 
     mocked_wiz_fetch_definition.assert_called_once_with(
-        "plugin::foo >= 1, < 2", "__MAPPING__"
+        "plugin::foo==0.1.0", "__MAPPING__"
     )
     mocked_retrieve.assert_called_once_with(mapping)
     mocked_update.assert_called_once_with(
