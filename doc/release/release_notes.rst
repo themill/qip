@@ -4,6 +4,14 @@
 Release Notes
 *************
 
+.. release:: Upcoming
+
+    .. change:: fixed
+
+        Updated :func:`qip.definition.export` to target specific package version
+        when retrieving additional variants which will be included in the
+        definition to export.
+
 .. release:: 2.0.1
     :date: 2020-09-14
 
