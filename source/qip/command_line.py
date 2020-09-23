@@ -139,6 +139,12 @@ def main(**kwargs):
     metavar="TARGET",
     default=_CONFIG.get("qip", {}).get("python_target", sys.executable)
 )
+@click.option(
+    "-R", "--continue-on-error",
+    help="Continue installation process when a package fails to install.",
+    is_flag=True,
+    default=False
+)
 @click.argument(
     "requests",
     nargs=-1,
@@ -165,7 +171,8 @@ def install(**kwargs):
         no_dependencies=kwargs["no_dependencies"],
         editable_mode=kwargs["editable"],
         python_target=kwargs["python"],
-        definition_mapping=definition_mapping
+        definition_mapping=definition_mapping,
+        continue_on_error=kwargs["continue_on_error"],
     )
 
     logger.info("Package output directory: {!r}".format(output_path))
