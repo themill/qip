@@ -63,6 +63,9 @@ def install(
     :param continue_on_error: Indicate whether installation process should
         continue if a package cannot be installed. Default is False.
 
+    :raises: :exc:`RuntimeError` if a package cannot be installed and
+        *continue_on_error* is set to False.
+
     :return: Boolean value.
 
     """
