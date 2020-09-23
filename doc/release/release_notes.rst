@@ -4,6 +4,22 @@
 Release Notes
 *************
 
+.. release:: Upcoming
+
+    .. change:: new
+        :tags: command-line
+
+        Added :option:`qip install -R/--continue-on-error <qip install -R>` to
+        resume the installation process when a package fails to install. By
+        default, an error is raised.
+
+    .. change:: changed
+        :tags: API
+
+        Updated :func:`qip.install` with `continue_on_error` option to
+        indicate whether installation process should resume when a package
+        fails to install. Default is False.
+
 .. release:: 2.0.2
     :date: 2020-09-15
 
