@@ -74,7 +74,8 @@ def test_missing_output(mocked_install, mocked_fetch_definition_mapping):
         no_dependencies=False,
         overwrite=None,
         python_target=sys.executable,
-        definition_mapping=None
+        definition_mapping=None,
+        continue_on_error=False
     )
     mocked_fetch_definition_mapping.assert_not_called()
 
@@ -112,7 +113,8 @@ def test_install_packages(
         no_dependencies=False,
         overwrite=None,
         python_target=sys.executable,
-        definition_mapping=None
+        definition_mapping=None,
+        continue_on_error=False
     )
     mocked_fetch_definition_mapping.assert_not_called()
 
@@ -135,7 +137,8 @@ def test_install_package_with_custom_paths(
         no_dependencies=False,
         overwrite=None,
         python_target=sys.executable,
-        definition_mapping=None
+        definition_mapping=None,
+        continue_on_error=False
     )
     mocked_fetch_definition_mapping.assert_not_called()
 
@@ -158,7 +161,8 @@ def test_install_package_without_dependencies(
         no_dependencies=True,
         overwrite=None,
         python_target=sys.executable,
-        definition_mapping=None
+        definition_mapping=None,
+        continue_on_error=False
     )
     mocked_fetch_definition_mapping.assert_not_called()
 
@@ -181,7 +185,8 @@ def test_install_package_overwrite(
         no_dependencies=False,
         overwrite=True,
         python_target=sys.executable,
-        definition_mapping=None
+        definition_mapping=None,
+        continue_on_error=False
     )
     mocked_fetch_definition_mapping.assert_not_called()
 
@@ -204,7 +209,8 @@ def test_install_package_skip(
         no_dependencies=False,
         overwrite=False,
         python_target=sys.executable,
-        definition_mapping=None
+        definition_mapping=None,
+        continue_on_error=False
     )
     mocked_fetch_definition_mapping.assert_not_called()
 
@@ -227,7 +233,8 @@ def test_install_package_editable(
         no_dependencies=False,
         overwrite=None,
         python_target=sys.executable,
-        definition_mapping=None
+        definition_mapping=None,
+        continue_on_error=False
     )
     mocked_fetch_definition_mapping.assert_not_called()
 
@@ -252,8 +259,34 @@ def test_install_package_update(
         no_dependencies=False,
         overwrite=None,
         python_target=sys.executable,
-        definition_mapping="__MAPPING__"
+        definition_mapping="__MAPPING__",
+        continue_on_error=False
     )
     mocked_fetch_definition_mapping.assert_called_once_with(
         [os.path.join("/tmp", "qip", "definitions")]
     )
+
+
+def test_install_continue_on_error(
+    mocked_install, mocked_fetch_definition_mapping
+):
+    """Install packages without raising error when package installation fails.
+    """
+    runner = CliRunner()
+    result = runner.invoke(
+        qip.command_line.install, ["foo", "--continue-on-error"]
+    )
+    assert result.exit_code == 0
+    assert not result.exception
+
+    mocked_install.assert_called_once_with(
+        ("foo",), os.path.join("/tmp", "qip", "packages"),
+        definition_path=os.path.join("/tmp", "qip", "definitions"),
+        editable_mode=False,
+        no_dependencies=False,
+        overwrite=None,
+        python_target=sys.executable,
+        definition_mapping=None,
+        continue_on_error=True
+    )
+    mocked_fetch_definition_mapping.assert_not_called()
