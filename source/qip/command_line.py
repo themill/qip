@@ -164,16 +164,21 @@ def install(**kwargs):
     if kwargs["update"]:
         definition_mapping = wiz.fetch_definition_mapping([definition_path])
 
-    qip.install(
-        kwargs["requests"], output_path,
-        definition_path=definition_path,
-        overwrite=kwargs["overwrite_installed"],
-        no_dependencies=kwargs["no_dependencies"],
-        editable_mode=kwargs["editable"],
-        python_target=kwargs["python"],
-        definition_mapping=definition_mapping,
-        continue_on_error=kwargs["continue_on_error"],
-    )
+    try:
+        qip.install(
+            kwargs["requests"], output_path,
+            definition_path=definition_path,
+            overwrite=kwargs["overwrite_installed"],
+            no_dependencies=kwargs["no_dependencies"],
+            editable_mode=kwargs["editable"],
+            python_target=kwargs["python"],
+            definition_mapping=definition_mapping,
+            continue_on_error=kwargs["continue_on_error"],
+        )
+    except RuntimeError as error:
+        raise click.exceptions.ClickException(
+            "Impossible to resume installation process:\n\n{}".format(error)
+        )
 
     logger.info("Package output directory: {!r}".format(output_path))
     logger.info("Definition output directory: {!r}".format(definition_path))
