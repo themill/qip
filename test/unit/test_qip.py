@@ -509,6 +509,58 @@ def test_install_with_package_installation_error(
     mocked_copy_to_destination, mocked_definition_export,
     mocked_shutil_rmtree, logger
 ):
+    """Install packages with one package error."""
+    package = {"identifier": "Foo-0.2.3"}
+
+    context = {
+        "environ": {
+            "PYTHONPATH": "/path/to/site-packages"
+        }
+    }
+
+    mocked_tempfile_mkdtemp.side_effect = ["/tmp1", "/tmp2"]
+    mocked_fetch_context_mapping.return_value = context
+    mocked_package_install.side_effect = [RuntimeError("Oops")]
+
+    mocked_copy_to_destination.return_value = (True, True)
+
+    with pytest.raises(RuntimeError) as error:
+        qip.install(["foo", "bar"], "/path/to/install")
+
+    assert "Oops" in str(error)
+
+    assert mocked_tempfile_mkdtemp.call_count == 2
+
+    assert mocked_filesystem_ensure_directory.call_count == 3
+    mocked_filesystem_ensure_directory.assert_any_call("/path/to/install")
+    mocked_filesystem_ensure_directory.assert_any_call("/path/to/site-packages")
+    mocked_filesystem_ensure_directory.assert_any_call("/tmp2")
+
+    mocked_fetch_context_mapping.assert_called_once_with(
+        "/tmp2", sys.executable
+    )
+
+    mocked_package_install.assert_called_once_with(
+        "foo", "/tmp2", context, "/tmp1",
+        editable_mode=False
+    )
+
+    mocked_copy_to_destination.assert_not_called()
+    mocked_definition_export.assert_not_called()
+
+    assert mocked_shutil_rmtree.call_count == 3
+    mocked_shutil_rmtree.assert_any_call("/tmp1")
+    mocked_shutil_rmtree.assert_any_call("/tmp2")
+
+    logger.error.assert_not_called()
+
+
+def test_install_with_continue_on_error(
+    mocked_filesystem_ensure_directory, mocked_tempfile_mkdtemp,
+    mocked_fetch_context_mapping, mocked_package_install,
+    mocked_copy_to_destination, mocked_definition_export,
+    mocked_shutil_rmtree, logger
+):
     """Install packages with one package error which is skipped."""
     package = {"identifier": "Foo-0.2.3"}
 
@@ -524,7 +576,7 @@ def test_install_with_package_installation_error(
 
     mocked_copy_to_destination.return_value = (True, True)
 
-    qip.install(["foo", "bar"], "/path/to/install")
+    qip.install(["foo", "bar"], "/path/to/install", continue_on_error=True)
 
     assert mocked_tempfile_mkdtemp.call_count == 2
 
