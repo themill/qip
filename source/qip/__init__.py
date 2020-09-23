@@ -20,7 +20,7 @@ from qip._version import __version__
 def install(
     requests, output_path, definition_path=None, overwrite=False,
     no_dependencies=False, editable_mode=False, python_target=sys.executable,
-    definition_mapping=None
+    definition_mapping=None, continue_on_error=False
 ):
     """Install packages to *output_path* from *requests*.
 
@@ -59,6 +59,9 @@ def install(
 
     :param definition_mapping: None or mapping regrouping all available
         :term:`Wiz` definitions. Default is None.
+
+    :param continue_on_error: Indicate whether installation process should
+        continue if a package cannot be installed. Default is False.
 
     :return: Boolean value.
 
@@ -108,6 +111,9 @@ def install(
                 )
 
             except RuntimeError as error:
+                if not continue_on_error:
+                    raise
+
                 prompt = "Request '{}' has failed ".format(request)
                 if parent_identifier is not None:
                     prompt += " [from '{}']".format(parent_identifier)
