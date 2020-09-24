@@ -122,11 +122,11 @@ def install(
                 continue
 
             # Retrieve definition from installation package path if possible.
-            custom_definition = qip.definition.retrieve(package_mapping)
+            custom_definition = qip.definition.fetch_custom(package_mapping)
 
             # Skip installation if the definition exists in registries other
             # than the output definition path.
-            existing_definition = qip.definition.fetch(
+            existing_definition = qip.definition.fetch_existing(
                 package_mapping, definition_mapping,
                 namespace=getattr(custom_definition, "namespace", None),
             )
@@ -153,18 +153,14 @@ def install(
 
             # Install package to destination.
             success, overwrite = copy_to_destination(
-                package_mapping,
-                package_path,
-                output_path,
+                package_mapping, package_path, output_path,
                 overwrite=overwrite
             )
 
             # Extract a wiz definition is requested.
             if success and definition_path is not None:
                 qip.definition.export(
-                    definition_path,
-                    package_mapping,
-                    output_path,
+                    definition_path, package_mapping, output_path,
                     editable_mode=editable_mode,
                     existing_definition=existing_definition,
                     custom_definition=custom_definition
