@@ -17,7 +17,7 @@ NAMESPACE = "library"
 
 def export(
     path, mapping, output_path, editable_mode=False, definition_mapping=None,
-    custom_definition=None
+    custom_definition=None, existing_definition=None
 ):
     """Export :term:`Wiz` definition to *path* for package *mapping*.
 
@@ -38,16 +38,18 @@ def export(
         update with package *mapping*. Default is None, which means that a
         default definition will be created from package data only.
 
-    """
-    # Extract previous namespace or set default.
-    namespace = custom_definition.namespace if custom_definition else NAMESPACE
+    :param existing_definition: :class:`wiz.definition.Definition` instance to
+        extract additional variants to add to new definition. Default is None
+        which means that no additional variants will be added to new definition
+        exported.
 
+    """
     # Extract additional variants from existing definition if possible.
     additional_variants = None
-
-    _definition = fetch(mapping, definition_mapping, namespace=namespace)
-    if _definition is not None:
-        additional_variants = [v.data() for v in _definition.variants]
+    if existing_definition is not None:
+        additional_variants = [
+            variant.data() for variant in existing_definition.variants
+        ]
 
     # Update definition or create a new definition.
     if custom_definition is not None:
@@ -426,6 +428,8 @@ def fetch(mapping, definition_mapping, namespace=None):
         :class:`wiz.definition.Definition` instance.
 
     """
+    namespace = namespace or NAMESPACE
+
     try:
         return wiz.fetch_definition(
             "{}::{}=={}".format(namespace, mapping["key"], mapping["version"]),
@@ -433,34 +437,3 @@ def fetch(mapping, definition_mapping, namespace=None):
         )
     except wiz.exception.RequestNotFound:
         pass
-
-
-def exists(
-    mapping, definition_mapping, namespace=NAMESPACE, ignored_registries=None
-):
-    """Indicate whether matching definition exists in :term:`Wiz` registries.
-
-    :param mapping: mapping of the python package built as returned by
-        :func:`qip.package.install`.
-
-    :param definition_mapping: mapping regrouping all available definitions.
-
-    :param namespace: Namespace of the definition to fetch. Default is
-        :data:`NAMESPACE`.
-
-    :param ignored_registries: List of registry paths that should be ignored
-        when looking for existing definitions.
-
-    :return: Boolean value.
-
-    """
-    print(namespace)
-    definition = fetch(mapping, definition_mapping, namespace=namespace)
-
-    if ignored_registries is None:
-        ignored_registries = []
-
-    return (
-        definition is not None
-        and definition.registry_path not in ignored_registries
-    )

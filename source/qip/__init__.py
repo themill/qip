@@ -124,11 +124,15 @@ def install(
             # Retrieve definition from installation package path if possible.
             custom_definition = qip.definition.retrieve(package_mapping)
 
-            # Check if the definition exists in registries.
-            if qip.definition.exists(
+            # Skip installation if the definition exists in registries other
+            # than the output definition path.
+            existing_definition = qip.definition.fetch(
                 package_mapping, definition_mapping,
                 namespace=getattr(custom_definition, "namespace", None),
-                ignored_registries=[definition_path]
+            )
+            if (
+                existing_definition is not None
+                and existing_definition.registry_path != definition_path
             ):
                 logger.warning(
                     "Skip '{}' which already exists in default registries."
@@ -162,7 +166,8 @@ def install(
                     package_mapping,
                     output_path,
                     editable_mode=editable_mode,
-                    definition_mapping=definition_mapping
+                    existing_definition=existing_definition,
+                    custom_definition=custom_definition
                 )
 
             # Reset editable mode to False for requirements.
