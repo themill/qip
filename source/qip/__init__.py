@@ -7,6 +7,8 @@ import shutil
 
 import six.moves
 import click
+import wiz
+import wiz.registry
 import wiz.filesystem
 
 import qip.definition
@@ -20,7 +22,7 @@ from qip._version import __version__
 def install(
     requests, output_path, definition_path=None, overwrite=False,
     no_dependencies=False, editable_mode=False, python_target=sys.executable,
-    definition_mapping=None
+    registry_paths=None
 ):
     """Install packages to *output_path* from *requests*.
 
@@ -57,10 +59,10 @@ def install(
         "/path/to/bin/python"). Default is the path to the current Python
         executable.
 
-    :param definition_mapping: None or mapping regrouping all available
-        :term:`Wiz` definitions. Default is None.
+    :param registry_paths: List of :term:`Wiz` registry paths to consider when
+        fetching existing definitions to update or skip.
 
-    :return: Boolean value.
+    :return: Boolean value indicating whether packages were installed.
 
     """
     logger = qip.logging.Logger(__name__ + ".install")
@@ -68,6 +70,10 @@ def install(
     wiz.filesystem.ensure_directory(output_path)
     if definition_path is not None:
         wiz.filesystem.ensure_directory(definition_path)
+
+    # Fetch definition mapping to determining whether a package should be
+    # skipped or updated.
+    definition_mapping = wiz.fetch_definition_mapping(registry_paths or [])
 
     # Setup temporary folder for package installation.
     cache_path = tempfile.mkdtemp()
@@ -115,6 +121,21 @@ def install(
                 logger.error("{}:\n{}".format(prompt, error))
                 continue
 
+            # Retrieve definition from installation package path if possible.
+            custom_definition = qip.definition.retrieve(package_mapping)
+
+            # Check if the definition exists in registries.
+            if qip.definition.exists(
+                package_mapping, definition_mapping,
+                namespace=getattr(custom_definition, "namespace", None),
+                ignored_registries=[definition_path]
+            ):
+                logger.warning(
+                    "Skip '{}' which already exists in default registries."
+                    .format(package_mapping["identifier"])
+                )
+                continue
+
             if package_mapping["identifier"] in installed_packages:
                 continue
 
@@ -157,11 +178,11 @@ def install(
         shutil.rmtree(package_path)
         shutil.rmtree(cache_path)
 
-    logger.info(
-        "Packages installed: {}".format(
-            ", ".join(sorted(installed_packages, key=lambda s: s.lower()))
-        )
-    )
+    if len(installed_packages):
+        result = ", ".join(sorted(installed_packages, key=lambda s: s.lower()))
+        logger.info("Packages installed: {}".format(result))
+
+    return len(installed_packages) > 0
 
 
 def copy_to_destination(

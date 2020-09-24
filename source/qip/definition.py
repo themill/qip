@@ -16,7 +16,8 @@ NAMESPACE = "library"
 
 
 def export(
-    path, mapping, output_path, editable_mode=False, definition_mapping=None
+    path, mapping, output_path, editable_mode=False, definition_mapping=None,
+    custom_definition=None
 ):
     """Export :term:`Wiz` definition to *path* for package *mapping*.
 
@@ -33,32 +34,25 @@ def export(
     :param definition_mapping: None or mapping regrouping all available
         definitions. Default is None.
 
-    """
-    # Retrieve definition from installation package path if possible.
-    definition = qip.definition.retrieve(mapping)
+    :param custom_definition: :class:`wiz.definition.Definition` instance to
+        update with package *mapping*. Default is None, which means that a
+        default definition will be created from package data only.
 
+    """
     # Extract previous namespace or set default.
-    namespace = definition.namespace if definition else NAMESPACE
+    namespace = custom_definition.namespace if custom_definition else NAMESPACE
 
     # Extract additional variants from existing definition if possible.
     additional_variants = None
 
-    if definition_mapping is not None:
-        try:
-            _definition = wiz.fetch_definition(
-                "{}::{}=={}".format(
-                    namespace, mapping["key"], mapping["version"]
-                ),
-                definition_mapping
-            )
-            additional_variants = [v.data() for v in _definition.variants]
-        except wiz.exception.RequestNotFound:
-            pass
+    _definition = fetch(mapping, definition_mapping, namespace=namespace)
+    if _definition is not None:
+        additional_variants = [v.data() for v in _definition.variants]
 
     # Update definition or create a new definition.
-    if definition is not None:
+    if custom_definition is not None:
         definition = qip.definition.update(
-            definition, mapping, output_path,
+            custom_definition, mapping, output_path,
             editable_mode=editable_mode,
             additional_variants=additional_variants,
         )
@@ -415,3 +409,58 @@ def _process_requirements(mapping, python_request):
         requests.append(str(requirement))
 
     return requests
+
+
+def fetch(mapping, definition_mapping, namespace=None):
+    """Fetch definition for package *mapping* in :term:`Wiz` registries.
+
+    :param mapping: mapping of the python package built as returned by
+        :func:`qip.package.install`.
+
+    :param definition_mapping: mapping regrouping all available definitions.
+
+    :param namespace: Namespace of the definition to fetch. Default is
+        :data:`NAMESPACE`.
+
+    :return: None if no definition was found, otherwise return the
+        :class:`wiz.definition.Definition` instance.
+
+    """
+    try:
+        return wiz.fetch_definition(
+            "{}::{}=={}".format(namespace, mapping["key"], mapping["version"]),
+            definition_mapping
+        )
+    except wiz.exception.RequestNotFound:
+        pass
+
+
+def exists(
+    mapping, definition_mapping, namespace=NAMESPACE, ignored_registries=None
+):
+    """Indicate whether matching definition exists in :term:`Wiz` registries.
+
+    :param mapping: mapping of the python package built as returned by
+        :func:`qip.package.install`.
+
+    :param definition_mapping: mapping regrouping all available definitions.
+
+    :param namespace: Namespace of the definition to fetch. Default is
+        :data:`NAMESPACE`.
+
+    :param ignored_registries: List of registry paths that should be ignored
+        when looking for existing definitions.
+
+    :return: Boolean value.
+
+    """
+    print(namespace)
+    definition = fetch(mapping, definition_mapping, namespace=namespace)
+
+    if ignored_registries is None:
+        ignored_registries = []
+
+    return (
+        definition is not None
+        and definition.registry_path not in ignored_registries
+    )
