@@ -130,6 +130,15 @@ def main(**kwargs):
     default=False
 )
 @click.option(
+    "-i", "--ignore-registries",
+    help=(
+         "Ignore Wiz registries when when determining whether a package "
+         "should be skipped or updated."
+    ),
+    is_flag=True,
+    default=False
+)
+@click.option(
     "-p", "--python",
     help=(
         "Target a specific Python version via a Wiz request or a path to a "
@@ -151,22 +160,26 @@ def install(**kwargs):
     output_path = kwargs["output_path"]
     definition_path = kwargs["definition_path"]
 
-    # Fetch definition mapping from definition path if previously extracted
-    # definitions should to create new definition.
-    definition_mapping = None
+    registry_paths = []
+
+    if not kwargs["ignore_registries"]:
+        registry_paths += wiz.registry.get_defaults()
 
     if kwargs["update"]:
-        definition_mapping = wiz.fetch_definition_mapping([definition_path])
+        registry_paths += [definition_path]
 
-    qip.install(
+    success = qip.install(
         kwargs["requests"], output_path,
         definition_path=definition_path,
         overwrite=kwargs["overwrite_installed"],
         no_dependencies=kwargs["no_dependencies"],
         editable_mode=kwargs["editable"],
         python_target=kwargs["python"],
-        definition_mapping=definition_mapping
+        registry_paths=registry_paths,
     )
+
+    if not success:
+        raise click.exceptions.ClickException("No packages installed.")
 
     logger.info("Package output directory: {!r}".format(output_path))
     logger.info("Definition output directory: {!r}".format(definition_path))
