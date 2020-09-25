@@ -98,6 +98,15 @@ def main(**kwargs):
     ),
 )
 @click.option(
+    "-u", "--update",
+    help=(
+        "Update Wiz definition(s) that already exist in the Wiz definitions "	
+        "output path with additional Python variants."
+    ),
+    is_flag=True,
+    default=False
+)
+@click.option(
     "-N", "--no-dependencies",
     help="Install the specified package(s) without dependencies.",
     is_flag=True,
@@ -130,15 +139,6 @@ def main(**kwargs):
     default=False
 )
 @click.option(
-    "-u", "--update-output",
-    help=(
-         "Consider output destination for Wiz definitions as a Wiz registry to "
-         "determining whether a package should be updated."
-    ),
-    is_flag=True,
-    default=False
-)
-@click.option(
     "-p", "--python",
     help=(
         "Target a specific Python version via a Wiz request or a path to a "
@@ -165,7 +165,7 @@ def install(**kwargs):
     if not kwargs["ignore_registries"]:
         registry_paths += wiz.registry.get_defaults()
 
-    if kwargs["update_output"]:
+    if kwargs["update"]:
         registry_paths += [definition_path]
 
     success = qip.install(
