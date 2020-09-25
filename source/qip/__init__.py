@@ -221,7 +221,7 @@ def _install(
                 "Skip '{}' which already exists in default registries."
                 .format(package_mapping["identifier"])
             )
-            return None, overwrite
+            return package_mapping, overwrite
 
     prompt = "Requested '{}'".format(request)
     if parent_identifier is not None:
@@ -263,7 +263,7 @@ def copy_to_destination(
         False.
 
     :return: tuple with one boolean value indicating whether the copy has been
-        done and one indicating a new value for the *overwrite* option.
+        skipped and one indicating a new value for the *overwrite* option.
 
     """
     logger = qip.logging.Logger(__name__ + ".copy_to_destination")
@@ -289,7 +289,7 @@ def copy_to_destination(
                 "Skip '{}' which is already installed.".format(identifier)
             )
 
-            return False, overwrite_next
+            return True, overwrite_next
 
     wiz.filesystem.ensure_directory(os.path.dirname(target))
     shutil.copytree(source_path, target)
@@ -297,7 +297,7 @@ def copy_to_destination(
 
     logger.info("\tInstalled '{}'.".format(identifier))
 
-    return True, overwrite_next
+    return False, overwrite_next
 
 
 def _confirm_overwrite(identifier):
