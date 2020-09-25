@@ -253,7 +253,7 @@ def test_install_package_update_output(
 
     runner = CliRunner()
     result = runner.invoke(
-        qip.command_line.install, ["foo", "--update-output"]
+        qip.command_line.install, ["foo", "--update"]
     )
     assert result.exit_code == 0
     assert not result.exception
@@ -304,9 +304,7 @@ def test_install_package_update_and_ignore_registries(
     """
     runner = CliRunner()
     result = runner.invoke(
-        qip.command_line.install, [
-            "foo", "--ignore-registries", "--update-output"
-        ]
+        qip.command_line.install, ["foo", "--ignore-registries", "--update"]
     )
     assert result.exit_code == 0
     assert not result.exception
