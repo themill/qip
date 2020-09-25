@@ -848,7 +848,7 @@ def test_install_one_request_skip_existing_definition(
         definition_path="/path/definitions",
         **options
     )
-    assert result == (None, overwrite)
+    assert result == (mapping, overwrite)
 
     mocked_package_install.assert_called_once_with(
         "foo", "/tmp/packages", "__CONTEXT__", "/tmp/cache",
@@ -1172,7 +1172,7 @@ def test_copy_to_destination(
     result = qip.copy_to_destination(
         mapping, "/path/to/installed/package", "/path/to/destination"
     )
-    assert result == (True, False)
+    assert result == (False, False)
 
     mocked_click_prompt.assert_not_called()
     mocked_shutil_rmtree.assert_not_called()
@@ -1210,7 +1210,7 @@ def test_copy_to_destination_with_system_restriction(
     result = qip.copy_to_destination(
         mapping, "/path/to/installed/package", "/path/to/destination"
     )
-    assert result == (True, False)
+    assert result == (False, False)
 
     mocked_click_prompt.assert_not_called()
     mocked_shutil_rmtree.assert_not_called()
@@ -1245,7 +1245,7 @@ def test_copy_to_destination_skip_existing(
     result = qip.copy_to_destination(
         mapping, "/path/to/installed/package", temporary_directory
     )
-    assert result == (False, False)
+    assert result == (True, False)
 
     mocked_click_prompt.assert_not_called()
     mocked_shutil_rmtree.assert_not_called()
@@ -1277,7 +1277,7 @@ def test_copy_to_destination_overwrite_existing(
         mapping, "/path/to/installed/package", temporary_directory,
         overwrite=True
     )
-    assert result == (True, True)
+    assert result == (False, True)
 
     mocked_click_prompt.assert_not_called()
 
@@ -1329,7 +1329,7 @@ def test_copy_to_destination_confirm_overwrite(
         mapping, "/path/to/installed/package", temporary_directory,
         overwrite=None
     )
-    assert result == (overwrite, expected)
+    assert result == (not overwrite, expected)
 
     if overwrite:
         mocked_shutil_rmtree.assert_called_once()
