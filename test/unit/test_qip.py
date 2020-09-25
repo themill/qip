@@ -377,13 +377,13 @@ def test_install_requests_without_dependencies(
         "with-registries",
     ]
 )
-def test_install_requests_skip(
+def test_install_requests_skip_installed(
     mocker, mocked_filesystem_ensure_directory, mocked_fetch_definition_mapping,
     mocked_tempfile_mkdtemp, mocked_fetch_context_mapping, mocked_install,
     mocked_shutil_rmtree, logger, options, overwrite, editable_mode,
     python_target, registry_paths
 ):
-    """Skip one package during installation."""
+    """Skip package already installed during installation."""
     context = {"environ": {"PYTHONPATH": "/path/to/site-packages"}}
     mocked_tempfile_mkdtemp.side_effect = ["/tmp1", "/tmp2"]
     mocked_fetch_context_mapping.return_value = context
@@ -431,6 +431,92 @@ def test_install_requests_skip(
     mocked_shutil_rmtree.assert_any_call("/tmp2")
 
     logger.info.assert_called_once_with("Packages installed: bar")
+
+
+@pytest.mark.parametrize(
+    "options, overwrite, editable_mode, python_target, registry_paths", [
+        ({}, False, False, sys.executable, []),
+        ({"overwrite": True}, True, False, sys.executable, []),
+        ({"editable_mode": True}, False, True, sys.executable, []),
+        ({"python_target": "/bin/python3"}, False, False, "/bin/python3", []),
+        (
+            {"registry_paths": ["/registry1", "registry2"]},
+            False, False, sys.executable, ["/registry1", "registry2"]
+        ),
+    ], ids=[
+        "simple",
+        "with-overwrite-packages",
+        "with-editable-mode",
+        "with-python-target",
+        "with-registries",
+    ]
+)
+def test_install_requests_skip_existing(
+    mocker, mocked_filesystem_ensure_directory, mocked_fetch_definition_mapping,
+    mocked_tempfile_mkdtemp, mocked_fetch_context_mapping, mocked_install,
+    mocked_shutil_rmtree, logger, options, overwrite, editable_mode,
+    python_target, registry_paths
+):
+    """Skip package found in Wiz registries during installation."""
+    context = {"environ": {"PYTHONPATH": "/path/to/site-packages"}}
+    mocked_tempfile_mkdtemp.side_effect = ["/tmp1", "/tmp2"]
+    mocked_fetch_context_mapping.return_value = context
+    mocked_fetch_definition_mapping.return_value = "__MAPPING__"
+
+    mocked_install.side_effect = [
+        (
+            {"identifier": "foo", "requirements": ["bim"], "skipped": True},
+            overwrite
+        ),
+        ({"identifier": "bar"}, overwrite),
+        ({"identifier": "bim"}, overwrite),
+    ]
+
+    result = qip.install(["foo", "bar"], "/path/to/install", **options)
+    assert result is True
+
+    assert mocked_tempfile_mkdtemp.call_count == 2
+
+    assert mocked_filesystem_ensure_directory.call_count == 7
+    mocked_filesystem_ensure_directory.assert_any_call("/path/to/install")
+    mocked_filesystem_ensure_directory.assert_any_call("/path/to/site-packages")
+    mocked_filesystem_ensure_directory.assert_any_call("/tmp2")
+
+    mocked_fetch_definition_mapping.assert_called_once_with(registry_paths)
+
+    mocked_fetch_context_mapping.assert_called_once_with("/tmp2", python_target)
+
+    assert mocked_install.call_count == 3
+    mocked_install.assert_any_call(
+        "foo", "/path/to/install", context, "__MAPPING__", "/tmp2", "/tmp1",
+        mocker.ANY,
+        definition_path=None,
+        overwrite=overwrite,
+        editable_mode=editable_mode,
+        parent_identifier=None,
+    )
+    mocked_install.assert_any_call(
+        "bar", "/path/to/install", context, "__MAPPING__", "/tmp2", "/tmp1",
+        mocker.ANY,
+        definition_path=None,
+        overwrite=overwrite,
+        editable_mode=editable_mode,
+        parent_identifier=None,
+    )
+    mocked_install.assert_any_call(
+        "bim", "/path/to/install", context, "__MAPPING__", "/tmp2", "/tmp1",
+        mocker.ANY,
+        definition_path=None,
+        overwrite=overwrite,
+        editable_mode=False,
+        parent_identifier="foo",
+    )
+
+    assert mocked_shutil_rmtree.call_count == 5
+    mocked_shutil_rmtree.assert_any_call("/tmp1")
+    mocked_shutil_rmtree.assert_any_call("/tmp2")
+
+    logger.info.assert_called_once_with("Packages installed: bar, bim")
 
 
 @pytest.mark.parametrize(
@@ -618,6 +704,8 @@ def test_install_one_request(
     logger.error.assert_not_called()
     logger.info.assert_called_once_with("Requested 'foo'")
 
+    assert mapping.get("skipped") is None
+
 
 @pytest.mark.parametrize(
     "options, overwrite, editable_mode", [
@@ -683,6 +771,8 @@ def test_install_one_request_with_definition_path(
     logger.warning.assert_not_called()
     logger.error.assert_not_called()
     logger.info.assert_called_once_with("Requested 'foo'")
+
+    assert mapping.get("skipped") is None
 
 
 @pytest.mark.parametrize(
@@ -754,6 +844,8 @@ def test_install_one_request_with_custom_definition(
     logger.warning.assert_not_called()
     logger.error.assert_not_called()
     logger.info.assert_called_once_with("Requested 'foo'")
+
+    assert mapping.get("skipped") is None
 
 
 @pytest.mark.parametrize(
@@ -829,6 +921,8 @@ def test_install_one_request_with_existing_definition_in_output(
     logger.error.assert_not_called()
     logger.info.assert_called_once_with("Requested 'foo'")
 
+    assert mapping.get("skipped") is None
+
 
 @pytest.mark.parametrize(
     "options, overwrite, editable_mode", [
@@ -903,6 +997,8 @@ def test_install_one_request_with_existing_definition_with_different_variant(
     logger.error.assert_not_called()
     logger.info.assert_called_once_with("Requested 'foo'")
 
+    assert mapping.get("skipped") is None
+
 
 @pytest.mark.parametrize(
     "options, overwrite, editable_mode", [
@@ -971,6 +1067,8 @@ def test_install_one_request_skip_existing_definition(
     logger.error.assert_not_called()
     logger.info.assert_not_called()
 
+    assert mapping.get("skipped") is True
+
 
 @pytest.mark.parametrize(
     "options, overwrite, editable_mode", [
@@ -1017,6 +1115,8 @@ def test_install_one_request_skip_installed(
     logger.warning.assert_not_called()
     logger.error.assert_not_called()
     logger.info.assert_not_called()
+
+    assert mapping.get("skipped") is None
 
 
 @pytest.mark.parametrize(
@@ -1065,6 +1165,8 @@ def test_install_one_request_overwrite_changed(
     logger.warning.assert_not_called()
     logger.error.assert_not_called()
     logger.info.assert_called_once_with("Requested 'foo'")
+
+    assert mapping.get("skipped") is None
 
 
 @pytest.mark.parametrize(
@@ -1127,6 +1229,8 @@ def test_install_one_request_copy_skipped(
     logger.error.assert_not_called()
     logger.info.assert_called_once_with("Requested 'foo'")
 
+    assert mapping.get("skipped") is None
+
 
 @pytest.mark.parametrize(
     "options, overwrite, editable_mode", [
@@ -1176,6 +1280,8 @@ def test_install_one_request_with_parent(
     logger.warning.assert_not_called()
     logger.error.assert_not_called()
     logger.info.assert_called_once_with("Requested 'foo' [from 'bar']")
+
+    assert mapping.get("skipped") is None
 
 
 @pytest.mark.parametrize(

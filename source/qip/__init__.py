@@ -79,17 +79,20 @@ def install(
     cache_path = tempfile.mkdtemp()
     package_path = tempfile.mkdtemp()
 
+    # Record requests and package installed to prevent duplications.
+    installed_packages = set()
+    installed_requests = set()
+
+    # Record packages skipped.
+    skipped_packages = set()
+
+    # Fill up queue with requirements extracted from requests.
+    queue = six.moves.queue.Queue()
+
     try:
         # Fetch environment mapping and installation path.
         context_mapping = fetch_context_mapping(package_path, python_target)
         library_path = context_mapping["environ"]["PYTHONPATH"]
-
-        # Record requests and package installed to prevent duplications.
-        installed_packages = set()
-        installed_requests = set()
-
-        # Fill up queue with requirements extracted from requests.
-        queue = six.moves.queue.Queue()
 
         for request in requests:
             queue.put((request, None, editable_mode))
@@ -120,6 +123,10 @@ def install(
             installed_packages.add(package_mapping["identifier"])
             installed_requests.add(request)
 
+            # Indicate if package was skipped.
+            if package_mapping.get("skipped", False):
+                skipped_packages.add(package_mapping["identifier"])
+
             # Fill up queue with requirements extracted from package
             # dependencies.
             if not no_dependencies:
@@ -130,9 +137,14 @@ def install(
         shutil.rmtree(package_path)
         shutil.rmtree(cache_path)
 
-    if len(installed_packages):
-        result = ", ".join(sorted(installed_packages, key=lambda s: s.lower()))
-        logger.info("Packages installed: {}".format(result))
+    # Sort and filter packages installed.
+    installed = sorted(
+        (p for p in installed_packages if p not in skipped_packages),
+        key=lambda _id: _id.lower()
+    )
+
+    if len(installed):
+        logger.info("Packages installed: {}".format(", ".join(installed)))
 
     return len(installed_packages) > 0
 
@@ -176,8 +188,14 @@ def _install(
         *request*. Default is None.
 
     :return: tuple with package mapping installed (or None is the installation
-        couldn't be processed) and one indicating a new value for the
-        *overwrite* option.
+        couldn't be processed), and one boolean value indicating a new value for
+        the *overwrite* option.
+
+    .. note::
+
+        Package mapping returned will have an additional "skipped" keyword
+        set as True if existing definition has been found in default registries.
+
 
     """
     logger = qip.logging.Logger(__name__ + "._install")
@@ -217,6 +235,7 @@ def _install(
                 "which already exists in Wiz registries."
                 .format(package_mapping)
             )
+            package_mapping["skipped"] = True
             return package_mapping, overwrite
 
     prompt = "Requested '{}'".format(request)
