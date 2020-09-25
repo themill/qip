@@ -19,11 +19,12 @@ Release Notes
     .. change:: changed
         :tags: command-line
 
-        Renamed ``-u/--update``:option:`-u/--update-output<qip install -u>` to
-        clarify the scope of this option. As, additional variants from existing
-        definitions in default :term:`Wiz` registries will now be automatically
-        used to create new definitions, using this option only indicates that
-        definitions previously exported in the output folder will also be used.
+        Renamed ``-u/--update`` to :option:`-u/--update-output<qip install -u>`
+        to clarify the scope of this option. As, additional variants from
+        existing definitions in default :term:`Wiz` registries will now be
+        automatically used to create new definitions, using this option only
+        indicates that definitions previously exported in the output folder will
+        also be used.
 
     .. change:: changed
 
