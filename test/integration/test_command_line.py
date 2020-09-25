@@ -49,6 +49,9 @@ def test_install_numpy(temporary_directory, logger):
         ]
     )
     print(logger.debug.call_args_list)
+    print(logger.info.call_args_list)
+    print(logger.warning.call_args_list)
+    print(logger.error.call_args_list)
     assert not result.exception
     assert result.exit_code == 0
 
