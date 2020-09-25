@@ -8,7 +8,6 @@ import shutil
 import six.moves
 import click
 import wiz
-import wiz.registry
 import wiz.filesystem
 
 import qip.definition
@@ -26,7 +25,7 @@ def install(
 ):
     """Install packages to *output_path* from *requests*.
 
-    :param requests: list of packages to be installed
+    :param requests: List of package requests to be installed.
 
         A request can be one of::
 
@@ -39,19 +38,20 @@ def install(
             ["git@gitlab:rnd/foo.git@0.1.0"]
             ["git@gitlab:rnd/foo.git@dev"]
 
-    :param output_path: root destination path for Python packages installation.
+    :param output_path: Destination path for Python packages installation.
 
-    :param definition_path: :term:`Wiz` definition extraction path. Default is
-        None, which means that :term:`Wiz` definitions are not extracted.
+    :param definition_path: Destination path for :term:`Wiz` definitions
+        automatically created for Python packages installed. Default is None,
+        which means that no :term:`Wiz` definitions are created.
 
-    :param overwrite: indicate whether packages already installed and
-        corresponding :term:`Wiz` definitions should be overwritten. If None, a
-        user confirmation will be prompted. Default is False.
+    :param overwrite: Indicate whether packages already installed in destination
+        path and corresponding :term:`Wiz` definitions should be overwritten. If
+        None, a user confirmation will be prompted. Default is False.
 
-    :param no_dependencies: indicate whether package dependencies should be
+    :param no_dependencies: Indicate whether package dependencies should be
         skipped. Default is False.
 
-    :param editable_mode: indicate whether the Python package location should
+    :param editable_mode: Indicate whether the Python package location should
         target the source installation package. Default is False.
 
     :param python_target: Target a specific Python version via a Wiz request or
@@ -92,88 +92,39 @@ def install(
         queue = six.moves.queue.Queue()
 
         for request in requests:
-            queue.put((request, None))
+            queue.put((request, None, editable_mode))
 
         while not queue.empty():
-            request, parent_identifier = queue.get()
+            request, parent_identifier, _editable_mode = queue.get()
             if request in installed_requests:
                 continue
 
             # Clean up before installation.
-            logger.debug("Clean up directory content before installation")
             shutil.rmtree(package_path)
             wiz.filesystem.ensure_directory(package_path)
 
             # Needed for the editable mode.
             wiz.filesystem.ensure_directory(library_path)
 
-            try:
-                package_mapping = qip.package.install(
-                    request, package_path, context_mapping, cache_path,
-                    editable_mode=editable_mode
-                )
-
-            except RuntimeError as error:
-                prompt = "Request '{}' has failed ".format(request)
-                if parent_identifier is not None:
-                    prompt += " [from '{}']".format(parent_identifier)
-
-                logger.error("{}:\n{}".format(prompt, error))
-                continue
-
-            # Retrieve definition from installation package path if possible.
-            custom_definition = qip.definition.fetch_custom(package_mapping)
-
-            # Skip installation if the definition exists in registries other
-            # than the output definition path.
-            existing_definition = qip.definition.fetch_existing(
-                package_mapping, definition_mapping,
-                namespace=getattr(custom_definition, "namespace", None),
+            package_mapping, overwrite = _install(
+                request, output_path, context_mapping, definition_mapping,
+                package_path, cache_path, installed_packages,
+                definition_path=definition_path,
+                overwrite=overwrite,
+                editable_mode=_editable_mode,
+                parent_identifier=parent_identifier,
             )
-            if (
-                existing_definition is not None
-                and existing_definition.registry_path != definition_path
-            ):
-                logger.warning(
-                    "Skip '{}' which already exists in default registries."
-                    .format(package_mapping["identifier"])
-                )
+            if package_mapping is None:
                 continue
-
-            if package_mapping["identifier"] in installed_packages:
-                continue
-
-            prompt = "Requested '{}'".format(request)
-            if parent_identifier is not None:
-                prompt += " [from '{}'].".format(parent_identifier)
-            logger.info(prompt)
 
             installed_packages.add(package_mapping["identifier"])
             installed_requests.add(request)
-
-            # Install package to destination.
-            success, overwrite = copy_to_destination(
-                package_mapping, package_path, output_path,
-                overwrite=overwrite
-            )
-
-            # Extract a wiz definition is requested.
-            if success and definition_path is not None:
-                qip.definition.export(
-                    definition_path, package_mapping, output_path,
-                    editable_mode=editable_mode,
-                    existing_definition=existing_definition,
-                    custom_definition=custom_definition
-                )
-
-            # Reset editable mode to False for requirements.
-            editable_mode = False
 
             # Fill up queue with requirements extracted from package
             # dependencies.
             if not no_dependencies:
                 for request in package_mapping.get("requirements", []):
-                    queue.put((request, package_mapping["identifier"]))
+                    queue.put((request, package_mapping["identifier"], False))
 
     finally:
         shutil.rmtree(package_path)
@@ -184,6 +135,115 @@ def install(
         logger.info("Packages installed: {}".format(result))
 
     return len(installed_packages) > 0
+
+
+def _install(
+    request, output_path, context_mapping, definition_mapping,
+    package_path, cache_path, installed_packages, definition_path=None,
+    overwrite=False, editable_mode=False, parent_identifier=None,
+):
+    """Install single package to *output_path* from *request*.
+
+    :param request: Package requests to be installed.
+
+    :param output_path: root destination path for Python packages installation.
+
+    :param context_mapping: Mapping containing environment and python mapping
+        as returned by :func:`fetch_context_mapping`
+
+    :param definition_mapping: mapping regrouping all available definitions as
+        returned by :func:`wiz.fetch_definition_mapping`.
+
+    :param package_path: Temporary path to install package from :term:`Pip`.
+
+    :param cache_path: Temporary directory for the :term:`Pip` cache.
+
+    :param installed_packages: Set grouping all Python package identifiers
+        already installed to skip current installation if necessary.
+
+    :param definition_path: Destination path for :term:`Wiz` definition
+        automatically created for Python package installed. Default is None,
+        which means that no :term:`Wiz` definition is created.
+
+    :param overwrite: Indicate whether package already installed in destination
+        path and corresponding :term:`Wiz` definition should be overwritten. If
+        None, a user confirmation will be prompted. Default is False.
+
+    :param editable_mode: Indicate whether the Python package location should
+        target the source installation package. Default is False.
+
+    :param parent_identifier: Indicate Python package which triggered the
+        *request*. Default is None.
+
+    :return: tuple with package mapping installed (or None is the installation
+        couldn't be processed) and one indicating a new value for the
+        *overwrite* option.
+
+    """
+    logger = qip.logging.Logger(__name__ + "._install")
+
+    try:
+        package_mapping = qip.package.install(
+            request, package_path, context_mapping, cache_path,
+            editable_mode=editable_mode
+        )
+
+    except RuntimeError as error:
+        prompt = "Request '{}' has failed".format(request)
+        if parent_identifier is not None:
+            prompt += " [from '{}']".format(parent_identifier)
+
+        logger.error("{}:\n{}".format(prompt, error))
+        return None, overwrite
+
+    if package_mapping["identifier"] in installed_packages:
+        return None, overwrite
+
+    # Attempt to fetch custom definition from package and existing definition
+    # from definition mapping.
+    custom_definition = None
+    existing_definition = None
+
+    if definition_path is not None:
+        custom_definition = qip.definition.fetch_custom(package_mapping)
+        existing_definition = qip.definition.fetch_existing(
+            package_mapping, definition_mapping,
+            namespace=getattr(custom_definition, "namespace", None),
+        )
+
+        # If existing definition is in any other registry than where definitions
+        # are exported, skip the installation process now.
+        if (
+            existing_definition is not None
+            and existing_definition.registry_path != definition_path
+        ):
+            logger.warning(
+                "Skip '{}' which already exists in default registries."
+                .format(package_mapping["identifier"])
+            )
+            return None, overwrite
+
+    prompt = "Requested '{}'".format(request)
+    if parent_identifier is not None:
+        prompt += " [from '{}']".format(parent_identifier)
+    logger.info(prompt)
+
+    # Install package to destination.
+    skipped, overwrite = copy_to_destination(
+        package_mapping, package_path, output_path,
+        overwrite=overwrite
+    )
+
+    # Extract a wiz definition is requested.
+    if not skipped and definition_path is not None:
+        qip.definition.export(
+            definition_path, package_mapping, output_path,
+            editable_mode=editable_mode,
+            existing_definition=existing_definition,
+            custom_definition=custom_definition
+        )
+
+    return package_mapping, overwrite
 
 
 def copy_to_destination(
