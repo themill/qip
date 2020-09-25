@@ -41,12 +41,14 @@ def test_install_numpy(temporary_directory):
     runner = CliRunner()
     result = runner.invoke(
         qip.command_line.main, [
+            "-v", "debug",
             "install",
             "numpy >= 1.16.6, <= 1.19.2",
             "-o", packages_path,
             "-d", definitions_path,
         ]
     )
+    print(result.output)
     assert not result.exception
     assert result.exit_code == 0
 
