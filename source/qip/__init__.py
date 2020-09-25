@@ -395,7 +395,7 @@ def fetch_context_mapping(path, python_target):
 
     """
     environ_mapping = qip.environ.fetch(
-        python_target, mapping={"PYTHONWARNINGS": "ignore:DEPRECATION"}
+        python_target, mapping={"PYTHONWARNINGS": "ignore"}
     )
 
     # Fetch Python version mapping from environment
