@@ -28,7 +28,7 @@ def reset_configuration(mocker):
     mocker.patch.object(os.path, "expanduser", function)
 
 
-def test_install_numpy(temporary_directory):
+def test_install_numpy(temporary_directory, logger):
     """Install numpy.
 
     Install numpy version within 1.16.6 and 1.19.2 which covers all Python
@@ -48,7 +48,7 @@ def test_install_numpy(temporary_directory):
             "-d", definitions_path,
         ]
     )
-    print(result.output)
+    print(logger.debug.call_args_list)
     assert not result.exception
     assert result.exit_code == 0
 
