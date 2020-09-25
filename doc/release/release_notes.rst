@@ -4,6 +4,60 @@
 Release Notes
 *************
 
+.. release:: Upcoming
+
+    .. change:: changed
+        :tags: command-line
+
+        Updated installation process to automatically include default
+        :term:`Wiz` registries to determine whether a definition must be skipped
+        or updated with new variants for new Python versions.
+
+        Added :option:`-i/--ignore-registries<qip install -i>` to ignore default
+        :term:`Wiz` registries.
+
+    .. change:: changed
+        :tags: command-line
+
+        Renamed ``-u/--update``:option:`-u/--update-output<qip install -u>` to
+        clarify the scope of this option. As, additional variants from existing
+        definitions in default :term:`Wiz` registries will now be automatically
+        used to create new definitions, using this option only indicates that
+        definitions previously exported in the output folder will also be used.
+
+    .. change:: changed
+
+        Updated :func:`qip.install` to handle the process of fetching definition
+        mapping from registry paths. It spares the user from having to fetch
+        definition mapping and makes the logic simpler.
+
+    .. change:: changed
+
+        Updated :func:`qip.install` to skip installation when a package version
+        is found in :term:`Wiz` registries. This does not include the output
+        definition path if this is also considered as a registry.
+
+    .. change:: new
+
+        Added :func:`qip.definition.fetch_existing` to fetch a Python package in
+        a definition mapping.
+
+    .. change:: changed
+
+        Renamed :func:`qip.definition.retrieve` to
+        :func:`qip.definition.fetch_custom` for consistency with new function
+        added.
+
+    .. change:: fixed
+
+        Fixed :func:`qip.install` to apply ``editable_mode`` for all incoming
+        requests.
+
+
+
+
+
+
 .. release:: 2.0.2
     :date: 2020-09-15
 
@@ -52,7 +106,7 @@ Release Notes
         Added following short options:
 
         * :option:`qip install -N` for :option:`qip install --no-dependencies`
-        * :option:`qip install -u` for :option:`qip install --update`
+        * :option:`qip install -u` for ``qip install --update``
         * :option:`qip install -f` for :option:`qip install --overwrite-installed`
         * :option:`qip install -s` for :option:`qip install --skip-installed`
 
@@ -218,7 +272,7 @@ Release Notes
     .. change:: new
         :tags: command-line
 
-        Added :option:`qip install --update` to update :term:`Wiz` definition(s)
+        Added ``qip install --update`` to update :term:`Wiz` definition(s)
         that already exist in the :term:`Wiz` definitions output path with
         additional Python variants
 
