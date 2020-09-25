@@ -10,33 +10,22 @@ Release Notes
         :tags: command-line
 
         Updated installation process to automatically include default
-        :term:`Wiz` registries to determine whether a definition must be skipped
-        or updated with new variants for new Python versions.
+        :term:`Wiz` registries to determine whether a definition should be
+        skipped or updated.
 
         Added :option:`-i/--ignore-registries<qip install -i>` to ignore default
         :term:`Wiz` registries.
 
     .. change:: changed
-        :tags: command-line
 
-        Renamed ``-u/--update`` to :option:`-u/--update-output<qip install -u>`
-        to clarify the scope of this option. As, additional variants from
-        existing definitions in default :term:`Wiz` registries will now be
-        automatically used to create new definitions, using this option only
-        indicates that definitions previously exported in the output folder will
-        also be used.
-
-    .. change:: changed
-
-        Updated :func:`qip.install` to handle the process of fetching definition
-        mapping from registry paths. It spares the user from having to fetch
-        definition mapping and makes the logic simpler.
+        Updated :func:`qip.install` to handle the process of fetching a
+        definition mapping from registry paths. It spares the user from having
+        to fetch definition mapping and makes the logic simpler.
 
     .. change:: changed
 
         Updated :func:`qip.install` to skip installation when a package version
-        is found in :term:`Wiz` registries. This does not include the output
-        definition path if this is also considered as a registry.
+        is found in :term:`Wiz` registries.
 
     .. change:: new
 
@@ -46,18 +35,13 @@ Release Notes
     .. change:: changed
 
         Renamed :func:`qip.definition.retrieve` to
-        :func:`qip.definition.fetch_custom` for consistency with new function
-        added.
+        :func:`qip.definition.fetch_custom` for consistency with
+        :func:`qip.definition.fetch_existing`.
 
     .. change:: fixed
 
         Fixed :func:`qip.install` to apply ``editable_mode`` for all incoming
-        requests.
-
-
-
-
-
+        requests. Previously, it would only apply to the first request.
 
 .. release:: 2.0.2
     :date: 2020-09-15
