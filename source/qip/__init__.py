@@ -211,15 +211,11 @@ def _install(
             namespace=getattr(custom_definition, "namespace", None),
         )
 
-        # If existing definition is in any other registry than where definitions
-        # are exported, skip the installation process now.
-        if (
-            existing_definition is not None
-            and existing_definition.registry_path != definition_path
-        ):
+        if _skip_install(existing_definition, package_mapping, definition_path):
             logger.warning(
-                "Skip '{}' which already exists in default registries."
-                .format(package_mapping["identifier"])
+                "Skip '{0[identifier]}[{0[python][identifier]}]=={0[version]}' "
+                "which already exists in Wiz registries."
+                .format(package_mapping)
             )
             return package_mapping, overwrite
 
@@ -244,6 +240,33 @@ def _install(
         )
 
     return package_mapping, overwrite
+
+
+def _skip_install(existing_definition, package_mapping, definition_path):
+    """Indicate whether existing definition mandates installation to be skipped.
+
+    Skip package installation if existing definition:
+
+    1. Is not None;
+    2. Doesn't have a variant for the current Python version used;
+    3. Is not stored in registry where installation process will export new
+      definitions.
+
+    Point 3 will be handled by :func:`copy_to_destination`.
+
+    """
+    python_version = package_mapping["python"]["identifier"]
+
+    if existing_definition is None:
+        return False
+
+    if not any(
+        variant.identifier == python_version for variant
+        in existing_definition.variants
+    ):
+        return False
+
+    return existing_definition.registry_path != definition_path
 
 
 def copy_to_destination(
