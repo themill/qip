@@ -14,7 +14,7 @@ import wiz.filesystem
 REQUEST_PATTERN = re.compile(r"(.*)\[(\w*)\]")
 
 #: Path to the Python package info script.
-_PACKAGE_INFO_SCRIPT = os.path.join(
+PACKAGE_INFO_SCRIPT = os.path.join(
     os.path.dirname(__file__), "package_data", "package_info.py"
 )
 
@@ -246,7 +246,7 @@ def extract_dependency_mapping(name, environ_mapping, extra=None):
         identifier += "[{}]".format(extra)
 
     command = "python {script} {identifier}".format(
-        script=_PACKAGE_INFO_SCRIPT,
+        script=PACKAGE_INFO_SCRIPT,
         identifier=identifier
     )
 

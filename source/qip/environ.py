@@ -10,7 +10,7 @@ import qip.command
 import qip.logging
 
 #: Path to the python info script.
-_PYTHON_INFO_SCRIPT = os.path.join(
+PYTHON_INFO_SCRIPT = os.path.join(
     os.path.dirname(__file__), "package_data", "python_info.py"
 )
 
@@ -87,7 +87,7 @@ def fetch_python_mapping(environ_mapping):
 
     """
     result = qip.command.execute(
-        "python {}".format(_PYTHON_INFO_SCRIPT), environ_mapping, quiet=True
+        "python {}".format(PYTHON_INFO_SCRIPT), environ_mapping, quiet=True
     )
     try:
         mapping = json.loads(result)
