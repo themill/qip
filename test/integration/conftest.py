@@ -20,13 +20,6 @@ PYTHON_MAPPING_27 = {
     "request": "python >= 2.7, < 2.8"
 }
 
-#: Context mapping mocked for Python 3.8
-PYTHON_MAPPING_38 = {
-    "identifier": "3.8",
-    "library-path": "lib/python3.8/site-packages",
-    "request": "python >= 3.8, < 3.9"
-}
-
 #: Collection of all packages dependency mapping available for testings.
 PACKAGE_DEPENDENCY_MAPPING = {
     "foo": {
@@ -110,7 +103,7 @@ def mock_commands(mocker):
             return json.dumps(PACKAGE_DEPENDENCY_MAPPING[identifier])
 
         elif command.startswith("python -m pip show"):
-            name = re.search("'(.+)'", command).group(1)
+            name = re.search(r"'(.+)'", command).group(1)
             return METADATA_MAPPING[name]
 
     mocker.patch.object(qip.command, "execute", _command_execute)
