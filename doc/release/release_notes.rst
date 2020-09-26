@@ -13,7 +13,7 @@ Release Notes
         :term:`Wiz` registries to determine whether a definition should be
         skipped or updated.
 
-        Added :option:`-i/--ignore-registries<qip install -i>` to ignore default
+        Added :option:`-I/--ignore-registries<qip install -I>` to ignore default
         :term:`Wiz` registries.
 
     .. change:: changed

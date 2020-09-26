@@ -130,7 +130,7 @@ def main(**kwargs):
     default=False
 )
 @click.option(
-    "-i", "--ignore-registries",
+    "-I", "--ignore-registries",
     help=(
          "Ignore Wiz registries when determining whether a package "
          "should be skipped or updated."
