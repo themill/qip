@@ -268,6 +268,7 @@ def _install(
             custom_definition=custom_definition
         )
 
+    package_mapping["skipped"] = skipped
     return package_mapping, overwrite
 
 

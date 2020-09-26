@@ -780,7 +780,7 @@ def test_install_one_request(
     logger.error.assert_not_called()
     logger.info.assert_called_once_with("Requested 'foo'")
 
-    assert mapping.get("skipped") is None
+    assert mapping.get("skipped") is False
 
 
 @pytest.mark.parametrize(
@@ -848,7 +848,7 @@ def test_install_one_request_with_definition_path(
     logger.error.assert_not_called()
     logger.info.assert_called_once_with("Requested 'foo'")
 
-    assert mapping.get("skipped") is None
+    assert mapping.get("skipped") is False
 
 
 @pytest.mark.parametrize(
@@ -921,7 +921,7 @@ def test_install_one_request_with_custom_definition(
     logger.error.assert_not_called()
     logger.info.assert_called_once_with("Requested 'foo'")
 
-    assert mapping.get("skipped") is None
+    assert mapping.get("skipped") is False
 
 
 @pytest.mark.parametrize(
@@ -998,7 +998,7 @@ def test_install_one_request_with_existing_definition_in_output(
     logger.error.assert_not_called()
     logger.info.assert_called_once_with("Requested 'foo'")
 
-    assert mapping.get("skipped") is None
+    assert mapping.get("skipped") is False
 
 
 @pytest.mark.parametrize(
@@ -1075,7 +1075,7 @@ def test_install_one_request_with_existing_definition_with_different_variant(
     logger.error.assert_not_called()
     logger.info.assert_called_once_with("Requested 'foo'")
 
-    assert mapping.get("skipped") is None
+    assert mapping.get("skipped") is False
 
 
 @pytest.mark.parametrize(
@@ -1244,7 +1244,7 @@ def test_install_one_request_overwrite_changed(
     logger.error.assert_not_called()
     logger.info.assert_called_once_with("Requested 'foo'")
 
-    assert mapping.get("skipped") is None
+    assert mapping.get("skipped") is False
 
 
 @pytest.mark.parametrize(
@@ -1307,7 +1307,7 @@ def test_install_one_request_copy_skipped(
     logger.error.assert_not_called()
     logger.info.assert_called_once_with("Requested 'foo'")
 
-    assert mapping.get("skipped") is None
+    assert mapping.get("skipped") is True
 
 
 @pytest.mark.parametrize(
@@ -1359,7 +1359,7 @@ def test_install_one_request_with_parent(
     logger.error.assert_not_called()
     logger.info.assert_called_once_with("Requested 'foo' [from 'bar']")
 
-    assert mapping.get("skipped") is None
+    assert mapping.get("skipped") is False
 
 
 @pytest.mark.parametrize(
