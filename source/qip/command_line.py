@@ -100,8 +100,8 @@ def main(**kwargs):
 @click.option(
     "-u", "--update",
     help=(
-        "Update Wiz definition(s) that already exist in the Wiz definitions "	
-        "output path with additional Python variants."
+        "Include additional variants from existing Wiz definitions, using "
+        "definitions previously exported in the same definitions output path."
     ),
     is_flag=True,
     default=False
