@@ -20,7 +20,14 @@ PYTHON_MAPPING_27 = {
     "request": "python >= 2.7, < 2.8"
 }
 
-#: Collection of all packages dependency mapping available for testings.
+#: Collection of all output folder .
+PACKAGE_OUTPUT_PATH = {
+    "foo": os.path.join("Foo", "Foo-1.2.0-py27"),
+    "bar": os.path.join("Bar", "Bar-0.1.0-py27-centos7"),
+    "bim": os.path.join("BIM", "BIM-3.6.2-py27"),
+}
+
+#: Collection of all packages dependency mapping.
 PACKAGE_DEPENDENCY_MAPPING = {
     "foo": {
         "package": {
@@ -95,7 +102,9 @@ def mock_commands(mocker):
             request = re.search(r"'(.+)'", command).group(1)
             output = re.search(r"--prefix ([^ ]+)", command).group(1)
             requirement = wiz.utility.get_requirement(request)
-            os.makedirs(os.path.join(output, requirement.name))
+            os.makedirs(
+                os.path.join(output, PACKAGE_OUTPUT_PATH[requirement.name])
+            )
             return "Installing collected packages: {}".format(requirement.name)
 
         elif command.startswith("python {}".format(PACKAGE_INFO_SCRIPT)):
