@@ -33,7 +33,7 @@ PACKAGE_DEPENDENCY_MAPPING = {
         "package": {
             "installed_version": "1.2.0",
             "key": "foo",
-            "module_name": "foo_module",
+            "module_name": "foo",
             "package_name": "Foo"
         },
         "requirements": [
@@ -44,7 +44,7 @@ PACKAGE_DEPENDENCY_MAPPING = {
         "package": {
             "installed_version": "0.1.0",
             "key": "bar",
-            "module_name": "bar_module",
+            "module_name": "bar",
             "package_name": "Bar"
         },
         "requirements": [
@@ -55,7 +55,7 @@ PACKAGE_DEPENDENCY_MAPPING = {
         "package": {
             "installed_version": "3.6.2",
             "key": "bim",
-            "module_name": "bim_module",
+            "module_name": "bim",
             "package_name": "BIM"
         }
     },
