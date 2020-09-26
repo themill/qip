@@ -1,17 +1,16 @@
 # :coding: utf-8
 
-import sys
 import os
-import re
-import importlib
 
 import pytest
 from six.moves import reload_module
 from click.testing import CliRunner
 import wiz
 import wiz.config
+import wiz.definition
 
 import qip.command_line
+import qip.command
 
 
 @pytest.fixture(autouse=True)
@@ -28,125 +27,125 @@ def reset_configuration(mocker):
     mocker.patch.object(os.path, "expanduser", function)
 
 
-def test_install_numpy(temporary_directory):
-    """Install numpy.
-
-    Install numpy version within 1.16.6 and 1.19.2 which covers all Python
-    version supported by Qip. numpy doesn't have any dependencies.
-
-    """
+def test_install(temporary_directory):
+    """Install a package with all dependencies."""
     packages_path = os.path.join(temporary_directory, "packages")
     definitions_path = os.path.join(temporary_directory, "definitions")
 
     runner = CliRunner()
     result = runner.invoke(
         qip.command_line.main, [
-            "-v", "debug",
             "install",
-            "numpy >= 1.16.6, <= 1.19.2",
+            "foo >= 1, <= 2",
+            "bar == 0.1.0",
             "-o", packages_path,
             "-d", definitions_path,
         ]
     )
+    print(result.output)
     assert not result.exception
     assert result.exit_code == 0
 
+    expected_packages = ["BIM", "Bar", "Foo"]
+
+    expected_definitions = [
+        "library-bar-0.1.0-M2Uq9Esezm-m00VeWkTzkQIu3T4.json",
+        "library-bim-3.6.2.json",
+        "library-foo-1.2.0.json",
+    ]
+
     # Check definitions installed.
     definitions = os.listdir(definitions_path)
-    assert len(definitions) == 1
-    assert re.match(r"^library-numpy-1..*.json$", definitions[0])
-    path = os.path.join(definitions_path, definitions[0])
-    assert os.path.isfile(path)
+    assert sorted(definitions) == expected_definitions
 
-    # Ensure that definition is correct.
+    path = os.path.join(definitions_path, expected_definitions[0])
     definition = wiz.load_definition(path)
-    assert definition.qualified_identifier == "library::numpy"
-    assert definition.install_root == packages_path
-    assert definition.system is not None
-    assert definition.requirements == []
-    assert definition.environ == {
-        "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+    assert definition.data() == {
+        "identifier": "bar",
+        "version": "0.1.0",
+        "description": "Bar Python Package.",
+        "namespace": "library",
+        "install-root": packages_path,
+        "system": {
+            "platform": "linux",
+            "os": "centos >= 7, < 8",
+            "arch": "x86_64"
+        },
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
+        "variants": [
+            {
+                "identifier": "2.7",
+                "install-location": (
+                    "${INSTALL_ROOT}/Bar/Bar-0.1.0-py27-centos7/lib/python2.7/"
+                    "site-packages"
+                ),
+                "requirements": [
+                    "python >= 2.7, < 2.8",
+                    "library::foo[2.7]"
+                ]
+            }
+        ]
     }
-    assert len(definition.variants) == 1
-    assert len(definition.variants[0].requirements) == 1
-    assert definition.variants[0].requirements[0].name == "python"
+
+    path = os.path.join(definitions_path, expected_definitions[1])
+    definition = wiz.load_definition(path)
+    assert definition.data() == {
+        "identifier": "bim",
+        "version": "3.6.2",
+        "description": "Bim Python Package.",
+        "namespace": "library",
+        "install-root": packages_path,
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
+        "variants": [
+            {
+                "identifier": "2.7",
+                "install-location": (
+                    "${INSTALL_ROOT}/BIM/BIM-3.6.2-py27/lib/python2.7/"
+                    "site-packages"
+                ),
+                "requirements": [
+                    "python >= 2.7, < 2.8",
+                ]
+            }
+        ]
+    }
+
+    path = os.path.join(definitions_path, expected_definitions[2])
+    definition = wiz.load_definition(path)
+    assert definition.data() == {
+        "identifier": "foo",
+        "version": "1.2.0",
+        "description": "Foo Python Package.",
+        "namespace": "library",
+        "install-root": packages_path,
+        "command": {
+            "foo": "python -m foo"
+        },
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
+        "variants": [
+            {
+                "identifier": "2.7",
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-1.2.0-py27/lib/python2.7/"
+                    "site-packages"
+                ),
+                "requirements": [
+                    "python >= 2.7, < 2.8",
+                    "library::bim[2.7] >=3.4, <5"
+                ]
+            }
+        ]
+    }
 
     # Check package installed.
-    assert len(os.listdir(packages_path)) == 1
-    path = os.path.join(packages_path, "numpy")
-    assert os.path.isdir(path)
+    packages = os.listdir(packages_path)
+    assert sorted(packages) == expected_packages
 
-    versions = os.listdir(path)
-    assert len(versions) == 1
-    assert re.match(r"^numpy-1..*", versions[0])
-    assert os.path.isdir(os.path.join(path, versions[0]))
-    assert os.path.isdir(os.path.join(path, versions[0], "lib"))
-
-    lib_version = "python{}.{}".format(
-        sys.version_info.major, sys.version_info.minor
-    )
-    path = os.path.join(path, versions[0], "lib", lib_version)
-    assert os.path.isdir(os.path.join(path, "site-packages"))
-    assert os.path.isdir(os.path.join(path, "site-packages", "numpy"))
-
-    # Check that module can be imported.
-    path = os.path.join(path, "site-packages")
-    sys.path.insert(0, path)
-    importlib.import_module("numpy")
-    del sys.path[0]
-
-
-def test_install_numpy_several_versions(temporary_directory):
-    """Install numpy.
-
-    Like the previous test, install numpy version within 1.16.6 and 1.19.2 which
-    covers all Python version supported by Qip. Then install numpy while
-    excluding the latest versions supported by 2.7 and 3+ to force another
-    version to get installed.
-
-    """
-    packages_path = os.path.join(temporary_directory, "packages")
-    definitions_path = os.path.join(temporary_directory, "definitions")
-
-    runner = CliRunner()
-    result = runner.invoke(
-        qip.command_line.main, [
-            "install",
-            "numpy >= 1.16.6, <= 1.19.2",
-            "numpy != 1.16.6, < 1.19.2.",
-            "-o", packages_path,
-            "-d", definitions_path,
-        ]
-    )
-    assert not result.exception
-    assert result.exit_code == 0
-
-    # Check definitions installed.
-    definitions = os.listdir(definitions_path)
-    assert len(definitions) == 2
-    assert definitions[0] != definitions[1]
-
-    assert re.match(r"^library-numpy-1..*.json$", definitions[0])
-    path = os.path.join(definitions_path, definitions[0])
-    assert os.path.isfile(path)
-    definition1 = wiz.load_definition(path)
-
-    assert re.match(r"^library-numpy-1..*.json$", definitions[1])
-    path = os.path.join(definitions_path, definitions[1])
-    assert os.path.isfile(path)
-    definition2 = wiz.load_definition(path)
-
-    # Ensure that definitions are correct.
-    for definition in [definition1, definition2]:
-        assert definition.qualified_identifier == "library::numpy"
-        assert definition.install_root == packages_path
-        assert definition.system is not None
-        assert definition.requirements == []
-        assert definition.environ == {
-            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
-        }
-        assert len(definition.variants) == 1
-        assert len(definition.variants[0].requirements) == 1
-        assert definition.variants[0].requirements[0].name == "python"
-
-    assert definition1.version != definition2.version
+    for package in packages:
+        assert os.path.isdir(os.path.join(packages_path, package))
