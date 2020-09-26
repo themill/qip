@@ -1106,7 +1106,8 @@ def test_install_one_request_skip_existing_definition(
     )
 
     mapping = {
-        "identifier": "foo",
+        "identifier": "foo-0.1.0",
+        "key": "foo",
         "version": "0.1.0",
         "python": {
             "identifier": "3.8"
@@ -1165,9 +1166,9 @@ def test_install_one_request_skip_installed(
     mocked_definition_export, logger, options, overwrite, editable_mode,
 ):
     """Skip package if has already been installed."""
-    installed_packages = {"foo"}
+    installed_packages = {"foo-0.1.0"}
 
-    mapping = {"identifier": "foo"}
+    mapping = {"identifier": "foo-0.1.0"}
     mocked_package_install.return_value = mapping
     mocked_copy_to_destination.return_value = (False, overwrite)
     mocked_definition_fetch_custom.return_value = None
@@ -1214,7 +1215,7 @@ def test_install_one_request_overwrite_changed(
     """Install package."""
     installed_packages = set()
 
-    mapping = {"identifier": "foo"}
+    mapping = {"identifier": "foo-0.1.0"}
     mocked_package_install.return_value = mapping
     mocked_copy_to_destination.return_value = (False, True)
 
@@ -1267,7 +1268,7 @@ def test_install_one_request_copy_skipped(
     installed_packages = set()
 
     mapping = {
-        "identifier": "foo",
+        "identifier": "foo-0.1.0",
         "version": "0.1.0",
         "python": {
             "identifier": "3.8"
@@ -1329,7 +1330,7 @@ def test_install_one_request_with_parent(
     """Install package with parent identifier."""
     installed_packages = set()
 
-    mapping = {"identifier": "foo"}
+    mapping = {"identifier": "foo-0.1.0"}
     mocked_package_install.return_value = mapping
     mocked_copy_to_destination.return_value = (False, overwrite)
 
