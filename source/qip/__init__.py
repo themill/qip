@@ -239,7 +239,7 @@ def _install(
 
         if _skip_install(existing_definition, package_mapping, definition_path):
             logger.warning(
-                "Skip '{0[identifier]}[{0[python][identifier]}]=={0[version]}' "
+                "Skip '{0[key]}[{0[python][identifier]}]=={0[version]}' "
                 "which already exists in Wiz registries."
                 .format(package_mapping)
             )
