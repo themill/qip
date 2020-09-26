@@ -40,7 +40,7 @@ def registry_path(mocker, temporary_directory):
 
 
 def test_install(temporary_directory, logger):
-    """Install a package with all dependencies."""
+    """Install packages with all dependencies."""
     packages_path = os.path.join(temporary_directory, "packages")
     definitions_path = os.path.join(temporary_directory, "definitions")
 
@@ -170,8 +170,131 @@ def test_install(temporary_directory, logger):
     }
 
 
+def test_install_editable_mode(temporary_directory, logger):
+    """Install packages in editable mode."""
+    packages_path = os.path.join(temporary_directory, "packages")
+    definitions_path = os.path.join(temporary_directory, "definitions")
+
+    runner = CliRunner()
+    result = runner.invoke(
+        qip.command_line.main, [
+            "install", "-e",
+            "foo >= 1, <= 2",
+            "bar == 0.1.0",
+            "-o", packages_path,
+            "-d", definitions_path,
+        ]
+    )
+    assert not result.exception
+    assert result.exit_code == 0
+
+    # Check log.
+    logger.info.assert_any_call(
+        "Packages installed: Bar-0.1.0, BIM-3.6.2, Foo-1.2.0"
+    )
+    logger.warning.assert_not_called()
+    logger.error.assert_not_called()
+
+    # Check package installed.
+    expected_packages = [
+        os.path.join("BIM", "BIM-3.6.2-py27"),
+        os.path.join("Bar", "Bar-0.1.0-py27-centos7"),
+        os.path.join("Foo", "Foo-1.2.0-py27")
+    ]
+
+    for package in expected_packages:
+        assert os.path.isdir(os.path.join(packages_path, package))
+
+    # Check definitions installed.
+    expected_definitions = [
+        "library-bar-0.1.0-M2Uq9Esezm-m00VeWkTzkQIu3T4.json",
+        "library-bim-3.6.2.json",
+        "library-foo-1.2.0.json",
+    ]
+
+    definitions = os.listdir(definitions_path)
+    assert sorted(definitions) == expected_definitions
+
+    path = os.path.join(definitions_path, expected_definitions[0])
+    definition = wiz.load_definition(path)
+    assert definition.data() == {
+        "identifier": "bar",
+        "version": "0.1.0",
+        "description": "Bar Python Package.",
+        "namespace": "library",
+        "system": {
+            "platform": "linux",
+            "os": "centos >= 7, < 8",
+            "arch": "x86_64"
+        },
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
+        "variants": [
+            {
+                "identifier": "2.7",
+                "install-location": "/path/to/bar",
+                "requirements": [
+                    "python >= 2.7, < 2.8",
+                    "library::foo[2.7]"
+                ]
+            }
+        ]
+    }
+
+    path = os.path.join(definitions_path, expected_definitions[1])
+    definition = wiz.load_definition(path)
+    assert definition.data() == {
+        "identifier": "bim",
+        "version": "3.6.2",
+        "description": "Bim Python Package.",
+        "namespace": "library",
+        "install-root": packages_path,
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
+        "variants": [
+            {
+                "identifier": "2.7",
+                "install-location": (
+                    "${INSTALL_ROOT}/BIM/BIM-3.6.2-py27/lib/python2.7/"
+                    "site-packages"
+                ),
+                "requirements": [
+                    "python >= 2.7, < 2.8",
+                ]
+            }
+        ]
+    }
+
+    path = os.path.join(definitions_path, expected_definitions[2])
+    definition = wiz.load_definition(path)
+    assert definition.data() == {
+        "identifier": "foo",
+        "version": "1.2.0",
+        "description": "Foo Python Package.",
+        "namespace": "library",
+        "command": {
+            "foo": "python -m foo"
+        },
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
+        "variants": [
+            {
+                "identifier": "2.7",
+                "install-location": "/path/to/foo",
+                "requirements": [
+                    "python >= 2.7, < 2.8",
+                    "library::bim[2.7] >=3.4, <5"
+                ]
+            }
+        ]
+    }
+
+
 def test_install_no_dependencies(temporary_directory, logger):
-    """Install a package without dependencies."""
+    """Install packages without dependencies."""
     packages_path = os.path.join(temporary_directory, "packages")
     definitions_path = os.path.join(temporary_directory, "definitions")
 
