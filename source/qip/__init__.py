@@ -21,7 +21,7 @@ from qip._version import __version__
 def install(
     requests, output_path, definition_path=None, overwrite=False,
     no_dependencies=False, editable_mode=False, python_target=sys.executable,
-    registry_paths=None
+    registry_paths=None, update_existing_definitions=False
 ):
     """Install packages to *output_path* from *requests*.
 
@@ -61,6 +61,9 @@ def install(
 
     :param registry_paths: List of :term:`Wiz` registry paths to consider when
         fetching existing definitions to update or skip.
+
+    :param update_existing_definitions: Indicate whether variants from existing
+        definitions should be used when exporting new definitions.
 
     :return: Boolean value indicating whether packages were installed.
 
@@ -115,6 +118,7 @@ def install(
                 definition_path=definition_path,
                 overwrite=overwrite,
                 editable_mode=_editable_mode,
+                update_existing_definitions=update_existing_definitions,
                 parent_identifier=parent_identifier,
             )
             if package_mapping is None:
@@ -152,7 +156,8 @@ def install(
 def _install(
     request, output_path, context_mapping, definition_mapping,
     package_path, cache_path, installed_packages, definition_path=None,
-    overwrite=False, editable_mode=False, parent_identifier=None,
+    overwrite=False, update_existing_definitions=False, editable_mode=False,
+    parent_identifier=None,
 ):
     """Install single package to *output_path* from *request*.
 
@@ -183,6 +188,9 @@ def _install(
 
     :param editable_mode: Indicate whether the Python package location should
         target the source installation package. Default is False.
+
+    :param update_existing_definitions: Indicate whether variants from existing
+        definitions should be used when exporting new definitions.
 
     :param parent_identifier: Indicate Python package which triggered the
         *request*. Default is None.
@@ -254,7 +262,9 @@ def _install(
         qip.definition.export(
             definition_path, package_mapping, output_path,
             editable_mode=editable_mode,
-            existing_definition=existing_definition,
+            existing_definition=(
+                existing_definition if update_existing_definitions else None
+            ),
             custom_definition=custom_definition
         )
 

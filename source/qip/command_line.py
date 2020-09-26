@@ -176,6 +176,7 @@ def install(**kwargs):
         editable_mode=kwargs["editable"],
         python_target=kwargs["python"],
         registry_paths=registry_paths,
+        update_existing_definitions=kwargs["update"],
     )
 
     if not success:
