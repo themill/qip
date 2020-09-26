@@ -112,14 +112,22 @@ def mocked_fetch_python_mapping(mocker):
 
 
 @pytest.mark.parametrize(
-    "options, overwrite, editable_mode, python_target, registry_paths", [
-        ({}, False, False, sys.executable, []),
-        ({"overwrite": True}, True, False, sys.executable, []),
-        ({"editable_mode": True}, False, True, sys.executable, []),
-        ({"python_target": "/bin/python3"}, False, False, "/bin/python3", []),
+    "options, overwrite, editable_mode, python_target, registry_paths, "
+    "update_existing_definitions", [
+        ({}, False, False, sys.executable, [], False),
+        ({"overwrite": True}, True, False, sys.executable, [], False),
+        ({"editable_mode": True}, False, True, sys.executable, [], False),
+        (
+            {"python_target": "/bin/python3"}, False, False, "/bin/python3", [],
+            False
+        ),
         (
             {"registry_paths": ["/registry1", "registry2"]},
-            False, False, sys.executable, ["/registry1", "registry2"]
+            False, False, sys.executable, ["/registry1", "registry2"], False
+        ),
+        (
+            {"update_existing_definitions": True}, False, False, sys.executable,
+            [], True
         ),
     ], ids=[
         "simple",
@@ -127,13 +135,14 @@ def mocked_fetch_python_mapping(mocker):
         "with-editable-mode",
         "with-python-target",
         "with-registries",
+        "with-update-existing-definitions",
     ]
 )
 def test_install_requests(
     mocker, mocked_filesystem_ensure_directory, mocked_fetch_definition_mapping,
     mocked_tempfile_mkdtemp, mocked_fetch_context_mapping, mocked_install,
     mocked_shutil_rmtree, logger, options, overwrite, editable_mode,
-    python_target, registry_paths
+    python_target, registry_paths, update_existing_definitions
 ):
     """Install packages."""
     context = {"environ": {"PYTHONPATH": "/path/to/site-packages"}}
@@ -169,6 +178,7 @@ def test_install_requests(
         overwrite=overwrite,
         editable_mode=editable_mode,
         parent_identifier=None,
+        update_existing_definitions=update_existing_definitions
     )
     mocked_install.assert_any_call(
         "bar", "/path/to/install", context, "__MAPPING__", "/tmp2", "/tmp1",
@@ -177,6 +187,7 @@ def test_install_requests(
         overwrite=overwrite,
         editable_mode=editable_mode,
         parent_identifier=None,
+        update_existing_definitions=update_existing_definitions
     )
     mocked_install.assert_any_call(
         "bim", "/path/to/install", context, "__MAPPING__", "/tmp2", "/tmp1",
@@ -185,6 +196,7 @@ def test_install_requests(
         overwrite=overwrite,
         editable_mode=False,
         parent_identifier="foo",
+        update_existing_definitions=update_existing_definitions
     )
 
     assert mocked_shutil_rmtree.call_count == 5
@@ -195,14 +207,22 @@ def test_install_requests(
 
 
 @pytest.mark.parametrize(
-    "options, overwrite, editable_mode, python_target, registry_paths", [
-        ({}, False, False, sys.executable, []),
-        ({"overwrite": True}, True, False, sys.executable, []),
-        ({"editable_mode": True}, False, True, sys.executable, []),
-        ({"python_target": "/bin/python3"}, False, False, "/bin/python3", []),
+    "options, overwrite, editable_mode, python_target, registry_paths, "
+    "update_existing_definitions", [
+        ({}, False, False, sys.executable, [], False),
+        ({"overwrite": True}, True, False, sys.executable, [], False),
+        ({"editable_mode": True}, False, True, sys.executable, [], False),
+        (
+            {"python_target": "/bin/python3"}, False, False, "/bin/python3", [],
+            False
+        ),
         (
             {"registry_paths": ["/registry1", "registry2"]},
-            False, False, sys.executable, ["/registry1", "registry2"]
+            False, False, sys.executable, ["/registry1", "registry2"], False
+        ),
+        (
+            {"update_existing_definitions": True}, False, False, sys.executable,
+            [], True
         ),
     ], ids=[
         "simple",
@@ -210,13 +230,14 @@ def test_install_requests(
         "with-editable-mode",
         "with-python-target",
         "with-registries",
+        "with-update-existing-definitions",
     ]
 )
 def test_install_requests_with_definition_path(
     mocker, mocked_filesystem_ensure_directory, mocked_fetch_definition_mapping,
     mocked_tempfile_mkdtemp, mocked_fetch_context_mapping, mocked_install,
     mocked_shutil_rmtree, logger, options, overwrite, editable_mode,
-    python_target, registry_paths
+    python_target, registry_paths, update_existing_definitions
 ):
     """Install packages and export Wiz definitions."""
     context = {"environ": {"PYTHONPATH": "/path/to/site-packages"}}
@@ -256,6 +277,7 @@ def test_install_requests_with_definition_path(
         overwrite=overwrite,
         editable_mode=editable_mode,
         parent_identifier=None,
+        update_existing_definitions=update_existing_definitions
     )
     mocked_install.assert_any_call(
         "bar", "/path/to/install", context, "__MAPPING__", "/tmp2", "/tmp1",
@@ -264,6 +286,7 @@ def test_install_requests_with_definition_path(
         overwrite=overwrite,
         editable_mode=editable_mode,
         parent_identifier=None,
+        update_existing_definitions=update_existing_definitions
     )
     mocked_install.assert_any_call(
         "bim", "/path/to/install", context, "__MAPPING__", "/tmp2", "/tmp1",
@@ -272,6 +295,7 @@ def test_install_requests_with_definition_path(
         overwrite=overwrite,
         editable_mode=False,
         parent_identifier="foo",
+        update_existing_definitions=update_existing_definitions
     )
 
     assert mocked_shutil_rmtree.call_count == 5
@@ -282,14 +306,22 @@ def test_install_requests_with_definition_path(
 
 
 @pytest.mark.parametrize(
-    "options, overwrite, editable_mode, python_target, registry_paths", [
-        ({}, False, False, sys.executable, []),
-        ({"overwrite": True}, True, False, sys.executable, []),
-        ({"editable_mode": True}, False, True, sys.executable, []),
-        ({"python_target": "/bin/python3"}, False, False, "/bin/python3", []),
+    "options, overwrite, editable_mode, python_target, registry_paths, "
+    "update_existing_definitions", [
+        ({}, False, False, sys.executable, [], False),
+        ({"overwrite": True}, True, False, sys.executable, [], False),
+        ({"editable_mode": True}, False, True, sys.executable, [], False),
+        (
+            {"python_target": "/bin/python3"}, False, False, "/bin/python3", [],
+            False
+        ),
         (
             {"registry_paths": ["/registry1", "registry2"]},
-            False, False, sys.executable, ["/registry1", "registry2"]
+            False, False, sys.executable, ["/registry1", "registry2"], False
+        ),
+        (
+            {"update_existing_definitions": True}, False, False, sys.executable,
+            [], True
         ),
     ], ids=[
         "simple",
@@ -297,13 +329,14 @@ def test_install_requests_with_definition_path(
         "with-editable-mode",
         "with-python-target",
         "with-registries",
+        "with-update-existing-definitions",
     ]
 )
 def test_install_requests_without_dependencies(
     mocker, mocked_filesystem_ensure_directory, mocked_fetch_definition_mapping,
     mocked_tempfile_mkdtemp, mocked_fetch_context_mapping, mocked_install,
     mocked_shutil_rmtree, logger, options, overwrite, editable_mode,
-    python_target, registry_paths
+    python_target, registry_paths, update_existing_definitions
 ):
     """Install packages without dependencies."""
     context = {"environ": {"PYTHONPATH": "/path/to/site-packages"}}
@@ -342,6 +375,7 @@ def test_install_requests_without_dependencies(
         overwrite=overwrite,
         editable_mode=editable_mode,
         parent_identifier=None,
+        update_existing_definitions=update_existing_definitions
     )
     mocked_install.assert_any_call(
         "bar", "/path/to/install", context, "__MAPPING__", "/tmp2", "/tmp1",
@@ -350,6 +384,7 @@ def test_install_requests_without_dependencies(
         overwrite=overwrite,
         editable_mode=editable_mode,
         parent_identifier=None,
+        update_existing_definitions=update_existing_definitions
     )
 
     assert mocked_shutil_rmtree.call_count == 4
@@ -360,14 +395,22 @@ def test_install_requests_without_dependencies(
 
 
 @pytest.mark.parametrize(
-    "options, overwrite, editable_mode, python_target, registry_paths", [
-        ({}, False, False, sys.executable, []),
-        ({"overwrite": True}, True, False, sys.executable, []),
-        ({"editable_mode": True}, False, True, sys.executable, []),
-        ({"python_target": "/bin/python3"}, False, False, "/bin/python3", []),
+    "options, overwrite, editable_mode, python_target, registry_paths, "
+    "update_existing_definitions", [
+        ({}, False, False, sys.executable, [], False),
+        ({"overwrite": True}, True, False, sys.executable, [], False),
+        ({"editable_mode": True}, False, True, sys.executable, [], False),
+        (
+            {"python_target": "/bin/python3"}, False, False, "/bin/python3", [],
+            False
+        ),
         (
             {"registry_paths": ["/registry1", "registry2"]},
-            False, False, sys.executable, ["/registry1", "registry2"]
+            False, False, sys.executable, ["/registry1", "registry2"], False
+        ),
+        (
+            {"update_existing_definitions": True}, False, False, sys.executable,
+            [], True
         ),
     ], ids=[
         "simple",
@@ -375,13 +418,14 @@ def test_install_requests_without_dependencies(
         "with-editable-mode",
         "with-python-target",
         "with-registries",
+        "with-update-existing-definitions",
     ]
 )
 def test_install_requests_skip_installed(
     mocker, mocked_filesystem_ensure_directory, mocked_fetch_definition_mapping,
     mocked_tempfile_mkdtemp, mocked_fetch_context_mapping, mocked_install,
     mocked_shutil_rmtree, logger, options, overwrite, editable_mode,
-    python_target, registry_paths
+    python_target, registry_paths, update_existing_definitions
 ):
     """Skip package already installed during installation."""
     context = {"environ": {"PYTHONPATH": "/path/to/site-packages"}}
@@ -416,6 +460,7 @@ def test_install_requests_skip_installed(
         overwrite=overwrite,
         editable_mode=editable_mode,
         parent_identifier=None,
+        update_existing_definitions=update_existing_definitions
     )
     mocked_install.assert_any_call(
         "bar", "/path/to/install", context, "__MAPPING__", "/tmp2", "/tmp1",
@@ -424,6 +469,7 @@ def test_install_requests_skip_installed(
         overwrite=overwrite,
         editable_mode=editable_mode,
         parent_identifier=None,
+        update_existing_definitions=update_existing_definitions
     )
 
     assert mocked_shutil_rmtree.call_count == 4
@@ -434,14 +480,22 @@ def test_install_requests_skip_installed(
 
 
 @pytest.mark.parametrize(
-    "options, overwrite, editable_mode, python_target, registry_paths", [
-        ({}, False, False, sys.executable, []),
-        ({"overwrite": True}, True, False, sys.executable, []),
-        ({"editable_mode": True}, False, True, sys.executable, []),
-        ({"python_target": "/bin/python3"}, False, False, "/bin/python3", []),
+    "options, overwrite, editable_mode, python_target, registry_paths, "
+    "update_existing_definitions", [
+        ({}, False, False, sys.executable, [], False),
+        ({"overwrite": True}, True, False, sys.executable, [], False),
+        ({"editable_mode": True}, False, True, sys.executable, [], False),
+        (
+            {"python_target": "/bin/python3"}, False, False, "/bin/python3", [],
+            False
+        ),
         (
             {"registry_paths": ["/registry1", "registry2"]},
-            False, False, sys.executable, ["/registry1", "registry2"]
+            False, False, sys.executable, ["/registry1", "registry2"], False
+        ),
+        (
+            {"update_existing_definitions": True}, False, False, sys.executable,
+            [], True
         ),
     ], ids=[
         "simple",
@@ -449,13 +503,14 @@ def test_install_requests_skip_installed(
         "with-editable-mode",
         "with-python-target",
         "with-registries",
+        "with-update-existing-definitions",
     ]
 )
 def test_install_requests_skip_existing(
     mocker, mocked_filesystem_ensure_directory, mocked_fetch_definition_mapping,
     mocked_tempfile_mkdtemp, mocked_fetch_context_mapping, mocked_install,
     mocked_shutil_rmtree, logger, options, overwrite, editable_mode,
-    python_target, registry_paths
+    python_target, registry_paths, update_existing_definitions
 ):
     """Skip package found in Wiz registries during installation."""
     context = {"environ": {"PYTHONPATH": "/path/to/site-packages"}}
@@ -494,6 +549,7 @@ def test_install_requests_skip_existing(
         overwrite=overwrite,
         editable_mode=editable_mode,
         parent_identifier=None,
+        update_existing_definitions=update_existing_definitions
     )
     mocked_install.assert_any_call(
         "bar", "/path/to/install", context, "__MAPPING__", "/tmp2", "/tmp1",
@@ -502,6 +558,7 @@ def test_install_requests_skip_existing(
         overwrite=overwrite,
         editable_mode=editable_mode,
         parent_identifier=None,
+        update_existing_definitions=update_existing_definitions
     )
     mocked_install.assert_any_call(
         "bim", "/path/to/install", context, "__MAPPING__", "/tmp2", "/tmp1",
@@ -510,6 +567,7 @@ def test_install_requests_skip_existing(
         overwrite=overwrite,
         editable_mode=False,
         parent_identifier="foo",
+        update_existing_definitions=update_existing_definitions
     )
 
     assert mocked_shutil_rmtree.call_count == 5
@@ -520,26 +578,32 @@ def test_install_requests_skip_existing(
 
 
 @pytest.mark.parametrize(
-    "options, editable_mode, python_target, registry_paths", [
-        ({}, False, sys.executable, []),
-        ({"editable_mode": True}, True, sys.executable, []),
-        ({"python_target": "/bin/python3"}, False, "/bin/python3", []),
+    "options, editable_mode, python_target, registry_paths, "
+    "update_existing_definitions", [
+        ({}, False, sys.executable, [], False),
+        ({"editable_mode": True}, True, sys.executable, [], False),
+        ({"python_target": "/bin/python3"}, False, "/bin/python3", [], False),
         (
             {"registry_paths": ["/registry1", "registry2"]},
-            False, sys.executable, ["/registry1", "registry2"]
+            False, sys.executable, ["/registry1", "registry2"], False
+        ),
+        (
+            {"update_existing_definitions": True}, False, sys.executable,
+            [], True
         ),
     ], ids=[
         "simple",
         "with-editable-mode",
         "with-python-target",
         "with-registries",
+        "with-update-existing-definitions",
     ]
 )
 def test_install_requests_overwrite_changed(
     mocker, mocked_filesystem_ensure_directory, mocked_fetch_definition_mapping,
     mocked_tempfile_mkdtemp, mocked_fetch_context_mapping, mocked_install,
     mocked_shutil_rmtree, logger, options, editable_mode,
-    python_target, registry_paths
+    python_target, registry_paths, update_existing_definitions
 ):
     """Change value of overwrite during installation."""
     context = {"environ": {"PYTHONPATH": "/path/to/site-packages"}}
@@ -577,6 +641,7 @@ def test_install_requests_overwrite_changed(
         overwrite=None,
         editable_mode=editable_mode,
         parent_identifier=None,
+        update_existing_definitions=update_existing_definitions
     )
     mocked_install.assert_any_call(
         "bar", "/path/to/install", context, "__MAPPING__", "/tmp2", "/tmp1",
@@ -585,6 +650,7 @@ def test_install_requests_overwrite_changed(
         overwrite=True,
         editable_mode=editable_mode,
         parent_identifier=None,
+        update_existing_definitions=update_existing_definitions
     )
 
     assert mocked_shutil_rmtree.call_count == 4
@@ -595,14 +661,22 @@ def test_install_requests_overwrite_changed(
 
 
 @pytest.mark.parametrize(
-    "options, overwrite, editable_mode, python_target, registry_paths", [
-        ({}, False, False, sys.executable, []),
-        ({"overwrite": True}, True, False, sys.executable, []),
-        ({"editable_mode": True}, False, True, sys.executable, []),
-        ({"python_target": "/bin/python3"}, False, False, "/bin/python3", []),
+    "options, overwrite, editable_mode, python_target, registry_paths, "
+    "update_existing_definitions", [
+        ({}, False, False, sys.executable, [], False),
+        ({"overwrite": True}, True, False, sys.executable, [], False),
+        ({"editable_mode": True}, False, True, sys.executable, [], False),
+        (
+            {"python_target": "/bin/python3"}, False, False, "/bin/python3", [],
+            False
+        ),
         (
             {"registry_paths": ["/registry1", "registry2"]},
-            False, False, sys.executable, ["/registry1", "registry2"]
+            False, False, sys.executable, ["/registry1", "registry2"], False
+        ),
+        (
+            {"update_existing_definitions": True}, False, False, sys.executable,
+            [], True
         ),
     ], ids=[
         "simple",
@@ -610,13 +684,14 @@ def test_install_requests_overwrite_changed(
         "with-editable-mode",
         "with-python-target",
         "with-registries",
+        "with-update-existing-definitions",
     ]
 )
 def test_install_requests_none(
     mocker, mocked_filesystem_ensure_directory, mocked_fetch_definition_mapping,
     mocked_tempfile_mkdtemp, mocked_fetch_context_mapping, mocked_install,
     mocked_shutil_rmtree, logger, options, overwrite, editable_mode,
-    python_target, registry_paths
+    python_target, registry_paths, update_existing_definitions
 ):
     """Install no packages."""
     context = {"environ": {"PYTHONPATH": "/path/to/site-packages"}}
@@ -647,6 +722,7 @@ def test_install_requests_none(
         overwrite=overwrite,
         editable_mode=editable_mode,
         parent_identifier=None,
+        update_existing_definitions=update_existing_definitions
     )
 
     assert mocked_shutil_rmtree.call_count == 3
@@ -892,6 +968,7 @@ def test_install_one_request_with_existing_definition_in_output(
         "foo", "/path/to/install", "__CONTEXT__", "__MAPPING__",
         "/tmp/packages", "/tmp/cache", installed_packages,
         definition_path="/path/definitions",
+        update_existing_definitions=True,
         **options
     )
     assert result == (mapping, overwrite)
@@ -968,6 +1045,7 @@ def test_install_one_request_with_existing_definition_with_different_variant(
         "foo", "/path/to/install", "__CONTEXT__", "__MAPPING__",
         "/tmp/packages", "/tmp/cache", installed_packages,
         definition_path="/path/definitions",
+        update_existing_definitions=True,
         **options
     )
     assert result == (mapping, overwrite)

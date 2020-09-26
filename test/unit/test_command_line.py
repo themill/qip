@@ -75,7 +75,8 @@ def test_missing_output(mocked_install, mocked_get_defaults_registries):
         no_dependencies=False,
         overwrite=None,
         python_target=sys.executable,
-        registry_paths=["/registry1", "/registry2"]
+        registry_paths=["/registry1", "/registry2"],
+        update_existing_definitions=False
     )
     mocked_get_defaults_registries.assert_called_once_with()
 
@@ -115,7 +116,8 @@ def test_install_packages(
         no_dependencies=False,
         overwrite=None,
         python_target=sys.executable,
-        registry_paths=["/registry1", "/registry2"]
+        registry_paths=["/registry1", "/registry2"],
+        update_existing_definitions=False
     )
     mocked_get_defaults_registries.assert_called_once_with()
 
@@ -140,7 +142,8 @@ def test_install_package_with_custom_paths(
         no_dependencies=False,
         overwrite=None,
         python_target=sys.executable,
-        registry_paths=["/registry1", "/registry2"]
+        registry_paths=["/registry1", "/registry2"],
+        update_existing_definitions=False
     )
     mocked_get_defaults_registries.assert_called_once_with()
 
@@ -165,7 +168,8 @@ def test_install_package_without_dependencies(
         no_dependencies=True,
         overwrite=None,
         python_target=sys.executable,
-        registry_paths=["/registry1", "/registry2"]
+        registry_paths=["/registry1", "/registry2"],
+        update_existing_definitions=False
     )
     mocked_get_defaults_registries.assert_called_once_with()
 
@@ -190,7 +194,8 @@ def test_install_package_overwrite(
         no_dependencies=False,
         overwrite=True,
         python_target=sys.executable,
-        registry_paths=["/registry1", "/registry2"]
+        registry_paths=["/registry1", "/registry2"],
+        update_existing_definitions=False
     )
     mocked_get_defaults_registries.assert_called_once_with()
 
@@ -215,7 +220,8 @@ def test_install_package_skip(
         no_dependencies=False,
         overwrite=False,
         python_target=sys.executable,
-        registry_paths=["/registry1", "/registry2"]
+        registry_paths=["/registry1", "/registry2"],
+        update_existing_definitions=False
     )
     mocked_get_defaults_registries.assert_called_once_with()
 
@@ -240,7 +246,8 @@ def test_install_package_editable(
         no_dependencies=False,
         overwrite=None,
         python_target=sys.executable,
-        registry_paths=["/registry1", "/registry2"]
+        registry_paths=["/registry1", "/registry2"],
+        update_existing_definitions=False
     )
     mocked_get_defaults_registries.assert_called_once_with()
 
@@ -268,7 +275,8 @@ def test_install_package_update_output(
         registry_paths=[
             "/registry1", "/registry2",
             os.path.join("/tmp", "qip", "definitions")
-        ]
+        ],
+        update_existing_definitions=True
     )
     mocked_get_defaults_registries.assert_called_once_with()
 
@@ -291,7 +299,8 @@ def test_install_package_ignore_registries(
         no_dependencies=False,
         overwrite=None,
         python_target=sys.executable,
-        registry_paths=[]
+        registry_paths=[],
+        update_existing_definitions=False
     )
     mocked_get_defaults_registries.assert_not_called()
 
@@ -318,6 +327,7 @@ def test_install_package_update_and_ignore_registries(
         python_target=sys.executable,
         registry_paths=[
             os.path.join("/tmp", "qip", "definitions")
-        ]
+        ],
+        update_existing_definitions=True
     )
     mocked_get_defaults_registries.assert_not_called()
