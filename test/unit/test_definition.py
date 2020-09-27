@@ -30,12 +30,6 @@ def mocked_wiz_fetch_definition(mocker):
 
 
 @pytest.fixture()
-def mocked_retrieve(mocker):
-    """Return mocked 'qip.definition.retrieve' function"""
-    return mocker.patch.object(qip.definition, "retrieve")
-
-
-@pytest.fixture()
 def mocked_update(mocker):
     """Return mocked 'qip.definition.update' function"""
     return mocker.patch.object(qip.definition, "update")
@@ -47,189 +41,89 @@ def mocked_create(mocker):
     return mocker.patch.object(qip.definition, "create")
 
 
+@pytest.mark.parametrize("options, additional_variants, editable_mode", [
+    ({}, None, False),
+    ({"editable_mode": True}, None, True),
+    (
+        {
+            "existing_definition": wiz.definition.Definition({
+                "identifier": "foo",
+                "variants": [{"identifier": "V3", "environ": {"KEY": "VALUE"}}]
+            })
+        },
+        [{"identifier": "V3", "environ": {"KEY": "VALUE"}}], False
+    ),
+], ids=[
+    "simple",
+    "with-editable-mode",
+    "with-additional-variants",
+])
 def test_export(
-    mocked_retrieve, mocked_update, mocked_create,
-    mocked_wiz_fetch_definition, mocked_wiz_export_definition
+    mocked_update, mocked_create, mocked_wiz_export_definition, options,
+    additional_variants, editable_mode
 ):
     """Export definition."""
-    mocked_retrieve.return_value = None
-    mocked_create.return_value = "__DEF__"
-
     mapping = {"request": "foo >= 1, < 2"}
     path = "/definitions"
     output_path = "/packages"
 
-    qip.definition.export(path, mapping, output_path)
+    qip.definition.export(path, mapping, output_path, **options)
 
-    mocked_wiz_fetch_definition.assert_not_called()
-    mocked_retrieve.assert_called_once_with(mapping)
     mocked_update.assert_not_called()
     mocked_create.assert_called_once_with(
-        mapping, output_path, editable_mode=False,
-        additional_variants=None
+        mapping, output_path, editable_mode=editable_mode,
+        additional_variants=additional_variants
     )
     mocked_wiz_export_definition.assert_called_once_with(
-        path, "__DEF__", overwrite=True
+        path, mocked_create.return_value, overwrite=True
     )
 
 
-def test_export_with_additional_variants(
-    mocker, mocked_retrieve, mocked_update, mocked_create,
-    mocked_wiz_fetch_definition, mocked_wiz_export_definition
+@pytest.mark.parametrize("options, additional_variants, editable_mode", [
+    ({}, None, False),
+    ({"editable_mode": True}, None, True),
+    (
+        {
+            "existing_definition": wiz.definition.Definition({
+                "identifier": "foo",
+                "variants": [{"identifier": "V3", "environ": {"KEY": "VALUE"}}]
+            })
+        },
+        [{"identifier": "V3", "environ": {"KEY": "VALUE"}}], False
+    ),
+], ids=[
+    "simple",
+    "with-editable-mode",
+    "with-additional-variants",
+])
+def test_export_from_custom_definition(
+    mocked_update, mocked_create, mocked_wiz_export_definition, options,
+    additional_variants, editable_mode
 ):
-    """Export definition with additional variants."""
-    mocked_retrieve.return_value = None
-    mocked_create.return_value = "__DEF__"
-    mocked_wiz_fetch_definition.return_value = mocker.Mock(
-        variants=[
-            mocker.Mock(**{"data.return_value": "__DATA1__"}),
-            mocker.Mock(**{"data.return_value": "__DATA2__"}),
-            mocker.Mock(**{"data.return_value": "__DATA3__"}),
-        ]
-    )
-
-    mapping = {"key": "foo", "version": "0.1.0"}
-    path = "/definitions"
-    output_path = "/packages"
-
-    qip.definition.export(
-        path, mapping, output_path,
-        definition_mapping="__MAPPING__"
-    )
-
-    mocked_wiz_fetch_definition.assert_called_once_with(
-        "library::foo==0.1.0", "__MAPPING__"
-    )
-    mocked_retrieve.assert_called_once_with(mapping)
-    mocked_update.assert_not_called()
-    mocked_create.assert_called_once_with(
-        mapping, output_path, editable_mode=False,
-        additional_variants=["__DATA1__", "__DATA2__", "__DATA3__"]
-    )
-    mocked_wiz_export_definition.assert_called_once_with(
-        path, "__DEF__", overwrite=True
-    )
-
-
-def test_export_with_request_error(
-    mocked_retrieve, mocked_update, mocked_create,
-    mocked_wiz_fetch_definition, mocked_wiz_export_definition
-):
-    """Impossible to find definition request in definition mapping."""
-    mocked_retrieve.return_value = None
-    mocked_create.return_value = "__DEF__"
-    mocked_wiz_fetch_definition.side_effect = wiz.exception.RequestNotFound
-
-    mapping = {"key": "foo", "version": "0.1.0"}
-    path = "/definitions"
-    output_path = "/packages"
-
-    qip.definition.export(
-        path, mapping, output_path,
-        definition_mapping="__MAPPING__"
-    )
-
-    mocked_wiz_fetch_definition.assert_called_once_with(
-        "library::foo==0.1.0", "__MAPPING__"
-    )
-    mocked_retrieve.assert_called_once_with(mapping)
-    mocked_update.assert_not_called()
-    mocked_create.assert_called_once_with(
-        mapping, output_path, editable_mode=False,
-        additional_variants=None
-    )
-    mocked_wiz_export_definition.assert_called_once_with(
-        path, "__DEF__", overwrite=True
-    )
-
-
-def test_export_retrieved(
-    mocker, mocked_retrieve, mocked_update, mocked_create,
-    mocked_wiz_fetch_definition, mocked_wiz_export_definition
-):
-    """Export definition with previous one retrieved."""
-    definition = mocker.Mock(namespace="plugin")
-
-    mocked_retrieve.return_value = definition
-    mocked_update.return_value = "__DEF__"
-
+    """Export definition from custom definition retrieved."""
     mapping = {"request": "foo >= 1, < 2"}
     path = "/definitions"
     output_path = "/packages"
 
-    qip.definition.export(path, mapping, output_path)
-
-    mocked_wiz_fetch_definition.assert_not_called()
-    mocked_retrieve.assert_called_once_with(mapping)
-    mocked_update.assert_called_once_with(
-        definition, mapping, output_path, editable_mode=False,
-        additional_variants=None
-    )
-    mocked_create.assert_not_called()
-    mocked_wiz_export_definition.assert_called_once_with(
-        path, "__DEF__", overwrite=True
-    )
-
-
-def test_export_retrieved_and_additional_variants(
-    mocker, mocked_retrieve, mocked_update, mocked_create,
-    mocked_wiz_fetch_definition, mocked_wiz_export_definition
-):
-    """Export definition with previous one retrieved and additional variants."""
-    definition = mocker.Mock(namespace="plugin")
-
-    mocked_retrieve.return_value = definition
-    mocked_update.return_value = "__DEF__"
-    mocked_wiz_fetch_definition.return_value = mocker.Mock(
-        variants=[
-            mocker.Mock(**{"data.return_value": "__DATA1__"}),
-            mocker.Mock(**{"data.return_value": "__DATA2__"}),
-            mocker.Mock(**{"data.return_value": "__DATA3__"}),
-        ]
-    )
-
-    mapping = {"key": "foo", "version": "0.1.0"}
-    path = "/definitions"
-    output_path = "/packages"
-
     qip.definition.export(
         path, mapping, output_path,
-        definition_mapping="__MAPPING__"
+        custom_definition="__CUSTOM_DEFINITION__",
+        **options
     )
 
-    mocked_wiz_fetch_definition.assert_called_once_with(
-        "plugin::foo==0.1.0", "__MAPPING__"
-    )
-    mocked_retrieve.assert_called_once_with(mapping)
     mocked_update.assert_called_once_with(
-        definition, mapping, output_path, editable_mode=False,
-        additional_variants=["__DATA1__", "__DATA2__", "__DATA3__"]
+        "__CUSTOM_DEFINITION__", mapping, output_path,
+        editable_mode=editable_mode,
+        additional_variants=additional_variants
     )
     mocked_create.assert_not_called()
     mocked_wiz_export_definition.assert_called_once_with(
-        path, "__DEF__", overwrite=True
+        path, mocked_update.return_value, overwrite=True
     )
 
 
-def test_retrieve_non_existing(mocked_wiz_load_definition, logger):
-    """Fail to update non existing definition from package mapping."""
-    mapping = {
-        "identifier": "Foo-0.2.3",
-        "module_name": "foo",
-        "location": "/path/to/lib"
-    }
-
-    result = qip.definition.retrieve(mapping)
-    assert result is None
-
-    mocked_wiz_load_definition.assert_not_called()
-    logger.info.assert_not_called()
-
-
-def test_retrieve(
-    mocked_wiz_load_definition, temporary_directory, logger
-):
-    """Retrieve definition from package installed."""
+def test_fetch_custom(mocked_wiz_load_definition, temporary_directory, logger):
+    """Fetch custom definition from package installed."""
     mapping = {
         "identifier": "Foo-0.2.3",
         "module_name": "foo",
@@ -251,7 +145,7 @@ def test_retrieve(
 
     mocked_wiz_load_definition.return_value = definition
 
-    _definition = qip.definition.retrieve(mapping)
+    _definition = qip.definition.fetch_custom(mapping)
 
     assert _definition.data() == {
         "identifier": "foo",
@@ -265,6 +159,59 @@ def test_retrieve(
     )
 
     mocked_wiz_load_definition.assert_any_call(path)
+
+
+def test_fetch_custom_empty(mocked_wiz_load_definition, logger):
+    """Fail to fetch custom definition from package mapping."""
+    mapping = {
+        "identifier": "Foo-0.2.3",
+        "module_name": "foo",
+        "location": "/path/to/lib"
+    }
+
+    result = qip.definition.fetch_custom(mapping)
+    assert result is None
+
+    mocked_wiz_load_definition.assert_not_called()
+    logger.info.assert_not_called()
+
+
+@pytest.mark.parametrize("options, namespace", [
+    ({}, "library"),
+    ({"namespace": "test"}, "test"),
+], ids=[
+    "simple",
+    "with-namespace",
+])
+def test_fetch_existing(mocked_wiz_fetch_definition, options, namespace):
+    """Fetch existing definition in definition mapping."""
+    result = qip.definition.fetch_existing(
+        {"key": "foo", "version": "0.1.0"}, "__MAPPING__", **options
+    )
+    mocked_wiz_fetch_definition.assert_called_once_with(
+        "{0}::foo==0.1.0".format(namespace), "__MAPPING__"
+    )
+    assert result == mocked_wiz_fetch_definition.return_value
+
+
+@pytest.mark.parametrize("options, namespace", [
+    ({}, "library"),
+    ({"namespace": "test"}, "test"),
+], ids=[
+    "simple",
+    "with-namespace",
+])
+def test_fetch_existing_empty(mocked_wiz_fetch_definition, options, namespace):
+    """Fail to fetch existing definition in definition mapping."""
+    mocked_wiz_fetch_definition.side_effect = wiz.exception.RequestNotFound
+
+    result = qip.definition.fetch_existing(
+        {"key": "foo", "version": "0.1.0"}, "__MAPPING__", **options
+    )
+    mocked_wiz_fetch_definition.assert_called_once_with(
+        "{0}::foo==0.1.0".format(namespace), "__MAPPING__"
+    )
+    assert result is None
 
 
 def test_create(logger):
@@ -1287,6 +1234,7 @@ def test_update_with_additional_variants_2():
     ("def", "abc", 1),
     ("2.7", "abc", -1),
     ("abc", "2.7", 1),
+    ("2.7", "2.7", 0),
 ], ids=[
     "float",
     "float-inv",
@@ -1294,6 +1242,7 @@ def test_update_with_additional_variants_2():
     "string-inv",
     "float-right",
     "float-left",
+    "identical",
 ])
 def test_compare_variants(identifier1, identifier2, expected):
     """Compare identifier values from variant mappings."""

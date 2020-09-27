@@ -14,6 +14,10 @@ import wiz.config
 import qip.command_line
 
 
+#: Record name of python library path for convenience.
+PY_LIB = "python{}.{}".format(sys.version_info.major, sys.version_info.minor)
+
+
 @pytest.fixture(autouse=True)
 def reset_configuration(mocker):
     """Ensure that no personal configuration is fetched during tests."""
@@ -28,7 +32,7 @@ def reset_configuration(mocker):
     mocker.patch.object(os.path, "expanduser", function)
 
 
-def test_install_numpy(temporary_directory):
+def test_install_numpy(temporary_directory, logger):
     """Install numpy.
 
     Install numpy version within 1.16.6 and 1.19.2 which covers all Python
@@ -49,6 +53,11 @@ def test_install_numpy(temporary_directory):
     )
     assert not result.exception
     assert result.exit_code == 0
+
+    # Check log.
+    logger.info.assert_called()
+    logger.warning.assert_not_called()
+    logger.error.assert_not_called()
 
     # Check definitions installed.
     definitions = os.listdir(definitions_path)
@@ -78,24 +87,18 @@ def test_install_numpy(temporary_directory):
     versions = os.listdir(path)
     assert len(versions) == 1
     assert re.match(r"^numpy-1..*", versions[0])
-    assert os.path.isdir(os.path.join(path, versions[0]))
-    assert os.path.isdir(os.path.join(path, versions[0], "lib"))
-
-    lib_version = "python{}.{}".format(
-        sys.version_info.major, sys.version_info.minor
-    )
-    path = os.path.join(path, versions[0], "lib", lib_version)
-    assert os.path.isdir(os.path.join(path, "site-packages"))
-    assert os.path.isdir(os.path.join(path, "site-packages", "numpy"))
+    lib_path = os.path.join(path, versions[0], "lib", PY_LIB, "site-packages")
+    module_path = os.path.join(lib_path, "numpy")
+    assert os.path.isdir(lib_path)
+    assert os.path.isdir(module_path)
 
     # Check that module can be imported.
-    path = os.path.join(path, "site-packages")
-    sys.path.insert(0, path)
+    sys.path.insert(0, lib_path)
     importlib.import_module("numpy")
     del sys.path[0]
 
 
-def test_install_numpy_several_versions(temporary_directory):
+def test_install_numpy_several_versions(temporary_directory, logger):
     """Install numpy.
 
     Like the previous test, install numpy version within 1.16.6 and 1.19.2 which
@@ -119,6 +122,11 @@ def test_install_numpy_several_versions(temporary_directory):
     )
     assert not result.exception
     assert result.exit_code == 0
+
+    # Check log.
+    logger.info.assert_called()
+    logger.warning.assert_not_called()
+    logger.error.assert_not_called()
 
     # Check definitions installed.
     definitions = os.listdir(definitions_path)
@@ -149,3 +157,23 @@ def test_install_numpy_several_versions(temporary_directory):
         assert definition.variants[0].requirements[0].name == "python"
 
     assert definition1.version != definition2.version
+
+    # Check packages installed.
+    assert len(os.listdir(packages_path)) == 1
+    path = os.path.join(packages_path, "numpy")
+    assert os.path.isdir(path)
+
+    versions = os.listdir(path)
+    assert len(versions) == 2
+
+    for version in versions:
+        assert re.match(r"^numpy-1..*", version)
+        lib_path = os.path.join(path, version, "lib", PY_LIB, "site-packages")
+        module_path = os.path.join(lib_path, "numpy")
+        assert os.path.isdir(lib_path)
+        assert os.path.isdir(module_path)
+
+        # Check that module can be imported.
+        sys.path.insert(0, lib_path)
+        importlib.import_module("numpy")
+        del sys.path[0]

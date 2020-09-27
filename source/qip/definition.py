@@ -16,13 +16,14 @@ NAMESPACE = "library"
 
 
 def export(
-    path, mapping, output_path, editable_mode=False, definition_mapping=None
+    path, package_mapping, output_path, editable_mode=False,
+    custom_definition=None, existing_definition=None
 ):
-    """Export :term:`Wiz` definition to *path* for package *mapping*.
+    """Export :term:`Wiz` definition to *path* for package mapping.
 
     :param path: destination path for the :term:`Wiz` definition.
 
-    :param mapping: mapping of the python package built as returned by
+    :param package_mapping: mapping of the python package built as returned by
         :func:`qip.package.install`.
 
     :param output_path: root destination path for Python packages installation.
@@ -30,42 +31,34 @@ def export(
     :param editable_mode: indicate whether the Python package location should
         target the source installation package. Default is False.
 
-    :param definition_mapping: None or mapping regrouping all available
-        definitions. Default is None.
+    :param custom_definition: :class:`wiz.definition.Definition` instance to
+        update as returned by :func:`fetch_custom`. Default is None, which means
+        that a default definition will be created from package mapping only.
+
+    :param existing_definition: :class:`wiz.definition.Definition` instance to
+        extract additional variants from as returned by :func:`fetch_existing`.
+        Default is None which means that no additional variants will be added to
+        new definition exported.
 
     """
-    # Retrieve definition from installation package path if possible.
-    definition = qip.definition.retrieve(mapping)
-
-    # Extract previous namespace or set default.
-    namespace = definition.namespace if definition else NAMESPACE
-
     # Extract additional variants from existing definition if possible.
     additional_variants = None
-
-    if definition_mapping is not None:
-        try:
-            _definition = wiz.fetch_definition(
-                "{}::{}=={}".format(
-                    namespace, mapping["key"], mapping["version"]
-                ),
-                definition_mapping
-            )
-            additional_variants = [v.data() for v in _definition.variants]
-        except wiz.exception.RequestNotFound:
-            pass
+    if existing_definition is not None:
+        additional_variants = [
+            variant.data() for variant in existing_definition.variants
+        ]
 
     # Update definition or create a new definition.
-    if definition is not None:
+    if custom_definition is not None:
         definition = qip.definition.update(
-            definition, mapping, output_path,
+            custom_definition, package_mapping, output_path,
             editable_mode=editable_mode,
             additional_variants=additional_variants,
         )
 
     else:
         definition = qip.definition.create(
-            mapping, output_path,
+            package_mapping, output_path,
             editable_mode=editable_mode,
             additional_variants=additional_variants
         )
@@ -73,52 +66,75 @@ def export(
     wiz.export_definition(path, definition, overwrite=True)
 
 
-def retrieve(mapping):
-    """Retrieve :term:`Wiz` definition from package *mapping* installed.
+def fetch_custom(package_mapping):
+    """Retrieve :term:`Wiz` definition from package mapping installed.
 
     Return the :term:`Wiz` definition extracted from a
     :file:`package_data/wiz.json` file found within the package installation
-    *path*.
+    path.
 
-    :param mapping: mapping of the python package built as returned by
+    :param package_mapping: mapping of the python package built as returned by
         :func:`qip.package.install`.
 
     :raise wiz.exception.WizError: if the :term:`Wiz` definition found is
         incorrect.
 
-    :return: None if no definition was found, otherwise return the
-        :class:`wiz.definition.Definition` instance.
+    :return: :class:`wiz.definition.Definition` instance fetched, or None if
+        no definition was found.
 
-    Example::
-
-        >>> retrieve(mapping)
-        Definition({
-            "identifier": "foo"
-            "definition-location": '/location/foo/package_data/wiz.json',
-            ...
-        })
+    .. seealso:: :ref:`development/custom_definition`
 
     """
     logger = qip.logging.Logger(__name__ + ".retrieve")
 
     definition_path = os.path.join(
-        mapping["location"], mapping["module_name"], "package_data", "wiz.json"
+        package_mapping["location"], package_mapping["module_name"],
+        "package_data", "wiz.json"
     )
 
     if os.path.exists(definition_path):
         definition = wiz.load_definition(definition_path)
         logger.info(
             "\tWiz definition extracted from '{}'.".format(
-                mapping["identifier"]
+                package_mapping["identifier"]
             )
         )
         return definition
 
 
-def create(mapping, output_path, editable_mode=False, additional_variants=None):
-    """Create :term:`Wiz` definition for package *mapping*.
+def fetch_existing(package_mapping, definition_mapping, namespace=None):
+    """Retrieve corresponding :term:`Wiz` definition in definition mapping.
 
-    :param mapping: mapping of the python package built as returned by
+    :param package_mapping: mapping of the python package built as returned by
+        :func:`qip.package.install`.
+
+    :param definition_mapping: mapping regrouping all available definitions as
+        returned by :func:`wiz.fetch_definition_mapping`.
+
+    :param namespace: Namespace of the definition to fetch. Default is
+        :data:`NAMESPACE`.
+
+    :return: :class:`wiz.definition.Definition` instance fetched, or None if
+        no definition was found.
+
+    """
+    namespace = namespace or NAMESPACE
+
+    try:
+        return wiz.fetch_definition(
+            "{0}::{1[key]}=={1[version]}".format(namespace, package_mapping),
+            definition_mapping
+        )
+    except wiz.exception.RequestNotFound:
+        pass
+
+
+def create(
+    package_mapping, output_path, editable_mode=False, additional_variants=None
+):
+    """Create :term:`Wiz` definition from package mapping.
+
+    :param package_mapping: mapping of the python package built as returned by
         :func:`qip.package.install`.
 
     :param output_path: root destination path for Python packages installation.
@@ -135,9 +151,9 @@ def create(mapping, output_path, editable_mode=False, additional_variants=None):
     logger = qip.logging.Logger(__name__ + ".create")
 
     definition_data = {
-        "identifier": mapping["key"],
-        "version": mapping["version"],
-        "description": mapping["description"],
+        "identifier": package_mapping["key"],
+        "version": package_mapping["version"],
+        "description": package_mapping["description"],
         "namespace": NAMESPACE,
         "environ": {
             "PYTHONPATH": "${{{}}}:${{PYTHONPATH}}".format(
@@ -147,21 +163,22 @@ def create(mapping, output_path, editable_mode=False, additional_variants=None):
     }
 
     # Add commands mapping.
-    if "command" in mapping.keys():
-        definition_data["command"] = mapping["command"]
+    if "command" in package_mapping.keys():
+        definition_data["command"] = package_mapping["command"]
 
     # Add system constraint if necessary.
-    if "system" in mapping.keys():
-        definition_data["system"] = _process_system_mapping(mapping)
+    if "system" in package_mapping.keys():
+        definition_data["system"] = _process_system_mapping(package_mapping)
 
     # Target package location if the installation is in editable mode.
-    location_path = mapping.get("location", "")
+    location_path = package_mapping.get("location", "")
 
     if not editable_mode:
         definition_data["install-root"] = output_path
         location_path = os.path.join(
-            "${{{}}}".format(wiz.symbol.INSTALL_ROOT), mapping["target"],
-            mapping["python"]["library-path"]
+            "${{{}}}".format(wiz.symbol.INSTALL_ROOT),
+            package_mapping["target"],
+            package_mapping["python"]["library-path"]
         )
 
     # Update and set variant for python version.
@@ -173,26 +190,29 @@ def create(mapping, output_path, editable_mode=False, additional_variants=None):
             key=functools.cmp_to_key(_compare_variants)
         )
 
-    _update_variants(variants, mapping, location_path)
+    _update_variants(variants, package_mapping, location_path)
 
     definition_data["variants"] = variants
 
     definition = wiz.definition.Definition(definition_data)
     logger.info(
-        "\tWiz definition created for '{}'.".format(mapping["identifier"])
+        "\tWiz definition created for '{0[identifier]}'.".format(
+            package_mapping
+        )
     )
     return definition
 
 
 def update(
-    definition, mapping, output_path, editable_mode=False,
+    definition, package_mapping, output_path, editable_mode=False,
     additional_variants=None
 ):
-    """Update *definition* with *mapping*.
+    """Update *definition* from package mapping.
 
-    :param definition: :class:`wiz.definition.Definition` instance.
+    :param definition: :class:`wiz.definition.Definition` instance as returned
+        by :func:`fetch_custom`.
 
-    :param mapping: mapping of the python package built as returned by
+    :param package_mapping: mapping of the python package built as returned by
         :func:`qip.package.install`.
 
     :param output_path: root destination path for Python packages installation.
@@ -207,21 +227,23 @@ def update(
 
     """
     if not definition.description:
-        definition = definition.set("description", mapping["description"])
+        definition = definition.set(
+            "description", package_mapping["description"]
+        )
 
     if not definition.version:
-        definition = definition.set("version", mapping["version"])
+        definition = definition.set("version", package_mapping["version"])
 
     if not definition.namespace:
         definition = definition.set("namespace", NAMESPACE)
 
-    if not definition.system and mapping.get("system"):
+    if not definition.system and package_mapping.get("system"):
         definition = definition.set(
-            "system", _process_system_mapping(mapping)
+            "system", _process_system_mapping(package_mapping)
         )
 
-    if mapping.get("command"):
-        definition = definition.update("command", mapping["command"])
+    if package_mapping.get("command"):
+        definition = definition.update("command", package_mapping["command"])
 
     # Update environ mapping
     environ_mapping = {
@@ -239,13 +261,14 @@ def update(
     definition = definition.update("environ", environ_mapping)
 
     # Target package location if the installation is in editable mode.
-    package_path = mapping.get("location", "")
+    package_path = package_mapping.get("location", "")
 
     if not editable_mode:
         definition = definition.set("install-root", output_path)
         package_path = os.path.join(
-            "${{{}}}".format(wiz.symbol.INSTALL_ROOT), mapping["target"],
-            mapping["python"]["library-path"]
+            "${{{}}}".format(wiz.symbol.INSTALL_ROOT),
+            package_mapping["target"],
+            package_mapping["python"]["library-path"]
         )
 
     variants = definition.variants
@@ -256,12 +279,12 @@ def update(
             key=functools.cmp_to_key(_compare_variants)
         )
 
-    _update_variants(variants, mapping, package_path)
+    _update_variants(variants, package_mapping, package_path)
 
     return definition.set("variants", variants)
 
 
-def _update_variants(variants, mapping, path):
+def _update_variants(variants, package_mapping, path):
     """Add variant corresponding to *identifier* to the *variant* list.
 
     Update existing variant if necessary or add new variant corresponding to the
@@ -270,7 +293,7 @@ def _update_variants(variants, mapping, path):
 
     :param variants: list of variant mappings to update.
 
-    :param mapping: mapping of the python package built as returned by
+    :param package_mapping: mapping of the python package built as returned by
         :func:`qip.package.install`.
 
     :param path: path where python package has been installed.
@@ -282,11 +305,11 @@ def _update_variants(variants, mapping, path):
         The *variants* list will be mutated.
 
     """
-    identifier = mapping["python"]["identifier"]
-    python_request = mapping["python"]["request"]
+    identifier = package_mapping["python"]["identifier"]
+    python_request = package_mapping["python"]["request"]
 
     # Process all requirements to detect duplication.
-    requirements = _process_requirements(mapping, python_request)
+    requirements = _process_requirements(package_mapping, python_request)
 
     # Index of new variant if necessary.
     _index = 0
@@ -370,22 +393,22 @@ def _compare_variants(variant1, variant2):
     return 1
 
 
-def _process_system_mapping(mapping):
-    """Compute 'system' keyword for the :term:`Wiz` definition from *mapping*.
+def _process_system_mapping(package_mapping):
+    """Compute 'system' keyword for the :term:`Wiz` definition from mapping.
 
-    :param mapping: mapping of the python package built as returned by
+    :param package_mapping: mapping of the python package built as returned by
         :func:`qip.package.install`.
 
     :return: system mapping.
 
     """
-    major_version = mapping["system"]["os"]["major_version"]
+    major_version = package_mapping["system"]["os"]["major_version"]
     return {
-        "platform": mapping["system"]["platform"],
-        "arch": mapping["system"]["arch"],
+        "platform": package_mapping["system"]["platform"],
+        "arch": package_mapping["system"]["arch"],
         "os": (
             "{name} >= {min_version}, < {max_version}".format(
-                name=mapping["system"]["os"]["name"],
+                name=package_mapping["system"]["os"]["name"],
                 min_version=major_version,
                 max_version=major_version + 1,
             )
@@ -393,10 +416,10 @@ def _process_system_mapping(mapping):
     }
 
 
-def _process_requirements(mapping, python_request):
+def _process_requirements(package_mapping, python_request):
     """Compute 'requirements' keyword for the :term:`Wiz` definition.
 
-    :param mapping: mapping of the python package built as returned by
+    :param package_mapping: mapping of the python package built as returned by
         :func:`qip.package.install`.
 
     :param python_request: Python version requirement (e.g.
@@ -408,10 +431,10 @@ def _process_requirements(mapping, python_request):
     requests = [python_request]
 
     # Add the library namespace for all requirements fetched.
-    for request in mapping.get("requirements", []):
+    for request in package_mapping.get("requirements", []):
         request = "{}::{}".format(NAMESPACE, request)
         requirement = wiz.utility.get_requirement(request)
-        requirement.extras = {mapping["python"]["identifier"]}
+        requirement.extras = {package_mapping["python"]["identifier"]}
         requests.append(str(requirement))
 
     return requests
