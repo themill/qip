@@ -10,8 +10,8 @@ Release Notes
         :tags: command-line
 
         Updated installation process to automatically include default
-        :term:`Wiz` registries to determine whether a definition should be
-        skipped or updated.
+        :term:`Wiz` registries to determine whether the installation of a Python
+        package should be skipped or if its definition should be updated.
 
         Added :option:`-I/--ignore-registries<qip install -I>` to ignore default
         :term:`Wiz` registries.
@@ -20,7 +20,7 @@ Release Notes
 
         Updated :func:`qip.install` to handle the process of fetching a
         definition mapping from registry paths. It spares the user from having
-        to fetch definition mapping and makes the logic simpler.
+        to fetch definition mapping and makes the usage simpler.
 
     .. change:: changed
 
