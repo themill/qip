@@ -148,6 +148,12 @@ def main(**kwargs):
     metavar="TARGET",
     default=_CONFIG.get("qip", {}).get("python_target", sys.executable)
 )
+@click.option(
+    "-R", "--continue-on-error",
+    help="Continue installation process when a package fails to install.",
+    is_flag=True,
+    default=False
+)
 @click.argument(
     "requests",
     nargs=-1,
@@ -168,16 +174,22 @@ def install(**kwargs):
     if kwargs["update"]:
         registry_paths += [definition_path]
 
-    success = qip.install(
-        kwargs["requests"], output_path,
-        definition_path=definition_path,
-        overwrite=kwargs["overwrite_installed"],
-        no_dependencies=kwargs["no_dependencies"],
-        editable_mode=kwargs["editable"],
-        python_target=kwargs["python"],
-        registry_paths=registry_paths,
-        update_existing_definitions=kwargs["update"],
-    )
+    try:
+        success = qip.install(
+            kwargs["requests"], output_path,
+            definition_path=definition_path,
+            overwrite=kwargs["overwrite_installed"],
+            no_dependencies=kwargs["no_dependencies"],
+            editable_mode=kwargs["editable"],
+            python_target=kwargs["python"],
+            registry_paths=registry_paths,
+            update_existing_definitions=kwargs["update"],
+            continue_on_error=kwargs["continue_on_error"],
+        )
+    except RuntimeError as error:
+        raise click.exceptions.ClickException(
+            "Impossible to resume installation process:\n\n{}".format(error)
+        )
 
     if not success:
         raise click.exceptions.ClickException("No packages installed.")

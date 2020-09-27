@@ -21,7 +21,8 @@ from qip._version import __version__
 def install(
     requests, output_path, definition_path=None, overwrite=False,
     no_dependencies=False, editable_mode=False, python_target=sys.executable,
-    registry_paths=None, update_existing_definitions=False
+    registry_paths=None, update_existing_definitions=False,
+    continue_on_error=False
 ):
     """Install packages to *output_path* from *requests*.
 
@@ -64,6 +65,12 @@ def install(
 
     :param update_existing_definitions: Indicate whether variants from existing
         definitions should be used when exporting new definitions.
+
+    :param continue_on_error: Indicate whether installation process should
+        continue if a package cannot be installed. Default is False.
+
+    :raises: :exc:`RuntimeError` if a package cannot be installed and
+        *continue_on_error* is set to False.
 
     :return: Boolean value indicating whether packages were installed.
 
@@ -120,6 +127,7 @@ def install(
                 editable_mode=_editable_mode,
                 update_existing_definitions=update_existing_definitions,
                 parent_identifier=parent_identifier,
+                continue_on_error=continue_on_error
             )
             if package_mapping is None:
                 continue
@@ -157,7 +165,7 @@ def _install(
     request, output_path, context_mapping, definition_mapping,
     package_path, cache_path, installed_packages, definition_path=None,
     overwrite=False, update_existing_definitions=False, editable_mode=False,
-    parent_identifier=None,
+    continue_on_error=False, parent_identifier=None,
 ):
     """Install single package to *output_path* from *request*.
 
@@ -192,8 +200,14 @@ def _install(
     :param update_existing_definitions: Indicate whether variants from existing
         definitions should be used when exporting new definitions.
 
+    :param continue_on_error: Indicate whether installation process should
+        continue if a package cannot be installed. Default is False.
+
     :param parent_identifier: Indicate Python package which triggered the
         *request*. Default is None.
+
+    :raises: :exc:`RuntimeError` if a package cannot be installed and
+        *continue_on_error* is set to False.
 
     :return: tuple with package mapping installed (or None is the installation
         couldn't be processed), and one boolean value indicating a new value for
@@ -215,6 +229,9 @@ def _install(
         )
 
     except RuntimeError as error:
+        if not continue_on_error:
+            raise
+
         prompt = "Request '{}' has failed".format(request)
         if parent_identifier is not None:
             prompt += " [from '{}']".format(parent_identifier)

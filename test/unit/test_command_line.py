@@ -76,7 +76,8 @@ def test_missing_output(mocked_install, mocked_get_defaults_registries):
         overwrite=None,
         python_target=sys.executable,
         registry_paths=["/registry1", "/registry2"],
-        update_existing_definitions=False
+        update_existing_definitions=False,
+        continue_on_error=False
     )
     mocked_get_defaults_registries.assert_called_once_with()
 
@@ -117,7 +118,8 @@ def test_install_packages(
         overwrite=None,
         python_target=sys.executable,
         registry_paths=["/registry1", "/registry2"],
-        update_existing_definitions=False
+        update_existing_definitions=False,
+        continue_on_error=False
     )
     mocked_get_defaults_registries.assert_called_once_with()
 
@@ -143,7 +145,8 @@ def test_install_package_with_custom_paths(
         overwrite=None,
         python_target=sys.executable,
         registry_paths=["/registry1", "/registry2"],
-        update_existing_definitions=False
+        update_existing_definitions=False,
+        continue_on_error=False
     )
     mocked_get_defaults_registries.assert_called_once_with()
 
@@ -169,7 +172,8 @@ def test_install_package_without_dependencies(
         overwrite=None,
         python_target=sys.executable,
         registry_paths=["/registry1", "/registry2"],
-        update_existing_definitions=False
+        update_existing_definitions=False,
+        continue_on_error=False
     )
     mocked_get_defaults_registries.assert_called_once_with()
 
@@ -195,7 +199,8 @@ def test_install_package_overwrite(
         overwrite=True,
         python_target=sys.executable,
         registry_paths=["/registry1", "/registry2"],
-        update_existing_definitions=False
+        update_existing_definitions=False,
+        continue_on_error=False
     )
     mocked_get_defaults_registries.assert_called_once_with()
 
@@ -221,7 +226,8 @@ def test_install_package_skip(
         overwrite=False,
         python_target=sys.executable,
         registry_paths=["/registry1", "/registry2"],
-        update_existing_definitions=False
+        update_existing_definitions=False,
+        continue_on_error=False
     )
     mocked_get_defaults_registries.assert_called_once_with()
 
@@ -247,7 +253,8 @@ def test_install_package_editable(
         overwrite=None,
         python_target=sys.executable,
         registry_paths=["/registry1", "/registry2"],
-        update_existing_definitions=False
+        update_existing_definitions=False,
+        continue_on_error=False
     )
     mocked_get_defaults_registries.assert_called_once_with()
 
@@ -276,7 +283,8 @@ def test_install_package_update_output(
             "/registry1", "/registry2",
             os.path.join("/tmp", "qip", "definitions")
         ],
-        update_existing_definitions=True
+        update_existing_definitions=True,
+        continue_on_error=False
     )
     mocked_get_defaults_registries.assert_called_once_with()
 
@@ -300,7 +308,8 @@ def test_install_package_ignore_registries(
         overwrite=None,
         python_target=sys.executable,
         registry_paths=[],
-        update_existing_definitions=False
+        update_existing_definitions=False,
+        continue_on_error=False
     )
     mocked_get_defaults_registries.assert_not_called()
 
@@ -328,6 +337,66 @@ def test_install_package_update_and_ignore_registries(
         registry_paths=[
             os.path.join("/tmp", "qip", "definitions")
         ],
-        update_existing_definitions=True
+        update_existing_definitions=True,
+        continue_on_error=False
     )
     mocked_get_defaults_registries.assert_not_called()
+
+
+def test_install_continue_on_error(
+    mocked_install, mocked_get_defaults_registries
+):
+    """Install packages without raising error when package installation fails.
+    """
+    mocked_get_defaults_registries.return_value = ["/registry1", "/registry2"]
+
+    runner = CliRunner()
+    result = runner.invoke(
+        qip.command_line.install, ["foo", "--continue-on-error"]
+    )
+    assert result.exit_code == 0
+    assert not result.exception
+
+    mocked_install.assert_called_once_with(
+        ("foo",), os.path.join("/tmp", "qip", "packages"),
+        definition_path=os.path.join("/tmp", "qip", "definitions"),
+        editable_mode=False,
+        no_dependencies=False,
+        overwrite=None,
+        python_target=sys.executable,
+        registry_paths=["/registry1", "/registry2"],
+        update_existing_definitions=False,
+        continue_on_error=True
+    )
+    mocked_get_defaults_registries.assert_called_once_with()
+
+
+def test_install_fails(
+    mocked_install, mocked_get_defaults_registries
+):
+    """Fail to install packages."""
+    mocked_get_defaults_registries.return_value = ["/registry1", "/registry2"]
+    mocked_install.side_effect = RuntimeError("Oh Shit")
+
+    runner = CliRunner()
+    result = runner.invoke(
+        qip.command_line.install, ["foo", "--continue-on-error"]
+    )
+    assert result.exit_code == 1
+    assert isinstance(result.exception, SystemExit)
+    assert (
+        "Error: Impossible to resume installation process:\n\nOh Shit"
+    ) in result.output
+
+    mocked_install.assert_called_once_with(
+        ("foo",), os.path.join("/tmp", "qip", "packages"),
+        definition_path=os.path.join("/tmp", "qip", "definitions"),
+        editable_mode=False,
+        no_dependencies=False,
+        overwrite=None,
+        python_target=sys.executable,
+        registry_paths=["/registry1", "/registry2"],
+        update_existing_definitions=False,
+        continue_on_error=True
+    )
+    mocked_get_defaults_registries.assert_called_once_with()

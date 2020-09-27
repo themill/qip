@@ -18,13 +18,24 @@ Qip is now automatically including default :term:`Wiz` registries to determine
 whether the installation of a Python package should be skipped or if its
 definition should be updated.
 
-The default :term:`Wiz` registries can be ignored with
-:option:`-I/--ignore-registries <qip install -I>`.
+If using the command line, use :option:`-I/--ignore-registries
+<qip install -I>` to prevent including default :term:`Wiz` registries.
 
-.. rubric:: Installation with the API
+.. rubric:: Handling Errors
 
-:func:`qip.install` has been modified to handle the process of fetching a
-definition mapping from registry paths.
+Default installation process has been modified to raise an error when the
+installation of a package has failed. Previously, the error was logged and the
+installation process would resume.
+
+If using the command line, use :option:`-R/--continue-on-error
+<qip install -R>` to resume the installation without raising an error.
+
+If using :func:`qip.install`, set the `continue_on_error` option to False.
+
+.. rubric:: API
+
+Signature of :func:`qip.install` has been modified to handle the process of
+fetching a definition mapping from registry paths.
 
 .. extended-code-block:: python
     :icon: ../image/avoid.png
@@ -37,8 +48,14 @@ definition mapping from registry paths.
 
     qip.install(["foo"], registry_paths=registry_paths)
 
-The installation will be skipped when a package version is found in :term:`Wiz`
-registries.
+        Renamed :func:`qip.definition.retrieve` to
+        :func:`qip.definition.fetch_custom` for consistency with
+        :func:`qip.definition.fetch_existing`.
+
+The following function has been renamed for consistency with
+:func:`qip.definition.fetch_existing` :
+
+* :func:`qip.definition.retrieve` → :func:`qip.definition.fetch_custom`
 
 .. _release/migration/2.0.0:
 
