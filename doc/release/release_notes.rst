@@ -6,6 +6,29 @@ Release Notes
 
 .. release:: Upcoming
 
+    .. change:: changed
+        :tags: command-line
+
+        Updated installation process to automatically include default
+        :term:`Wiz` registries to determine whether the installation of a Python
+        package should be skipped or if its definition should be updated.
+
+        Added :option:`-I/--ignore-registries<qip install -I>` to ignore default
+        :term:`Wiz` registries.
+
+    .. change:: changed
+        :tags: API
+
+        Updated :func:`qip.install` to handle the process of fetching a
+        definition mapping from registry paths. It spares the user from having
+        to fetch definition mapping and makes the usage simpler.
+
+    .. change:: changed
+        :tags: API
+
+        Updated :func:`qip.install` to skip installation when a package version
+        is found in :term:`Wiz` registries.
+
     .. change:: new
         :tags: command-line
 
@@ -19,6 +42,25 @@ Release Notes
         Updated :func:`qip.install` with `continue_on_error` option to
         indicate whether installation process should resume when a package
         fails to install. Default is False.
+
+    .. change:: new
+        :tags: API
+
+        Added :func:`qip.definition.fetch_existing` to fetch a Python package in
+        a definition mapping.
+
+    .. change:: changed
+        :tags: API
+
+        Renamed :func:`qip.definition.retrieve` to
+        :func:`qip.definition.fetch_custom` for consistency with
+        :func:`qip.definition.fetch_existing`.
+
+    .. change:: fixed
+        :tags: API
+
+        Fixed :func:`qip.install` to apply ``editable_mode`` for all incoming
+        requests. Previously, it would only apply to the first request.
 
 .. release:: 2.0.2
     :date: 2020-09-15

@@ -45,7 +45,7 @@ def temporary_directory(request):
     return path
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def logger(mocker):
     """Mock the 'qip.logging' module and return logger."""
     import qip.logging

@@ -24,6 +24,9 @@ extensions = [
     'sphinx_click.ext'
 ]
 
+# Add local extensions.
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '_extension'))
+extensions.append("code_block")
 
 # The suffix of source filenames.
 source_suffix = ".rst"
@@ -96,3 +99,7 @@ intersphinx_mapping = {
 
 def setup(app):
     app.connect("autodoc-skip-member", autodoc_skip)
+
+    # Ensure custom stylesheet added, even when on Read The Docs server where
+    # html_style setting is ignored.
+    app.add_stylesheet("style.css")
