@@ -121,7 +121,7 @@ the :option:`-p/--python <qip install --python>` option::
 
 .. note::
 
-    The :option:`-u/--update <qip install -u>` option is used to
+    The :option:`-u/--update <qip install --update>` option is used to
     update existing :term:`Wiz` definitions with new variants corresponding to
     the Python version used (e.g. "2.7").
 
