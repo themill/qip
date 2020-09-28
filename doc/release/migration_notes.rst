@@ -48,10 +48,6 @@ fetching a definition mapping from registry paths.
 
     qip.install(["foo"], registry_paths=registry_paths)
 
-        Renamed :func:`qip.definition.retrieve` to
-        :func:`qip.definition.fetch_custom` for consistency with
-        :func:`qip.definition.fetch_existing`.
-
 The following function has been renamed for consistency with
 :func:`qip.definition.fetch_existing` :
 
