@@ -254,7 +254,9 @@ def _install(
             namespace=getattr(custom_definition, "namespace", None),
         )
 
-        if _skip_install(existing_definition, package_mapping, definition_path):
+        if not editable_mode and _skip_install(
+            existing_definition, package_mapping, definition_path
+        ):
             logger.warning(
                 "Skip '{0[key]}[{0[python][identifier]}]=={0[version]}' "
                 "which already exists in Wiz registries."

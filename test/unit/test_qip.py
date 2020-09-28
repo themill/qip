@@ -1096,7 +1096,7 @@ def test_install_one_request_with_existing_definition_with_different_variant(
     mocked_definition_fetch_existing, mocked_copy_to_destination,
     mocked_definition_export, logger, options, overwrite, editable_mode,
 ):
-    """Install package and export Wiz definition from existing definition."""
+    """Do not skip existing definition which does not have the same variant."""
     installed_packages = set()
 
     existing_definition = wiz.definition.Definition(
@@ -1158,20 +1158,95 @@ def test_install_one_request_with_existing_definition_with_different_variant(
 
 
 @pytest.mark.parametrize(
-    "options, overwrite, editable_mode", [
-        ({}, False, False),
-        ({"overwrite": True}, True, False),
-        ({"editable_mode": True}, False, True),
+    "options, overwrite", [
+        ({}, False),
+        ({"overwrite": True}, True),
     ], ids=[
         "simple",
         "with-overwrite-packages",
-        "with-editable-mode",
+    ]
+)
+def test_install_one_request_with_existing_definition_in_editable_mode(
+    mocked_package_install, mocked_definition_fetch_custom,
+    mocked_definition_fetch_existing, mocked_copy_to_destination,
+    mocked_definition_export, logger, options, overwrite,
+):
+    """Do not skip existing definition when editable mode is used."""
+    installed_packages = set()
+
+    existing_definition = wiz.definition.Definition(
+        {
+            "identifier": "foo",
+            "variants": [{"identifier": "3.8"}]
+        },
+        registry_path="/somewhere/else"
+    )
+
+    mapping = {
+        "identifier": "foo-0.1.0",
+        "key": "foo",
+        "version": "0.1.0",
+        "python": {
+            "identifier": "3.8"
+        }
+    }
+
+    mocked_package_install.return_value = mapping
+    mocked_copy_to_destination.return_value = (False, overwrite)
+    mocked_definition_fetch_custom.return_value = None
+    mocked_definition_fetch_existing.return_value = existing_definition
+
+    result = qip._install(
+        "foo", "/path/to/install", "__CONTEXT__", "__MAPPING__",
+        "/tmp/packages", "/tmp/cache", installed_packages,
+        definition_path="/path/definitions",
+        editable_mode=True,
+        **options
+    )
+    assert result == (mapping, overwrite)
+
+    mocked_package_install.assert_called_once_with(
+        "foo", "/tmp/packages", "__CONTEXT__", "/tmp/cache",
+        editable_mode=True
+    )
+
+    mocked_definition_fetch_custom.assert_called_once_with(mapping)
+    mocked_definition_fetch_existing.assert_called_once_with(
+        mapping, "__MAPPING__", namespace=None
+    )
+
+    mocked_definition_export.assert_called_once_with(
+        "/path/definitions", mapping, "/path/to/install",
+        editable_mode=True,
+        existing_definition=None,
+        custom_definition=None
+    )
+
+    mocked_copy_to_destination.assert_called_once_with(
+        mapping, "/tmp/packages", "/path/to/install",
+        overwrite=overwrite
+    )
+
+    logger.warning.assert_not_called()
+    logger.error.assert_not_called()
+    logger.info.assert_called_once_with("Requested 'foo'")
+
+    assert mapping.get("skipped") is False
+
+
+@pytest.mark.parametrize(
+    "options, overwrite", [
+        ({}, False),
+        ({"overwrite": True}, True),
+    ], ids=[
+        "simple",
+        "with-overwrite-packages",
     ]
 )
 def test_install_one_request_skip_existing_definition(
     mocked_package_install, mocked_definition_fetch_custom,
     mocked_definition_fetch_existing, mocked_copy_to_destination,
-    mocked_definition_export, logger, options, overwrite, editable_mode,
+    mocked_definition_export, logger, options, overwrite,
 ):
     """Skip package because of existing definition."""
     installed_packages = set()
@@ -1208,7 +1283,7 @@ def test_install_one_request_skip_existing_definition(
 
     mocked_package_install.assert_called_once_with(
         "foo", "/tmp/packages", "__CONTEXT__", "/tmp/cache",
-        editable_mode=editable_mode
+        editable_mode=False
     )
 
     mocked_definition_fetch_custom.assert_called_once_with(mapping)
