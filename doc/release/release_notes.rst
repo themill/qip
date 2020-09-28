@@ -4,6 +4,16 @@
 Release Notes
 *************
 
+.. release:: Upcoming
+
+    .. change:: fixed
+
+        Updated :func:`qip.install` to prevent skipping installation when
+        editable mode is used, even if a package version is found in :term:`Wiz`
+        registries.
+
+        .. seealso:: :ref:`development/editable`
+
 .. release:: 2.1.0
     :date: 2020-09-26
 
