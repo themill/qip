@@ -1,19 +1,21 @@
 # :coding: utf-8
 
+import logging
 import os
 import sys
 import tempfile
 import textwrap
 
 import click
-import qip
-import qip.logging
 import wiz
 import wiz.config
+
+import qip
+import qip._logging
 from qip import __version__
 
 # Initiate logging handler to display potential warning when fetching config.
-wiz.logging.configure()
+qip._logging.initiate()
 
 #: Retrieve configuration mapping to initialize default values.
 _CONFIG = wiz.config.fetch()
@@ -32,13 +34,12 @@ CONTEXT_SETTINGS = dict(
 @click.option(
     "-v", "--verbosity",
     help="Set the logging output verbosity.",
-    type=click.Choice(qip.logging.levels),
+    type=click.Choice(qip._logging.LEVEL_MAPPING.keys()),
     default="info"
 )
 def main(**kwargs):
     """Quarantine Installer for Python."""
-    qip.logging.configure()
-    qip.logging.root.handlers["stderr"].filterer.min = kwargs["verbosity"]
+    qip._logging.initiate(console_level=kwargs["verbosity"])
 
 
 @main.command(
@@ -161,7 +162,7 @@ def main(**kwargs):
 )
 def install(**kwargs):
     """Install one or several packages."""
-    logger = qip.logging.Logger(__name__ + ".install")
+    logger = logging.getLogger(__name__ + ".install")
 
     output_path = kwargs["output_path"]
     definition_path = kwargs["definition_path"]

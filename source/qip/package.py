@@ -1,14 +1,15 @@
 # :coding: utf-8
 
+import logging
 import json
 import os
 import re
 
+import wiz.filesystem
+
 import qip.command
 import qip.environ
-import qip.logging
 import qip.system
-import wiz.filesystem
 
 #: Compiled regular expression to detect request with extra option.
 REQUEST_PATTERN = re.compile(r"(.*)\[(\w*)\]")
@@ -78,7 +79,7 @@ def install(request, path, context_mapping, cache_path, editable_mode=False):
             }
 
     """
-    logger = qip.logging.Logger(__name__ + ".install")
+    logger = logging.getLogger(__name__ + ".install")
 
     if request.startswith("git@gitlab:"):
         request = "git+ssh://" + request.replace(":", "/")
@@ -158,7 +159,7 @@ def fetch_mapping_from_environ(name, context_mapping, extra=None):
             }
 
     """
-    logger = qip.logging.Logger(__name__ + ".fetch_mapping_from_environ")
+    logger = logging.getLogger(__name__ + ".fetch_mapping_from_environ")
 
     # Extract package information and its dependency.
     dependency_mapping = extract_dependency_mapping(

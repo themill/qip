@@ -1,5 +1,6 @@
 # :coding: utf-8
 
+import logging
 import functools
 import os
 
@@ -8,8 +9,6 @@ import wiz.environ
 import wiz.exception
 import wiz.symbol
 import wiz.utility
-
-import qip.logging
 
 #: Common namespace for all :term:`Wiz` definition.
 NAMESPACE = "library"
@@ -50,14 +49,14 @@ def export(
 
     # Update definition or create a new definition.
     if custom_definition is not None:
-        definition = qip.definition.update(
+        definition = update(
             custom_definition, package_mapping, output_path,
             editable_mode=editable_mode,
             additional_variants=additional_variants,
         )
 
     else:
-        definition = qip.definition.create(
+        definition = create(
             package_mapping, output_path,
             editable_mode=editable_mode,
             additional_variants=additional_variants
@@ -85,7 +84,7 @@ def fetch_custom(package_mapping):
     .. seealso:: :ref:`development/custom_definition`
 
     """
-    logger = qip.logging.Logger(__name__ + ".retrieve")
+    logger = logging.getLogger(__name__ + ".retrieve")
 
     definition_path = os.path.join(
         package_mapping["location"], package_mapping["module_name"],
@@ -148,7 +147,7 @@ def create(
     :return: :class:`wiz.definition.Definition` instance created.
 
     """
-    logger = qip.logging.Logger(__name__ + ".create")
+    logger = logging.getLogger(__name__ + ".create")
 
     definition_data = {
         "identifier": package_mapping["key"],

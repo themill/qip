@@ -25,12 +25,11 @@ with open(
 # Compute dependencies.
 INSTALL_REQUIRES = [
     "click >= 7, < 8",
+    "coloredlogs >= 14.0, < 15",
     "colorama >= 0.3.9, < 1",
     "distro >= 1.5.0, < 2",
     "packaging >= 17.1, < 18",
     "pip >= 10",
-    "pystache >= 0.5.4, < 1",
-    "sawmill >= 0.2.1, < 1",
     "six >= 1.15.0, < 2",
     "wiz-env >= 3, < 4"
 ]
