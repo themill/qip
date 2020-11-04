@@ -4,6 +4,14 @@
 Release Notes
 *************
 
+.. release:: Upcoming
+
+    .. change:: changed
+
+        Updated repository to use built-in :mod:`logging` module instead of
+        `sawmill <https://gitlab.com/4degrees/sawmill>`_ as there are no clear
+        advantages in using a non-standard framework to handle logging.
+
 .. release:: 2.1.1
     :date: 2020-09-28
 

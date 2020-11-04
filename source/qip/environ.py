@@ -1,5 +1,6 @@
 # :coding: utf-8
 
+import logging
 import json
 import os
 import tempfile
@@ -7,7 +8,6 @@ import tempfile
 import wiz
 
 import qip.command
-import qip.logging
 
 #: Path to the python info script.
 PYTHON_INFO_SCRIPT = os.path.join(
@@ -40,7 +40,7 @@ def fetch(python_target, mapping=None):
         >>> fetch("/path/to/bin/python")
 
     """
-    logger = qip.logging.Logger(__name__ + ".fetch")
+    logger = logging.getLogger(__name__ + ".fetch")
     logger.debug("initial environment: {}".format(mapping))
 
     if mapping is None:

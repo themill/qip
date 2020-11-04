@@ -1,6 +1,7 @@
 # :coding: utf-8
 
 import os
+import logging
 import shutil
 import tempfile
 import uuid
@@ -45,15 +46,12 @@ def temporary_directory(request):
     return path
 
 
-@pytest.fixture()
+@pytest.fixture(autouse=True)
 def logger(mocker):
-    """Mock the 'qip.logging' module and return logger."""
-    import qip.logging
-    mocker.patch.object(qip.logging, "configure")
-    mocker.patch.object(qip.logging, "root")
-
-    mock_logger = mocker.Mock()
-    mocker.patch.object(
-        qip.logging, "Logger", return_value=mock_logger
+    """Mock logger."""
+    return mocker.Mock(
+        warning=mocker.patch.object(logging.Logger, "warning"),
+        error=mocker.patch.object(logging.Logger, "error"),
+        info=mocker.patch.object(logging.Logger, "info"),
+        debug=mocker.patch.object(logging.Logger, "debug"),
     )
-    return mock_logger

@@ -1,6 +1,7 @@
 # :coding: utf-8
 
 import os
+import logging
 import sys
 import tempfile
 import shutil
@@ -13,7 +14,6 @@ import wiz.filesystem
 import qip.definition
 import qip.package
 import qip.environ
-import qip.logging
 
 from qip._version import __version__
 
@@ -75,7 +75,7 @@ def install(
     :return: Boolean value indicating whether packages were installed.
 
     """
-    logger = qip.logging.Logger(__name__ + ".install")
+    logger = logging.getLogger(__name__ + ".install")
 
     wiz.filesystem.ensure_directory(output_path)
     if definition_path is not None:
@@ -220,7 +220,7 @@ def _install(
 
 
     """
-    logger = qip.logging.Logger(__name__ + "._install")
+    logger = logging.getLogger(__name__ + "._install")
 
     try:
         package_mapping = qip.package.install(
@@ -338,7 +338,7 @@ def copy_to_destination(
         skipped and one indicating a new value for the *overwrite* option.
 
     """
-    logger = qip.logging.Logger(__name__ + ".copy_to_destination")
+    logger = logging.getLogger(__name__ + ".copy_to_destination")
 
     identifier = mapping["identifier"]
     target = os.path.join(destination_path, mapping["target"])

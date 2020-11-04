@@ -203,7 +203,9 @@ def test_fetch_existing(mocked_wiz_fetch_definition, options, namespace):
 ])
 def test_fetch_existing_empty(mocked_wiz_fetch_definition, options, namespace):
     """Fail to fetch existing definition in definition mapping."""
-    mocked_wiz_fetch_definition.side_effect = wiz.exception.RequestNotFound
+    mocked_wiz_fetch_definition.side_effect = (
+        wiz.exception.RequestNotFound("Error!")
+    )
 
     result = qip.definition.fetch_existing(
         {"key": "foo", "version": "0.1.0"}, "__MAPPING__", **options
