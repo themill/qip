@@ -1,11 +1,11 @@
 # :coding: utf-8
 
-from __future__ import absolute_import
 import collections
 import getpass
 import logging
 import logging.config
 import os
+import sys
 import tempfile
 
 import coloredlogs
@@ -76,3 +76,7 @@ def initiate(console_level="info"):
             }
         }
     })
+
+    # Formatter class cannot be initiate via config in Python 2.7.
+    if sys.version_info[0] < 3:
+        coloredlogs.install(fmt="%(message)s")
