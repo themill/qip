@@ -31,7 +31,8 @@ def execute(command, environ_mapping, quiet=False):
         shlex.split(command),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        env=environ_mapping
+        env=environ_mapping,
+        close_fds=True
     )
 
     if not quiet:
