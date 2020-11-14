@@ -21,7 +21,7 @@ import qip.environ
 
 from qip._version import __version__
 
-THREAD_COUNT = os.getenv("QIP_INSTALLER_THREAD_COUNT", 20)
+THREAD_COUNT = int(os.getenv("QIP_INSTALLER_THREAD_COUNT", 20))
 
 
 def install(
