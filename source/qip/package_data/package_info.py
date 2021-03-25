@@ -8,7 +8,7 @@ import sys
 import pkg_resources
 
 #: Compiled regular expression to detect request with extra option.
-REQUEST_PATTERN = re.compile(r"(.*)\[(\w*)\]")
+REQUEST_PATTERN = re.compile(r"(.*)\[(\w*)]")
 
 #: Metadata file containing the top-level Python module name.
 TOP_LEVEL_METADATA_FILE = "top_level.txt"
@@ -82,7 +82,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog="package-info",
         description="Query information about an installed Python package",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument("name", help="Python package name to query.")
     namespace = parser.parse_args()

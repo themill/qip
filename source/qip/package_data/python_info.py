@@ -53,7 +53,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         prog="python-info",
         description="Query information about a Python environment",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     namespace = parser.parse_args()
 
