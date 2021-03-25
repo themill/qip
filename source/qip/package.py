@@ -11,8 +11,11 @@ import qip.command
 import qip.environ
 import qip.system
 
+#: Compiled regular expression to detect git input.
+GIT_PATTERN = re.compile(r"^git@[\w._-]+:")
+
 #: Compiled regular expression to detect request with extra option.
-REQUEST_PATTERN = re.compile(r"(.*)\[(\w*)\]")
+REQUEST_PATTERN = re.compile(r"(.*)\[(\w*)]")
 
 #: Path to the Python package info script.
 PACKAGE_INFO_SCRIPT = os.path.join(
@@ -81,7 +84,7 @@ def install(request, path, context_mapping, cache_path, editable_mode=False):
     """
     logger = logging.getLogger(__name__ + ".install")
 
-    if request.startswith("git@gitlab:"):
+    if GIT_PATTERN.match(request) is not None:
         request = "git+ssh://" + request.replace(":", "/")
 
     logger.debug("Installing '{}'...".format(request))
@@ -175,9 +178,14 @@ def fetch_mapping_from_environ(name, context_mapping, extra=None):
         quiet=True
     )
 
+    # Compute unique identifier from extra requirement keywords.
+    _extra = "-".join(sorted(extra.split(",")))
+
     mapping = {
-        "identifier": extract_identifier(dependency_mapping["package"]),
-        "key": dependency_mapping["package"]["key"],
+        "identifier": extract_identifier(
+            dependency_mapping["package"], extra=_extra
+        ),
+        "key": extract_key(dependency_mapping["package"], extra=_extra),
         "name": dependency_mapping["package"]["package_name"],
         "module_name": dependency_mapping["package"]["module_name"],
         "version": dependency_mapping["package"]["installed_version"],
@@ -262,7 +270,7 @@ def extract_dependency_mapping(name, environ_mapping, extra=None):
     return mapping
 
 
-def extract_identifier(mapping):
+def extract_identifier(mapping, extra=None):
     """Return corresponding identifier from package *mapping*.
 
     :param mapping: package mapping. The package mapping must be in the form
@@ -274,17 +282,51 @@ def extract_identifier(mapping):
                 "installed_version": "1.11",
             }
 
+    :param extra: None or extra requirement label (e.g. "test"). Default is
+        None.
+
     :return: Corresponding identifier (e.g. "Foo-1.11", "Bar").
 
     """
-    identifier = wiz.filesystem.sanitize_value(
-        "{name}-{version}".format(
+    if extra is not None:
+        extra = "-" + extra
+
+    return wiz.filesystem.sanitize_value(
+        "{name}{extra}-{version}".format(
             name=mapping["package_name"],
-            version=mapping["installed_version"]
+            version=mapping["installed_version"],
+            extra=extra or ""
         )
     )
 
-    return identifier
+
+def extract_key(mapping, extra=None):
+    """Compute key for package *mapping*.
+
+    :param mapping: package mapping. The package mapping must be in the form
+        of::
+
+            {
+                "key": "foo",
+                "package_name": "Foo",
+                "installed_version": "1.11",
+            }
+
+    :param extra: None or extra requirement label (e.g. "test"). Default is
+        None.
+
+    :return: Corresponding key (e.g. "foo", "foo-test").
+
+    """
+    if extra is not None:
+        extra = "-" + extra
+
+    return wiz.filesystem.sanitize_value(
+        "{name}{extra}".format(
+            name=mapping["key"],
+            extra=extra or ""
+        )
+    )
 
 
 def is_system_required(metadata):
@@ -335,7 +377,7 @@ def extract_command_mapping(metadata):
     # Convention: command name can only have alpha-numeric characters, hyphens
     # and points.
     entry_points = re.search(
-        r"Entry-points:\n\s*\[console_scripts\]\n((\s*.+\s*=\s*.+\s*\n)+)",
+        r"Entry-points:\n\s*\[console_scripts]\n((\s*.+\s*=\s*.+\s*\n)+)",
         metadata
     )
     if entry_points is not None:
