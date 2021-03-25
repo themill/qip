@@ -79,4 +79,8 @@ def initiate(console_level="info"):
 
     # Formatter class cannot be initiate via config in Python 2.7.
     if sys.version_info[0] < 3:
-        coloredlogs.install(fmt="%(message)s")
+        coloredlogs.install(
+            fmt="%(message)s",
+            stream=sys.stdout,
+            level=console_level.upper(),
+        )
