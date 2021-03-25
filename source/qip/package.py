@@ -179,7 +179,7 @@ def fetch_mapping_from_environ(name, context_mapping, extra=None):
     )
 
     # Compute unique identifier from extra requirement keywords.
-    _extra = "-".join(sorted(extra.split(",")))
+    _extra = "-".join(sorted(extra.split(","))) if extra else None
 
     mapping = {
         "identifier": extract_identifier(

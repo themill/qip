@@ -62,16 +62,19 @@ def mocked_extract_target_path(mocker):
     ("foo", "foo"),
     ("foo==0.1.0", "foo==0.1.0"),
     ("foo >= 7, < 8", "foo >= 7, < 8"),
-    ("git@gitlab:rnd/foo.git", "git+ssh://git@gitlab/rnd/foo.git"),
-    ("git@gitlab:rnd/foo.git@0.1.0", "git+ssh://git@gitlab/rnd/foo.git@0.1.0"),
-    ("git@gitlab:rnd/foo.git@dev", "git+ssh://git@gitlab/rnd/foo.git@dev"),
+    ("git@host:user/foo.git", "git+ssh://git@host/user/foo.git"),
+    ("git@host1:bar/foo.git@0.1.0", "git+ssh://git@host1/bar/foo.git@0.1.0"),
+    (
+        "git@github.com:username/foo.git@dev",
+        "git+ssh://git@github.com/username/foo.git@dev"
+    ),
 ], ids=[
     "foo",
     "foo==0.1.0",
     "foo >= 7, < 8",
-    "git@gitlab:rnd/foo.git",
-    "git@gitlab:rnd/foo.git@0.1.0",
-    "git@gitlab:rnd/foo.git@dev"
+    "git@host:user/foo.git",
+    "git@host1:bar/foo.git@0.1.0",
+    "git@github.com:username/foo.git@dev"
 ])
 def test_install(
     mocked_fetch_mapping_from_environ, mocked_command_execute, package, expected
@@ -425,7 +428,7 @@ def test_extract_dependency_mapping_with_extra(mocker, mocked_command_execute):
     mapping = qip.package.extract_dependency_mapping("foo", {}, extra="dev")
     mocked_command_execute.assert_called_once_with(mocker.ANY, {}, quiet=True)
     assert re.match(
-        r"python .+ foo\[dev\]", mocked_command_execute.call_args_list[0][0][0]
+        r"python .+ foo\[dev]", mocked_command_execute.call_args_list[0][0][0]
     )
     assert mapping == {"package": {"key": "foo"}}
 
