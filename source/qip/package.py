@@ -179,13 +179,16 @@ def fetch_mapping_from_environ(name, context_mapping, extra=None):
     )
 
     # Compute unique identifier from extra requirement keywords.
-    _extra = "-".join(sorted(extra.split(","))) if extra else None
+    if extra is not None:
+        keywords = (key.strip().lower() for key in extra.split(","))
+        keywords = (key for key in keywords if len(key))
+        extra = "-".join(sorted(keywords))
 
     mapping = {
         "identifier": extract_identifier(
-            dependency_mapping["package"], extra=_extra
+            dependency_mapping["package"], extra=extra
         ),
-        "key": extract_key(dependency_mapping["package"], extra=_extra),
+        "key": extract_key(dependency_mapping["package"], extra=extra),
         "name": dependency_mapping["package"]["package_name"],
         "module_name": dependency_mapping["package"]["module_name"],
         "version": dependency_mapping["package"]["installed_version"],
