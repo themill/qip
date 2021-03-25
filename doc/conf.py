@@ -102,4 +102,4 @@ def setup(app):
 
     # Ensure custom stylesheet added, even when on Read The Docs server where
     # html_style setting is ignored.
-    app.add_stylesheet("style.css")
+    app.add_css_file("style.css")
