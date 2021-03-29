@@ -13,6 +13,15 @@ Glossary
 
             * `Official devpi documentation <http://doc.devpi.net/>`__
 
+    Entry-Points
+        Entry points are a mechanism for an installed distribution to advertise
+        components it provides to be discovered and used by other code.
+
+        .. seealso::
+
+            `Entry points specification
+            <https://packaging.python.org/specifications/entry-points>`_
+
     extras_require
         :term:`Setuptools` provides an ``extras_require`` option which takes
         a dictionary mapping unique keywords to a list of optional dependencies.

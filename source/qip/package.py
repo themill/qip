@@ -367,9 +367,12 @@ def is_system_required(metadata):
 def extract_command_mapping(metadata, extra_keywords=None):
     """Extract command mapping from entry points within *metadata*.
 
-    Package `Entry-Points
-    <https://packaging.python.org/specifications/entry-points/>`_ are retrieved
-    from *metadata* to extract the corresponding commands.
+    Package :term:`Entry-Points` are retrieved from *metadata* to extract the
+    corresponding commands. Each function defined as ``console_scripts`` will
+    be used to create associated command.
+
+    Provided *extra_keywords* are used when commands depend on optional
+    dependencies.
 
     :param metadata: string resulting from the `pip show -v
         <https://pip.pypa.io/en/stable/reference/pip_show/>`_ command.
