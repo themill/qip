@@ -67,6 +67,9 @@ setup(
         "test": TEST_REQUIRES,
         "dev": DOC_REQUIRES + TEST_REQUIRES
     },
+    python_requires=(
+        ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5*"
+    ),
     zip_safe=False,
     entry_points={
         "console_scripts": [
@@ -84,6 +87,7 @@ setup(
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "Topic :: Software Development",
     ],
 )
