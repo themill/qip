@@ -704,7 +704,7 @@ def test_extract_command_mapping_with_extra():
         "Entry-points:\n"
         "  [console_scripts]\n"
         "  foo = foo.__main__:main [test]\n"
-        "  bar = bar.__main__:main [doc, test]\n"
+        "  bar = bar.__main__:main [doc]\n"
     )
 
     assert qip.package.extract_command_mapping(metadata) == {}
