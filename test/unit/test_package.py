@@ -93,7 +93,7 @@ def test_install(
         package, "/path", {"environ": "__ENV__"}, "/cache"
     )
     mocked_fetch_mapping_from_environ.assert_called_once_with(
-        "foo", {"environ": "__ENV__"}, extra=None
+        "foo", {"environ": "__ENV__"}, extra_keywords=[]
     )
     assert result == {"request": expected}
 
@@ -158,8 +158,12 @@ def test_fetch_mapping_from_environ(
         quiet=True
     )
     mocked_system_query.assert_not_called()
-    mocked_extract_identifier.assert_called_once_with(package, extra=None)
-    mocked_extract_key.assert_called_once_with(package, extra=None)
+    mocked_extract_identifier.assert_called_once_with(
+        package, extra_keywords=None
+    )
+    mocked_extract_key.assert_called_once_with(
+        package, extra_keywords=None
+    )
 
 
 def test_fetch_mapping_from_environ_with_extra(
@@ -189,18 +193,18 @@ def test_fetch_mapping_from_environ_with_extra(
         "requirements": []
     }
 
-    mocked_extract_identifier.return_value = "Foo-dev-doc-test-0.1.0"
-    mocked_extract_key.return_value = "foo-dev-doc-test"
+    mocked_extract_identifier.return_value = "Foo-doc-test-0.1.0"
+    mocked_extract_key.return_value = "foo-doc-test"
     mocked_is_system_required.return_value = False
     mocked_extract_command_mapping.return_value = {}
     mocked_extract_target_path.return_value = "/path/to/target"
 
     mapping = qip.package.fetch_mapping_from_environ(
-        "foo", context, extra="Doc, test, dev"
+        "foo", context, extra_keywords=["doc", "test"]
     )
     assert mapping == {
-        "identifier": "Foo-dev-doc-test-0.1.0",
-        "key": "foo-dev-doc-test",
+        "identifier": "Foo-doc-test-0.1.0",
+        "key": "foo-doc-test",
         "name": "Foo",
         "module_name": "foo",
         "version": "0.1.0",
@@ -216,10 +220,10 @@ def test_fetch_mapping_from_environ_with_extra(
     )
     mocked_system_query.assert_not_called()
     mocked_extract_identifier.assert_called_once_with(
-        package, extra="dev-doc-test"
+        package, extra_keywords=["doc", "test"]
     )
     mocked_extract_key.assert_called_once_with(
-        package, extra="dev-doc-test"
+        package, extra_keywords=["doc", "test"]
     )
 
 
@@ -276,8 +280,12 @@ def test_fetch_mapping_from_environ_with_system(
         quiet=True
     )
     mocked_system_query.assert_called_once()
-    mocked_extract_identifier.assert_called_once_with(package, extra=None)
-    mocked_extract_key.assert_called_once_with(package, extra=None)
+    mocked_extract_identifier.assert_called_once_with(
+        package, extra_keywords=None
+    )
+    mocked_extract_key.assert_called_once_with(
+        package, extra_keywords=None
+    )
 
 
 def test_fetch_mapping_from_environ_with_description(
@@ -332,8 +340,12 @@ def test_fetch_mapping_from_environ_with_description(
         quiet=True
     )
     mocked_system_query.assert_not_called()
-    mocked_extract_identifier.assert_called_once_with(package, extra=None)
-    mocked_extract_key.assert_called_once_with(package, extra=None)
+    mocked_extract_identifier.assert_called_once_with(
+        package, extra_keywords=None
+    )
+    mocked_extract_key.assert_called_once_with(
+        package, extra_keywords=None
+    )
 
 
 def test_fetch_mapping_from_environ_with_location(
@@ -388,8 +400,12 @@ def test_fetch_mapping_from_environ_with_location(
         quiet=True
     )
     mocked_system_query.assert_not_called()
-    mocked_extract_identifier.assert_called_once_with(package, extra=None)
-    mocked_extract_key.assert_called_once_with(package, extra=None)
+    mocked_extract_identifier.assert_called_once_with(
+        package, extra_keywords=None
+    )
+    mocked_extract_key.assert_called_once_with(
+        package, extra_keywords=None
+    )
 
 
 def test_fetch_mapping_from_environ_with_commands(
@@ -444,8 +460,12 @@ def test_fetch_mapping_from_environ_with_commands(
         quiet=True
     )
     mocked_system_query.assert_not_called()
-    mocked_extract_identifier.assert_called_once_with(package, extra=None)
-    mocked_extract_key.assert_called_once_with(package, extra=None)
+    mocked_extract_identifier.assert_called_once_with(
+        package, extra_keywords=None
+    )
+    mocked_extract_key.assert_called_once_with(
+        package, extra_keywords=None
+    )
 
 
 def test_fetch_mapping_from_environ_with_requirements(
@@ -506,8 +526,12 @@ def test_fetch_mapping_from_environ_with_requirements(
         quiet=True
     )
     mocked_system_query.assert_not_called()
-    mocked_extract_identifier.assert_called_once_with(package, extra=None)
-    mocked_extract_key.assert_called_once_with(package, extra=None)
+    mocked_extract_identifier.assert_called_once_with(
+        package, extra_keywords=None
+    )
+    mocked_extract_key.assert_called_once_with(
+        package, extra_keywords=None
+    )
 
 
 def test_extract_dependency_mapping(mocker, mocked_command_execute):
@@ -528,10 +552,13 @@ def test_extract_dependency_mapping_with_extra(mocker, mocked_command_execute):
     """
     mocked_command_execute.return_value = "{\"package\": {\"key\": \"foo\"}}"
 
-    mapping = qip.package.extract_dependency_mapping("foo", {}, extra="dev")
+    mapping = qip.package.extract_dependency_mapping(
+        "foo", {}, extra_keywords=["doc", "test"]
+    )
     mocked_command_execute.assert_called_once_with(mocker.ANY, {}, quiet=True)
     assert re.match(
-        r"python .+ foo\[dev]", mocked_command_execute.call_args_list[0][0][0]
+        r"python .+ foo\[doc,test]",
+        mocked_command_execute.call_args_list[0][0][0]
     )
     assert mapping == {"package": {"key": "foo"}}
 
@@ -566,8 +593,10 @@ def test_extract_identifier_with_extra():
         "module_name": "foo",
         "installed_version": "1.11",
     }
-    identifier = qip.package.extract_identifier(mapping, extra="dev")
-    assert identifier == "Foo-dev-1.11"
+    identifier = qip.package.extract_identifier(
+        mapping, extra_keywords=["doc", "test"]
+    )
+    assert identifier == "Foo-doc-test-1.11"
 
 
 def test_extract_key():
@@ -590,8 +619,10 @@ def test_extract_key_with_extra():
         "module_name": "foo",
         "installed_version": "1.11",
     }
-    identifier = qip.package.extract_key(mapping, extra="dev")
-    assert identifier == "foo-dev"
+    identifier = qip.package.extract_key(
+        mapping, extra_keywords=["doc", "test"]
+    )
+    assert identifier == "foo-doc-test"
 
 
 @pytest.mark.parametrize("metadata, expected", [
@@ -665,6 +696,37 @@ def test_is_system_required(metadata, expected):
 def test_extract_command_mapping(metadata, expected):
     """Extract command mapping from entry points"""
     assert qip.package.extract_command_mapping(metadata) == expected
+
+
+def test_extract_command_mapping_with_extra():
+    """Extract command mapping from entry points with extra keywords"""
+    metadata = (
+        "Entry-points:\n"
+        "  [console_scripts]\n"
+        "  foo = foo.__main__:main [test]\n"
+        "  bar = bar.__main__:main [doc, test]\n"
+    )
+
+    assert qip.package.extract_command_mapping(metadata) == {}
+
+    assert qip.package.extract_command_mapping(
+        metadata, extra_keywords=["test"]
+    ) == {
+        "foo": "python -m foo"
+    }
+
+    assert qip.package.extract_command_mapping(
+        metadata, extra_keywords=["doc"]
+    ) == {
+        "bar": "python -m bar"
+    }
+
+    assert qip.package.extract_command_mapping(
+        metadata, extra_keywords=["doc", "test"]
+    ) == {
+        "foo": "python -m foo",
+        "bar": "python -m bar"
+    }
 
 
 def test_extract_target_path():

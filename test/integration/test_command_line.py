@@ -293,6 +293,103 @@ def test_install_editable_mode(temporary_directory, logger):
     }
 
 
+def test_install_with_optional_dependencies(temporary_directory, logger):
+    """Install packages with optional dependencies."""
+    packages_path = os.path.join(temporary_directory, "packages")
+    definitions_path = os.path.join(temporary_directory, "definitions")
+
+    runner = CliRunner()
+    result = runner.invoke(
+        qip.command_line.main, [
+            "install",
+            "bim[test1]",
+            "-o", packages_path,
+            "-d", definitions_path,
+        ]
+    )
+    assert not result.exception
+    assert result.exit_code == 0
+
+    # Check log.
+    logger.info.assert_any_call(
+        "Packages installed: Baz-4.5.2, BIM-test1-3.6.2"
+    )
+    logger.warning.assert_not_called()
+    logger.error.assert_not_called()
+
+    # Check package installed.
+    expected_packages = [
+        os.path.join("BIM", "BIM-test1-3.6.2-py27"),
+        os.path.join("Baz", "Baz-4.5.2-py27"),
+    ]
+
+    for package in expected_packages:
+        assert os.path.isdir(os.path.join(packages_path, package))
+
+    # Check definitions installed.
+    expected_definitions = [
+        "library-baz-4.5.2.json",
+        "library-bim-test1-3.6.2.json",
+    ]
+
+    definitions = os.listdir(definitions_path)
+    assert sorted(definitions) == expected_definitions
+
+    path = os.path.join(definitions_path, expected_definitions[0])
+    definition = wiz.load_definition(path)
+    assert definition.data() == {
+        "identifier": "baz",
+        "version": "4.5.2",
+        "description": "Baz Python Package.",
+        "namespace": "library",
+        "install-root": packages_path,
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
+        "variants": [
+            {
+                "identifier": "2.7",
+                "install-location": (
+                    "${INSTALL_ROOT}/Baz/Baz-4.5.2-py27/lib/python2.7/"
+                    "site-packages"
+                ),
+                "requirements": [
+                    "python >= 2.7, < 2.8",
+                ]
+            }
+        ]
+    }
+
+    path = os.path.join(definitions_path, expected_definitions[1])
+    definition = wiz.load_definition(path)
+    assert definition.data() == {
+        "identifier": "bim-test1",
+        "version": "3.6.2",
+        "description": "Bim Python Package.",
+        "namespace": "library",
+        "install-root": packages_path,
+        "command": {
+            "bim1": "python -m bim"
+        },
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
+        "variants": [
+            {
+                "identifier": "2.7",
+                "install-location": (
+                    "${INSTALL_ROOT}/BIM/BIM-test1-3.6.2-py27/lib/python2.7/"
+                    "site-packages"
+                ),
+                "requirements": [
+                    "python >= 2.7, < 2.8",
+                    "library::baz[2.7]"
+                ]
+            }
+        ]
+    }
+
+
 def test_install_no_dependencies(temporary_directory, logger):
     """Install packages without dependencies."""
     packages_path = os.path.join(temporary_directory, "packages")
