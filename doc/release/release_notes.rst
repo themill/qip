@@ -8,20 +8,27 @@ Release Notes
 
     .. change:: changed
 
-        Updated :func:`qip.package.extract_identifier` to compute unique identifier which
-        includes :term:`extra keywords <extras_require>` provided in the request. This
-        ensures that packages installed with optional dependencies do not overwrite
-        existing packages installed without optional dependencies or with different
+        Updated :func:`qip.package.extract_identifier` to compute unique
+        identifier which includes :term:`extra keywords <extras_require>`
+        provided in the request. This ensures that packages installed with
+        optional dependencies do not overwrite existing packages installed
+        without optional dependencies or with different optional dependencies.
+
+    .. change:: changed
+
+        Added :func:`qip.package.extract_key` to compute unique package key
+        which includes :term:`extra keywords <extras_require>` provided in the
+        request. As package key is used to compute identifier of the
+        corresponding :term:`Wiz` definition, it ensures that definitions
+        installed with optional dependencies do not overwrite existing
+        definitions installed without optional dependencies or with different
         optional dependencies.
 
     .. change:: changed
 
-        Added :func:`qip.package.extract_key` to compute unique package key which
-        includes :term:`extra keywords <extras_require>` provided in the request. As
-        package key is used to compute identifier of the corresponding :term:`Wiz`
-        definition, it ensures that definitions installed with optional dependencies do
-        not overwrite existing definitions installed without optional dependencies or
-        with different optional dependencies.
+        Updated :func:`qip.package.extract_command_mapping` to extract commands
+        from functions defined as ``console_scripts`` based on provided
+        :term:`extra requirement keywords <extras_require>`
 
     .. change:: changed
 
