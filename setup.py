@@ -61,7 +61,6 @@ setup(
     },
     include_package_data=True,
     install_requires=INSTALL_REQUIRES,
-    tests_require=TEST_REQUIRES,
     extras_require={
         "doc": DOC_REQUIRES,
         "test": TEST_REQUIRES,
