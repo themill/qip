@@ -20,7 +20,6 @@ jobs:
           "ubuntu-py37",
           "ubuntu-py38",
           "ubuntu-py39",
-          "ubuntu-py310",
           "macos-py37",
           "macos-py38",
           "macos-py39",
@@ -41,9 +40,6 @@ jobs:
             os: ubuntu-latest
           - name: "ubuntu-py39"
             python: "3.9"
-            os: ubuntu-latest
-          - name: "ubuntu-py310"
-            python: "3.10-dev"
             os: ubuntu-latest
           - name: "macos-py37"
             python: "3.7"
