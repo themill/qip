@@ -35,7 +35,7 @@ def reset_configuration(mocker):
 def test_install_numpy(temporary_directory, logger):
     """Install numpy.
 
-    Install numpy version within 1.16.6 and 1.19.2 which covers all Python
+    Install numpy version within 1.16.6 and 1.20.2 which covers all Python
     version supported by Qip. numpy doesn't have any dependencies.
 
     """
@@ -46,7 +46,7 @@ def test_install_numpy(temporary_directory, logger):
     result = runner.invoke(
         qip.command_line.main, [
             "install",
-            "numpy >= 1.16.6, <= 1.19.2",
+            "numpy >= 1.16.6, <= 1.20.2",
             "-o", packages_path,
             "-d", definitions_path,
         ]
@@ -101,7 +101,7 @@ def test_install_numpy(temporary_directory, logger):
 def test_install_numpy_several_versions(temporary_directory, logger):
     """Install numpy.
 
-    Like the previous test, install numpy version within 1.16.6 and 1.19.2 which
+    Like the previous test, install numpy version within 1.16.6 and 1.20.2 which
     covers all Python version supported by Qip. Then install numpy while
     excluding the latest versions supported by 2.7 and 3+ to force another
     version to get installed.
@@ -114,8 +114,8 @@ def test_install_numpy_several_versions(temporary_directory, logger):
     result = runner.invoke(
         qip.command_line.main, [
             "install",
-            "numpy >= 1.16.6, <= 1.19.2",
-            "numpy != 1.16.6, < 1.19.2.",
+            "numpy >= 1.16.6, <= 1.20.2",
+            "numpy != 1.16.6, < 1.20.2",
             "-o", packages_path,
             "-d", definitions_path,
         ]

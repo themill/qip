@@ -11,8 +11,11 @@ import qip.command
 import qip.environ
 import qip.system
 
+#: Compiled regular expression to detect git input.
+GIT_PATTERN = re.compile(r"^git@[\w._-]+:")
+
 #: Compiled regular expression to detect request with extra option.
-REQUEST_PATTERN = re.compile(r"(.*)\[(\w*)\]")
+EXTRA_REQUEST_PATTERN = re.compile(r"(?:.*)\s*\[(.+)]")
 
 #: Path to the Python package info script.
 PACKAGE_INFO_SCRIPT = os.path.join(
@@ -81,7 +84,7 @@ def install(request, path, context_mapping, cache_path, editable_mode=False):
     """
     logger = logging.getLogger(__name__ + ".install")
 
-    if request.startswith("git@gitlab:"):
+    if GIT_PATTERN.match(request) is not None:
         request = "git+ssh://" + request.replace(":", "/")
 
     logger.debug("Installing '{}'...".format(request))
@@ -110,15 +113,23 @@ def install(request, path, context_mapping, cache_path, editable_mode=False):
         )
     name = match_name.group().strip()
 
-    matched = REQUEST_PATTERN.match(request)
-    extra = None if matched is None else matched.group(2)
+    extra_keywords = []
 
-    mapping = fetch_mapping_from_environ(name, context_mapping, extra=extra)
+    matched_extra = EXTRA_REQUEST_PATTERN.match(request)
+    if matched_extra:
+        extra_keywords = matched_extra.group(1).split(",")
+        extra_keywords = sorted(key.strip() for key in extra_keywords)
+        extra_keywords = [key for key in extra_keywords if len(key)]
+
+    mapping = fetch_mapping_from_environ(
+        name, context_mapping,
+        extra_keywords=extra_keywords
+    )
     mapping["request"] = request
     return mapping
 
 
-def fetch_mapping_from_environ(name, context_mapping, extra=None):
+def fetch_mapping_from_environ(name, context_mapping, extra_keywords=None):
     """Return a mapping with information about the Python package *name*.
 
     :param name: Python package name.
@@ -126,8 +137,8 @@ def fetch_mapping_from_environ(name, context_mapping, extra=None):
     :param context_mapping: contain environment mapping and python mapping, as
         returned from :func:`qip.fetch_context_mapping`.
 
-    :param extra: None or extra requirement label (e.g. "test"). Default is
-        None.
+    :param extra_keywords: List of :term:`extra requirement keywords
+        <extras_require>` if required. Default is None.
 
     :return: mapping with information about the package gathered from the
         environment. It should be in the form of::
@@ -163,7 +174,8 @@ def fetch_mapping_from_environ(name, context_mapping, extra=None):
 
     # Extract package information and its dependency.
     dependency_mapping = extract_dependency_mapping(
-        name, context_mapping["environ"], extra=extra
+        name, context_mapping["environ"],
+        extra_keywords=extra_keywords
     )
 
     # Run pip show command to find extra information from extended metadata.
@@ -176,8 +188,14 @@ def fetch_mapping_from_environ(name, context_mapping, extra=None):
     )
 
     mapping = {
-        "identifier": extract_identifier(dependency_mapping["package"]),
-        "key": dependency_mapping["package"]["key"],
+        "identifier": extract_identifier(
+            dependency_mapping["package"],
+            extra_keywords=extra_keywords
+        ),
+        "key": extract_key(
+            dependency_mapping["package"],
+            extra_keywords=extra_keywords
+        ),
         "name": dependency_mapping["package"]["package_name"],
         "module_name": dependency_mapping["package"]["module_name"],
         "version": dependency_mapping["package"]["installed_version"],
@@ -195,7 +213,9 @@ def fetch_mapping_from_environ(name, context_mapping, extra=None):
     if is_system_required(metadata):
         mapping["system"] = qip.system.query()
 
-    command_mapping = extract_command_mapping(metadata)
+    command_mapping = extract_command_mapping(
+        metadata, extra_keywords=extra_keywords
+    )
     if len(command_mapping) > 0:
         mapping["command"] = command_mapping
 
@@ -215,15 +235,15 @@ def fetch_mapping_from_environ(name, context_mapping, extra=None):
     return mapping
 
 
-def extract_dependency_mapping(name, environ_mapping, extra=None):
+def extract_dependency_mapping(name, environ_mapping, extra_keywords=None):
     """Return mapping for Python package with all dependency requirements.
 
     :param name: Python package name.
 
     :param environ_mapping: mapping of environment variables.
 
-    :param extra: None or extra requirement label (e.g. "test"). Default is
-        None.
+    :param extra_keywords: List of :term:`extra requirement keywords
+        <extras_require>` if required. Default is None.
 
     :return: None if the package *name* cannot be found in dependency mapping,
         otherwise return dependency mapping. A valid mapping should be in the
@@ -243,8 +263,8 @@ def extract_dependency_mapping(name, environ_mapping, extra=None):
 
     """
     identifier = name.lower()
-    if extra is not None:
-        identifier += "[{}]".format(extra)
+    if extra_keywords is not None and len(extra_keywords):
+        identifier += "[{}]".format(",".join(extra_keywords))
 
     command = "python {script} {identifier}".format(
         script=PACKAGE_INFO_SCRIPT,
@@ -262,7 +282,7 @@ def extract_dependency_mapping(name, environ_mapping, extra=None):
     return mapping
 
 
-def extract_identifier(mapping):
+def extract_identifier(mapping, extra_keywords=None):
     """Return corresponding identifier from package *mapping*.
 
     :param mapping: package mapping. The package mapping must be in the form
@@ -274,17 +294,51 @@ def extract_identifier(mapping):
                 "installed_version": "1.11",
             }
 
+    :param extra_keywords: List of :term:`extra requirement keywords
+        <extras_require>` if required. Default is None.
+
     :return: Corresponding identifier (e.g. "Foo-1.11", "Bar").
 
     """
-    identifier = wiz.filesystem.sanitize_value(
-        "{name}-{version}".format(
+    if extra_keywords is not None and len(extra_keywords):
+        extra_keywords = "-" + "-".join(extra_keywords)
+
+    return wiz.filesystem.sanitize_value(
+        "{name}{extra}-{version}".format(
             name=mapping["package_name"],
-            version=mapping["installed_version"]
+            version=mapping["installed_version"],
+            extra=extra_keywords or ""
         )
     )
 
-    return identifier
+
+def extract_key(mapping, extra_keywords=None):
+    """Compute key for package *mapping*.
+
+    :param mapping: package mapping. The package mapping must be in the form
+        of::
+
+            {
+                "key": "foo",
+                "package_name": "Foo",
+                "installed_version": "1.11",
+            }
+
+    :param extra_keywords: List of :term:`extra requirement keywords
+        <extras_require>` if required. Default is None.
+
+    :return: Corresponding key (e.g. "foo", "foo-test").
+
+    """
+    if extra_keywords is not None and len(extra_keywords):
+        extra_keywords = "-" + "-".join(extra_keywords)
+
+    return wiz.filesystem.sanitize_value(
+        "{name}{extra}".format(
+            name=mapping["key"],
+            extra=extra_keywords or ""
+        )
+    )
 
 
 def is_system_required(metadata):
@@ -310,15 +364,21 @@ def is_system_required(metadata):
     return len(classifiers) > 0 and not os_independent
 
 
-def extract_command_mapping(metadata):
+def extract_command_mapping(metadata, extra_keywords=None):
     """Extract command mapping from entry points within *metadata*.
 
-    Package `Entry-Points
-    <https://packaging.python.org/specifications/entry-points/>`_ are retrieved
-    from *metadata* to extract the corresponding commands.
+    Package :term:`Entry-Points` are retrieved from *metadata* to extract the
+    corresponding commands. Each function defined as ``console_scripts`` will
+    be used to create associated command.
+
+    Provided *extra_keywords* are used when commands depend on optional
+    dependencies.
 
     :param metadata: string resulting from the `pip show -v
         <https://pip.pypa.io/en/stable/reference/pip_show/>`_ command.
+
+    :param extra_keywords: List of :term:`extra requirement keywords
+        <extras_require>` if required. Default is None.
 
     :return: command mapping
 
@@ -335,19 +395,28 @@ def extract_command_mapping(metadata):
     # Convention: command name can only have alpha-numeric characters, hyphens
     # and points.
     entry_points = re.search(
-        r"Entry-points:\n\s*\[console_scripts\]\n((\s*.+\s*=\s*.+\s*\n)+)",
+        r"Entry-points:\n\s*\[console_scripts]\n((?:\s*.+\s*=\s*.+\s*\n)+)",
         metadata
     )
     if entry_points is not None:
         entry_points = entry_points.group(1)
 
-        for alias, command in (
-            (
-                element.split("=")[0].strip(),
-                element.split("=")[1].split(":")[0].strip()
-            )
-            for element in entry_points.split("\n") if element
-        ):
+        for element in entry_points.split("\n"):
+            element = element.strip()
+            if not len(element):
+                continue
+
+            alias, script = element.split("=")
+            alias = alias.strip()
+            script = script.strip()
+
+            matched_extra = EXTRA_REQUEST_PATTERN.match(script)
+            if matched_extra:
+                authorized = set(matched_extra.group(1).split(","))
+                if authorized.difference(extra_keywords or []):
+                    continue
+
+            command = script.split(":")[0].strip()
             if command.endswith(".__main__"):
                 command = command[:-9]
 

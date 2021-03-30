@@ -4,6 +4,43 @@
 Release Notes
 *************
 
+.. release:: Upcoming
+
+    .. change:: changed
+
+        Updated :func:`qip.package.extract_identifier` to compute unique
+        identifier which includes :term:`extra keywords <extras_require>`
+        provided in the request. This ensures that packages installed with
+        optional dependencies do not overwrite existing packages installed
+        without optional dependencies or with different optional dependencies.
+
+    .. change:: changed
+
+        Added :func:`qip.package.extract_key` to compute unique package key
+        which includes :term:`extra keywords <extras_require>` provided in the
+        request. As package key is used to compute identifier of the
+        corresponding :term:`Wiz` definition, it ensures that definitions
+        installed with optional dependencies do not overwrite existing
+        definitions installed without optional dependencies or with different
+        optional dependencies.
+
+    .. change:: changed
+
+        Updated :func:`qip.package.extract_command_mapping` to extract commands
+        from functions defined as ``console_scripts`` based on provided
+        :term:`extra requirement keywords <extras_require>`
+
+    .. change:: changed
+
+        Updated :func:`qip.package.install` to properly convert private Git
+        URLs from ``git@host:group/project.git`` to
+        ``git+ssh://host/group/git+ssh://``.
+
+        .. seealso::
+
+            `PIP Documentation - Git support
+            <https://pip.pypa.io/en/stable/reference/pip_install/#git>`_
+
 .. release:: 2.2.0
     :date: 2020-11-04
 
@@ -111,7 +148,7 @@ Release Notes
     .. change:: changed
 
         Project name has been changed to ``qip-installer`` to guarantee a unique
-        name on `Pypi <https://pypi.org/>`_.
+        name on :term:`PyPi`.
 
     .. change:: changed
 
@@ -511,7 +548,7 @@ Release Notes
         :tags: definition
 
         Changed 'group' keyword to 'namespace' when creating new definitions for
-        packages from :term:`Pypi` and set its value to 'library'.
+        packages from :term:`PyPi` and set its value to 'library'.
         The 'group' keyword has been replaced in :term:`Wiz` 1.3.0.
 
     .. change:: changed
@@ -554,7 +591,7 @@ Release Notes
         :tags: definition
 
         Added 'group' keyword set to "python" when creating new definitions for
-        packages from :term:`Pypi`.
+        packages from :term:`PyPi`.
 
     .. change:: new
         :tags: definition
@@ -564,7 +601,7 @@ Release Notes
         :envvar:`wiz:INSTALL_LOCATION` in a definition is being replaced with
         the accurate relative target path (including the identifier, version and
         potential system information). Without this adjustment, any path in
-        :envvar:`wiz:INSTALL_LOCATION` retrieved from :term:`devpi` would
+        :envvar:`wiz:INSTALL_LOCATION` retrieved from :term:`Devpi` would
         include non existent paths and the link to the data would be lost.
 
     .. change:: new
@@ -626,7 +663,7 @@ Release Notes
 
         There are no changes made to a retrieved :term:`Wiz` definition.
         Any dependencies or system information will have to be correct when
-        the package gets bundled and uploaded to :term:`devpi`.
+        the package gets bundled and uploaded to :term:`Devpi`.
 
     .. change:: new
 

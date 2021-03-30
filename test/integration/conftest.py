@@ -25,6 +25,8 @@ PACKAGE_OUTPUT_PATH = {
     "foo": os.path.join("Foo", "Foo-1.2.0-py27"),
     "bar": os.path.join("Bar", "Bar-0.1.0-py27-centos7"),
     "bim": os.path.join("BIM", "BIM-3.6.2-py27"),
+    "bim-test1": os.path.join("BIM", "BIM-test1-3.6.2-py27"),
+    "baz": os.path.join("Baz", "Baz-4.5.2-py27"),
 }
 
 #: Collection of all packages dependency mapping.
@@ -59,6 +61,26 @@ PACKAGE_DEPENDENCY_MAPPING = {
             "package_name": "BIM"
         }
     },
+    "bim[test1]": {
+        "package": {
+            "installed_version": "3.6.2",
+            "key": "bim",
+            "module_name": "bim",
+            "package_name": "BIM"
+        },
+        "requirements": [
+            "baz"
+        ]
+    },
+    "baz": {
+        "package": {
+            "installed_version": "4.5.2",
+            "key": "baz",
+            "module_name": "baz",
+            "package_name": "Baz"
+        },
+    },
+
 }
 
 #: Collection of metadata per package name.
@@ -70,6 +92,7 @@ METADATA_MAPPING = {
         Entry-points:
           [console_scripts]
           foo = foo.__main__:main
+          foo1 = foo.other:main [test]
         """
     ),
     "bar": textwrap.dedent(
@@ -84,6 +107,16 @@ METADATA_MAPPING = {
         """
         Summary: Bim Python Package.
         Location: /path/to/bim
+        Entry-points:
+          [console_scripts]
+          bim1 = bim.__main__:main [test1]
+          bim2 = bim.other:main [test1, test2]
+        """
+    ),
+    "baz": textwrap.dedent(
+        """
+        Summary: Baz Python Package.
+        Location: /path/to/baz
         """
     ),
 }
@@ -102,9 +135,8 @@ def mock_commands(mocker):
             request = re.search(r"'(.+)'", command).group(1)
             output = re.search(r"--prefix ([^ ]+)", command).group(1)
             requirement = wiz.utility.get_requirement(request)
-            os.makedirs(
-                os.path.join(output, PACKAGE_OUTPUT_PATH[requirement.name])
-            )
+            _id = "-".join([requirement.name] + sorted(requirement.extras))
+            os.makedirs(os.path.join(output, PACKAGE_OUTPUT_PATH[_id]))
             return "Installing collected packages: {}".format(requirement.name)
 
         elif command.startswith("python {}".format(PACKAGE_INFO_SCRIPT)):
