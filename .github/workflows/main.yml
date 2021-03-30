@@ -16,7 +16,6 @@ jobs:
       matrix:
         name: [
           "ubuntu-py27",
-          "ubuntu-py36",
           "ubuntu-py37",
           "ubuntu-py38",
           "ubuntu-py39",
@@ -28,9 +27,6 @@ jobs:
         include:
           - name: "ubuntu-py27"
             python: "2.7"
-            os: ubuntu-latest
-          - name: "ubuntu-py36"
-            python: "3.6"
             os: ubuntu-latest
           - name: "ubuntu-py37"
             python: "3.7"
