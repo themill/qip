@@ -4,7 +4,8 @@
 Release Notes
 *************
 
-.. release:: Upcoming
+.. release:: 2.3.0
+    :date: 2021-03-30
 
     .. change:: changed
 
