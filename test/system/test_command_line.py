@@ -51,7 +51,6 @@ def test_install_numpy(temporary_directory, logger):
             "-d", definitions_path,
         ]
     )
-    print(result.output)
     assert not result.exception
     assert result.exit_code == 0
 
@@ -116,7 +115,7 @@ def test_install_numpy_several_versions(temporary_directory, logger):
         qip.command_line.main, [
             "install",
             "numpy >= 1.16.6, <= 1.20.2",
-            "numpy != 1.16.6, < 1.20.2.",
+            "numpy != 1.16.6, < 1.20.2",
             "-o", packages_path,
             "-d", definitions_path,
         ]
