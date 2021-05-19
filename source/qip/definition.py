@@ -270,17 +270,40 @@ def update(
             package_mapping["python"]["library-path"]
         )
 
-    variants = definition.variants
+    # Merge additional variants with existing variants.
+    variants = _merge_variants(definition, additional_variants)
 
-    if additional_variants is not None:
-        variants = sorted(
-            variants + additional_variants,
-            key=functools.cmp_to_key(_compare_variants)
-        )
-
+    # Update variants with information from package.
     _update_variants(variants, package_mapping, package_path)
 
     return definition.set("variants", variants)
+
+
+def _merge_variants(definition, additional_variants=None):
+    """Return merged list of variants and definition variants.
+
+    Variants from *definition* have priority over additional variants.
+
+    :param definition: :class:`wiz.definition.Definition` instance as returned
+        by :func:`fetch_custom`.
+
+    :param additional_variants: None or list of variant mappings that should be
+        added to the definition updated. Default is None.
+
+    :return: list of sorted merged variant mappings.
+
+    """
+    mapping = {v["identifier"]: v for v in additional_variants or []}
+
+    for variant in definition.variants:
+        identifier = variant.identifier
+
+        if identifier in mapping:
+            wiz.utility.deep_update(mapping[identifier], variant.data())
+        else:
+            mapping[identifier] = variant.data()
+
+    return sorted(mapping.values(), key=functools.cmp_to_key(_compare_variants))
 
 
 def _update_variants(variants, package_mapping, path):

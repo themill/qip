@@ -1084,8 +1084,171 @@ def test_update_editable():
     }
 
 
+def test_update_with_variants_1():
+    """Update definition with existing variants.
+
+    Existing Variants are not adding to current variant.
+
+    """
+    definition = wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
+        "variants": [
+            {
+                "identifier": "variant",
+            },
+            {
+                "identifier": "3.6",
+                "environ": {"KEY36": "VALUE36"}
+            },
+            {
+                "identifier": "2.8",
+                "environ": {"KEY28": "VALUE28"}
+            },
+            {
+                "identifier": "2.7",
+                "environ": {"KEY22": "VALUE22"}
+            }
+        ]
+    })
+
+    mapping = {
+        "identifier": "Foo-0.2.3",
+        "name": "Foo",
+        "key": "foo",
+        "version": "0.2.3",
+        "description": "This is a cool library",
+        "target": "Foo/Foo-0.2.3",
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9",
+            "library-path": "lib/python2.8/site-packages"
+        },
+    }
+
+    result = qip.definition.update(definition, mapping, "/packages")
+
+    assert result.data() == {
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
+        "install-root": "/packages",
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
+        "variants": [
+            {
+                "identifier": "3.6",
+                "environ": {"KEY36": "VALUE36"}
+            },
+            {
+                "identifier": "2.8",
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
+                ),
+                "environ": {
+                    "KEY28": "VALUE28"
+                },
+                "requirements": [
+                    "python >= 2.8, <2.9"
+                ]
+            },
+            {
+                "identifier": "2.7",
+                "environ": {"KEY22": "VALUE22"}
+            },
+            {
+                "identifier": "variant",
+            }
+        ]
+    }
+
+
+def test_update_with_variants_2():
+    """Update definition with existing variants.
+
+    Additional variants are not adding to current variant.
+
+    """
+    definition = wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
+        "variants": [
+            {
+                "identifier": "variant",
+            },
+            {
+                "identifier": "3.6",
+                "environ": {"KEY36": "VALUE36"}
+            },
+            {
+                "identifier": "2.7",
+                "environ": {"KEY22": "VALUE22"}
+            }
+        ]
+    })
+
+    mapping = {
+        "identifier": "Foo-0.2.3",
+        "name": "Foo",
+        "key": "foo",
+        "version": "0.2.3",
+        "description": "This is a cool library",
+        "target": "Foo/Foo-0.2.3",
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9",
+            "library-path": "lib/python2.8/site-packages"
+        },
+    }
+
+    result = qip.definition.update(definition, mapping, "/packages")
+
+    assert result.data() == {
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
+        "install-root": "/packages",
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
+        "variants": [
+            {
+                "identifier": "3.6",
+                "environ": {"KEY36": "VALUE36"}
+            },
+            {
+                "identifier": "2.8",
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
+                ),
+                "requirements": [
+                    "python >= 2.8, <2.9"
+                ]
+            },
+            {
+                "identifier": "2.7",
+                "environ": {"KEY22": "VALUE22"}
+            },
+            {
+                "identifier": "variant",
+            }
+        ]
+    }
+
+
 def test_update_with_additional_variants_1():
-    """Update definition with mapping with additional variants."""
+    """Update definition with mapping with additional variants.
+
+    Additional variants are adding to current variant.
+
+    """
     definition = wiz.definition.Definition({
         "identifier": "foo",
         "version": "0.2.3",
@@ -1161,7 +1324,11 @@ def test_update_with_additional_variants_1():
 
 
 def test_update_with_additional_variants_2():
-    """Update definition with mapping with additional variants."""
+    """Update definition with mapping with additional variants.
+
+    Additional variants are not adding to current variant.
+
+    """
     definition = wiz.definition.Definition({
         "identifier": "foo",
         "version": "0.2.3",
@@ -1224,6 +1391,143 @@ def test_update_with_additional_variants_2():
             },
             {
                 "identifier": "variant",
+            }
+        ]
+    }
+
+
+def test_update_with_additional_variants_3():
+    """Update definition with mapping with additional variants.
+
+    Definition to update has existing variants which are not conflicting with
+    additional variants.
+
+    """
+    definition = wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
+        "variants": [
+            {
+                "identifier": "2.8",
+                "environ": {"KEY28": "VALUE28"}
+            },
+        ]
+    })
+
+    mapping = {
+        "target": "Foo/Foo-0.2.3",
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9",
+            "library-path": "lib/python2.8/site-packages"
+        },
+    }
+
+    result = qip.definition.update(
+        definition, mapping, "/packages",
+        additional_variants=[
+            {
+                "identifier": "2.7",
+                "environ": {"KEY22": "VALUE22"}
+            }
+        ]
+    )
+
+    assert result.data() == {
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
+        "install-root": "/packages",
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
+        "variants": [
+            {
+                "identifier": "2.8",
+                "environ": {"KEY28": "VALUE28"},
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
+                ),
+                "requirements": [
+                    "python >= 2.8, <2.9"
+                ]
+            },
+            {
+                "identifier": "2.7",
+                "environ": {"KEY22": "VALUE22"}
+            }
+        ]
+    }
+
+
+def test_update_with_additional_variants_4():
+    """Update definition with mapping with additional variants.
+
+    Definition to update has existing variants which are conflicting with
+    additional variants.
+
+    """
+    definition = wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
+        "variants": [
+            {
+                "identifier": "2.8",
+                "environ": {"KEY1": "VALUE1", "KEY2": "VALUE2"}
+            },
+        ]
+    })
+
+    mapping = {
+        "target": "Foo/Foo-0.2.3",
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9",
+            "library-path": "lib/python2.8/site-packages"
+        },
+    }
+
+    result = qip.definition.update(
+        definition, mapping, "/packages",
+        additional_variants=[
+            {
+                "identifier": "2.8",
+                "environ": {
+                    "KEY2": "VALUE22",
+                    "KEY3": "VALUE3",
+                }
+            }
+        ]
+    )
+
+    assert result.data() == {
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
+        "install-root": "/packages",
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
+        "variants": [
+            {
+                "identifier": "2.8",
+                "environ": {
+                    "KEY1": "VALUE1",
+                    "KEY2": "VALUE2",
+                    "KEY3": "VALUE3",
+                },
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
+                ),
+                "requirements": [
+                    "python >= 2.8, <2.9"
+                ]
             }
         ]
     }
