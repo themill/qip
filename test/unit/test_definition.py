@@ -19,8 +19,8 @@ def mocked_wiz_export_definition(mocker):
 
 @pytest.fixture()
 def mocked_wiz_load_definition(mocker):
-    """Return mocked 'wiz.load_definition' function"""
-    return mocker.patch.object(wiz, "load_definition")
+    """Return mocked 'wiz.definition.load' function"""
+    return mocker.patch.object(wiz.definition, "load")
 
 
 @pytest.fixture()
@@ -125,9 +125,12 @@ def test_export_from_custom_definition(
 def test_fetch_custom(mocked_wiz_load_definition, temporary_directory, logger):
     """Fetch custom definition from package installed."""
     mapping = {
+        "key": "foo",
+        "version": "0.2.3",
         "identifier": "Foo-0.2.3",
         "module_name": "foo",
-        "location": temporary_directory
+        "location": temporary_directory,
+        "extra": []
     }
 
     path = os.path.join(temporary_directory, "foo", "package_data", "wiz.json")
@@ -136,14 +139,12 @@ def test_fetch_custom(mocked_wiz_load_definition, temporary_directory, logger):
     with open(path, "w") as stream:
         stream.write("")
 
-    definition = wiz.definition.Definition({
+    mocked_wiz_load_definition.return_value = wiz.definition.Definition({
         "identifier": "foo",
         "version": "0.2.3",
         "namespace": "plugin",
         "description": "This is a library",
     })
-
-    mocked_wiz_load_definition.return_value = definition
 
     _definition = qip.definition.fetch_custom(mapping)
 
@@ -158,7 +159,133 @@ def test_fetch_custom(mocked_wiz_load_definition, temporary_directory, logger):
         "\tWiz definition extracted from 'Foo-0.2.3'."
     )
 
-    mocked_wiz_load_definition.assert_any_call(path)
+    mocked_wiz_load_definition.assert_called_once_with(
+        path, mapping={"identifier": "foo", "version": "0.2.3"}
+    )
+
+
+def test_fetch_custom_with_extra(
+    mocked_wiz_load_definition, temporary_directory, logger
+):
+    """Fetch extra custom definitions from package installed."""
+    mapping = {
+        "key": "foo",
+        "version": "0.2.3",
+        "identifier": "Foo-0.2.3",
+        "module_name": "foo",
+        "location": temporary_directory,
+        "extra": ["test1", "test2"]
+    }
+
+    os.makedirs(os.path.join(temporary_directory, "foo", "package_data"))
+    paths = [
+        os.path.join(temporary_directory, "foo", "package_data", name)
+        for name in ["wiz.json", "wiz-test1.json"]
+    ]
+
+    for path in paths:
+        with open(path, "w") as stream:
+            stream.write("")
+
+    mocked_wiz_load_definition.side_effect = [
+        wiz.definition.Definition({
+            "identifier": "foo",
+            "version": "0.2.3",
+            "namespace": "plugin",
+            "description": "This is a library",
+            "environ": {"KEY1": "VALUE1"}
+        }),
+        wiz.definition.Definition({
+            "identifier": "foo",
+            "version": "0.2.3",
+            "environ": {"KEY2": "VALUE2"},
+            "requirements": [
+                "bar >= 1.2, < 2"
+            ]
+        }),
+    ]
+
+    _definition = qip.definition.fetch_custom(mapping)
+
+    assert _definition.data() == {
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
+        "environ": {
+            "KEY1": "VALUE1",
+            "KEY2": "VALUE2",
+        },
+        "requirements": [
+            "bar >= 1.2, < 2"
+        ]
+    }
+
+    logger.info.assert_called_once_with(
+        "\tWiz definition extracted from 'Foo-0.2.3'."
+    )
+
+    assert mocked_wiz_load_definition.call_count == 2
+    mocked_wiz_load_definition.assert_any_call(
+        paths[0], mapping={"identifier": "foo", "version": "0.2.3"}
+    )
+    mocked_wiz_load_definition.assert_any_call(
+        paths[1], mapping={"identifier": "foo", "version": "0.2.3"}
+    )
+
+
+def test_fetch_custom_with_extra_only(
+    mocked_wiz_load_definition, temporary_directory, logger
+):
+    """Fetch only extra custom definition from package installed."""
+    mapping = {
+        "key": "foo",
+        "version": "0.2.3",
+        "identifier": "Foo-0.2.3",
+        "module_name": "foo",
+        "location": temporary_directory,
+        "extra": ["test1", "test2"]
+    }
+
+    path = os.path.join(
+        temporary_directory, "foo", "package_data", "wiz-test1.json"
+    )
+
+    os.makedirs(os.path.dirname(path))
+    with open(path, "w") as stream:
+        stream.write("")
+
+    mocked_wiz_load_definition.side_effect = [
+        wiz.definition.Definition({
+            "identifier": "foo",
+            "version": "0.2.3",
+            "environ": {"KEY2": "VALUE2"},
+            "requirements": [
+                "bar >= 1.2, < 2"
+            ]
+        }),
+    ]
+
+    _definition = qip.definition.fetch_custom(mapping)
+
+    assert _definition.data() == {
+        "identifier": "foo",
+        "version": "0.2.3",
+        "environ": {
+            "KEY2": "VALUE2",
+        },
+        "requirements": [
+            "bar >= 1.2, < 2"
+        ]
+    }
+
+    logger.info.assert_called_once_with(
+        "\tWiz definition extracted from 'Foo-0.2.3'."
+    )
+
+    mocked_wiz_load_definition.assert_called_once_with(
+        path, mapping={"identifier": "foo", "version": "0.2.3"}
+    )
 
 
 def test_fetch_custom_empty(mocked_wiz_load_definition, logger):
@@ -166,7 +293,8 @@ def test_fetch_custom_empty(mocked_wiz_load_definition, logger):
     mapping = {
         "identifier": "Foo-0.2.3",
         "module_name": "foo",
-        "location": "/path/to/lib"
+        "location": "/path/to/lib",
+        "extra": []
     }
 
     result = qip.definition.fetch_custom(mapping)

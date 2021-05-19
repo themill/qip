@@ -5,6 +5,7 @@ import functools
 import os
 
 import wiz
+import wiz.definition
 import wiz.environ
 import wiz.exception
 import wiz.symbol
@@ -72,6 +73,10 @@ def fetch_custom(package_mapping):
     :file:`package_data/wiz.json` file found within the package installation
     path.
 
+    If :term:`extra requirement keywords <extras_require>` are called,
+    :term:`Wiz` definition containing each keyword will also be fetched and
+    merged together into one definition.
+
     :param package_mapping: mapping of the python package built as returned by
         :func:`qip.package.install`.
 
@@ -84,15 +89,32 @@ def fetch_custom(package_mapping):
     .. seealso:: :ref:`development/custom_definition`
 
     """
-    logger = logging.getLogger(__name__ + ".retrieve")
+    logger = logging.getLogger(__name__ + ".fetch_custom")
 
-    definition_path = os.path.join(
-        package_mapping["location"], package_mapping["module_name"],
-        "package_data", "wiz.json"
-    )
+    definitions = []
 
-    if os.path.exists(definition_path):
-        definition = wiz.load_definition(definition_path)
+    for key in [None] + package_mapping["extra"]:
+        name = "wiz.json" if not key else "wiz-{}.json".format(key)
+        path = os.path.join(
+            package_mapping["location"], package_mapping["module_name"],
+            "package_data", name
+        )
+
+        if os.path.exists(path):
+            definition = wiz.definition.load(path, mapping={
+                "identifier": package_mapping["key"],
+                "version": package_mapping["version"]
+            })
+            definitions.append(definition)
+
+    if len(definitions):
+        definition = definitions[0]
+        data = definition.data(copy_data=False)
+
+        # Update first definition with data fetched from other definitions.
+        for _definition in definitions[1:]:
+            wiz.utility.deep_update(data, _definition.data(copy_data=False))
+
         logger.info(
             "\tWiz definition extracted from '{}'.".format(
                 package_mapping["identifier"]
