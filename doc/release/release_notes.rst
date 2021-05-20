@@ -4,6 +4,35 @@
 Release Notes
 *************
 
+.. release:: Upcoming
+
+    .. change:: new
+
+        Added :ref:`development/optional_dependencies`.
+
+    .. change:: changed
+
+        Updated :func:`qip.definition.fetch_custom` to always override
+        :ref:`identifier <wiz:definition/identifier>` and :ref:`version
+        <wiz:definition/version>` keywords with accurate information from the
+        Python package. It means that it is no longer compulsory to add the
+        identifier to :ref:`custom definitions <development/custom_definition>`.
+
+    .. change:: changed
+
+        Updated :func:`qip.definition.fetch_custom` to look for custom
+        definitions matching :term:`extra keywords <extras_require>` provided in
+        the request.
+
+    .. change:: changed
+
+        Updated :ref:`development/custom_definition`.
+
+    .. change:: fixed
+
+        Updated :func:`qip.definition.update` to better combine additional
+        variants with variants found in custom :term:`Wiz` definition.
+
 .. release:: 2.3.0
     :date: 2021-03-30
 
