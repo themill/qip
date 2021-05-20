@@ -95,7 +95,7 @@ def test_install(
     mocked_fetch_mapping_from_environ.assert_called_once_with(
         "foo", {"environ": "__ENV__"}, extra_keywords=[]
     )
-    assert result == {"request": expected}
+    assert result == {"request": expected, "extra": []}
 
 
 def test_install_fail(mocked_command_execute):

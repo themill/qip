@@ -19,8 +19,8 @@ def mocked_wiz_export_definition(mocker):
 
 @pytest.fixture()
 def mocked_wiz_load_definition(mocker):
-    """Return mocked 'wiz.load_definition' function"""
-    return mocker.patch.object(wiz, "load_definition")
+    """Return mocked 'wiz.definition.load' function"""
+    return mocker.patch.object(wiz.definition, "load")
 
 
 @pytest.fixture()
@@ -125,9 +125,12 @@ def test_export_from_custom_definition(
 def test_fetch_custom(mocked_wiz_load_definition, temporary_directory, logger):
     """Fetch custom definition from package installed."""
     mapping = {
+        "key": "foo",
+        "version": "0.2.3",
         "identifier": "Foo-0.2.3",
         "module_name": "foo",
-        "location": temporary_directory
+        "location": temporary_directory,
+        "extra": []
     }
 
     path = os.path.join(temporary_directory, "foo", "package_data", "wiz.json")
@@ -136,14 +139,12 @@ def test_fetch_custom(mocked_wiz_load_definition, temporary_directory, logger):
     with open(path, "w") as stream:
         stream.write("")
 
-    definition = wiz.definition.Definition({
+    mocked_wiz_load_definition.return_value = wiz.definition.Definition({
         "identifier": "foo",
         "version": "0.2.3",
         "namespace": "plugin",
         "description": "This is a library",
     })
-
-    mocked_wiz_load_definition.return_value = definition
 
     _definition = qip.definition.fetch_custom(mapping)
 
@@ -158,7 +159,133 @@ def test_fetch_custom(mocked_wiz_load_definition, temporary_directory, logger):
         "\tWiz definition extracted from 'Foo-0.2.3'."
     )
 
-    mocked_wiz_load_definition.assert_any_call(path)
+    mocked_wiz_load_definition.assert_called_once_with(
+        path, mapping={"identifier": "foo", "version": "0.2.3"}
+    )
+
+
+def test_fetch_custom_with_extra(
+    mocked_wiz_load_definition, temporary_directory, logger
+):
+    """Fetch extra custom definitions from package installed."""
+    mapping = {
+        "key": "foo",
+        "version": "0.2.3",
+        "identifier": "Foo-0.2.3",
+        "module_name": "foo",
+        "location": temporary_directory,
+        "extra": ["test1", "test2"]
+    }
+
+    os.makedirs(os.path.join(temporary_directory, "foo", "package_data"))
+    paths = [
+        os.path.join(temporary_directory, "foo", "package_data", name)
+        for name in ["wiz.json", "wiz-test1.json"]
+    ]
+
+    for path in paths:
+        with open(path, "w") as stream:
+            stream.write("")
+
+    mocked_wiz_load_definition.side_effect = [
+        wiz.definition.Definition({
+            "identifier": "foo",
+            "version": "0.2.3",
+            "namespace": "plugin",
+            "description": "This is a library",
+            "environ": {"KEY1": "VALUE1"}
+        }),
+        wiz.definition.Definition({
+            "identifier": "foo",
+            "version": "0.2.3",
+            "environ": {"KEY2": "VALUE2"},
+            "requirements": [
+                "bar >= 1.2, < 2"
+            ]
+        }),
+    ]
+
+    _definition = qip.definition.fetch_custom(mapping)
+
+    assert _definition.data() == {
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
+        "environ": {
+            "KEY1": "VALUE1",
+            "KEY2": "VALUE2",
+        },
+        "requirements": [
+            "bar >= 1.2, < 2"
+        ]
+    }
+
+    logger.info.assert_called_once_with(
+        "\tWiz definition extracted from 'Foo-0.2.3'."
+    )
+
+    assert mocked_wiz_load_definition.call_count == 2
+    mocked_wiz_load_definition.assert_any_call(
+        paths[0], mapping={"identifier": "foo", "version": "0.2.3"}
+    )
+    mocked_wiz_load_definition.assert_any_call(
+        paths[1], mapping={"identifier": "foo", "version": "0.2.3"}
+    )
+
+
+def test_fetch_custom_with_extra_only(
+    mocked_wiz_load_definition, temporary_directory, logger
+):
+    """Fetch only extra custom definition from package installed."""
+    mapping = {
+        "key": "foo",
+        "version": "0.2.3",
+        "identifier": "Foo-0.2.3",
+        "module_name": "foo",
+        "location": temporary_directory,
+        "extra": ["test1", "test2"]
+    }
+
+    path = os.path.join(
+        temporary_directory, "foo", "package_data", "wiz-test1.json"
+    )
+
+    os.makedirs(os.path.dirname(path))
+    with open(path, "w") as stream:
+        stream.write("")
+
+    mocked_wiz_load_definition.side_effect = [
+        wiz.definition.Definition({
+            "identifier": "foo",
+            "version": "0.2.3",
+            "environ": {"KEY2": "VALUE2"},
+            "requirements": [
+                "bar >= 1.2, < 2"
+            ]
+        }),
+    ]
+
+    _definition = qip.definition.fetch_custom(mapping)
+
+    assert _definition.data() == {
+        "identifier": "foo",
+        "version": "0.2.3",
+        "environ": {
+            "KEY2": "VALUE2",
+        },
+        "requirements": [
+            "bar >= 1.2, < 2"
+        ]
+    }
+
+    logger.info.assert_called_once_with(
+        "\tWiz definition extracted from 'Foo-0.2.3'."
+    )
+
+    mocked_wiz_load_definition.assert_called_once_with(
+        path, mapping={"identifier": "foo", "version": "0.2.3"}
+    )
 
 
 def test_fetch_custom_empty(mocked_wiz_load_definition, logger):
@@ -166,7 +293,8 @@ def test_fetch_custom_empty(mocked_wiz_load_definition, logger):
     mapping = {
         "identifier": "Foo-0.2.3",
         "module_name": "foo",
-        "location": "/path/to/lib"
+        "location": "/path/to/lib",
+        "extra": []
     }
 
     result = qip.definition.fetch_custom(mapping)
@@ -1084,8 +1212,171 @@ def test_update_editable():
     }
 
 
+def test_update_with_variants_1():
+    """Update definition with existing variants.
+
+    Existing Variants are not adding to current variant.
+
+    """
+    definition = wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
+        "variants": [
+            {
+                "identifier": "variant",
+            },
+            {
+                "identifier": "3.6",
+                "environ": {"KEY36": "VALUE36"}
+            },
+            {
+                "identifier": "2.8",
+                "environ": {"KEY28": "VALUE28"}
+            },
+            {
+                "identifier": "2.7",
+                "environ": {"KEY22": "VALUE22"}
+            }
+        ]
+    })
+
+    mapping = {
+        "identifier": "Foo-0.2.3",
+        "name": "Foo",
+        "key": "foo",
+        "version": "0.2.3",
+        "description": "This is a cool library",
+        "target": "Foo/Foo-0.2.3",
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9",
+            "library-path": "lib/python2.8/site-packages"
+        },
+    }
+
+    result = qip.definition.update(definition, mapping, "/packages")
+
+    assert result.data() == {
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
+        "install-root": "/packages",
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
+        "variants": [
+            {
+                "identifier": "3.6",
+                "environ": {"KEY36": "VALUE36"}
+            },
+            {
+                "identifier": "2.8",
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
+                ),
+                "environ": {
+                    "KEY28": "VALUE28"
+                },
+                "requirements": [
+                    "python >= 2.8, <2.9"
+                ]
+            },
+            {
+                "identifier": "2.7",
+                "environ": {"KEY22": "VALUE22"}
+            },
+            {
+                "identifier": "variant",
+            }
+        ]
+    }
+
+
+def test_update_with_variants_2():
+    """Update definition with existing variants.
+
+    Additional variants are not adding to current variant.
+
+    """
+    definition = wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
+        "variants": [
+            {
+                "identifier": "variant",
+            },
+            {
+                "identifier": "3.6",
+                "environ": {"KEY36": "VALUE36"}
+            },
+            {
+                "identifier": "2.7",
+                "environ": {"KEY22": "VALUE22"}
+            }
+        ]
+    })
+
+    mapping = {
+        "identifier": "Foo-0.2.3",
+        "name": "Foo",
+        "key": "foo",
+        "version": "0.2.3",
+        "description": "This is a cool library",
+        "target": "Foo/Foo-0.2.3",
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9",
+            "library-path": "lib/python2.8/site-packages"
+        },
+    }
+
+    result = qip.definition.update(definition, mapping, "/packages")
+
+    assert result.data() == {
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
+        "install-root": "/packages",
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
+        "variants": [
+            {
+                "identifier": "3.6",
+                "environ": {"KEY36": "VALUE36"}
+            },
+            {
+                "identifier": "2.8",
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
+                ),
+                "requirements": [
+                    "python >= 2.8, <2.9"
+                ]
+            },
+            {
+                "identifier": "2.7",
+                "environ": {"KEY22": "VALUE22"}
+            },
+            {
+                "identifier": "variant",
+            }
+        ]
+    }
+
+
 def test_update_with_additional_variants_1():
-    """Update definition with mapping with additional variants."""
+    """Update definition with mapping with additional variants.
+
+    Additional variants are adding to current variant.
+
+    """
     definition = wiz.definition.Definition({
         "identifier": "foo",
         "version": "0.2.3",
@@ -1161,7 +1452,11 @@ def test_update_with_additional_variants_1():
 
 
 def test_update_with_additional_variants_2():
-    """Update definition with mapping with additional variants."""
+    """Update definition with mapping with additional variants.
+
+    Additional variants are not adding to current variant.
+
+    """
     definition = wiz.definition.Definition({
         "identifier": "foo",
         "version": "0.2.3",
@@ -1224,6 +1519,143 @@ def test_update_with_additional_variants_2():
             },
             {
                 "identifier": "variant",
+            }
+        ]
+    }
+
+
+def test_update_with_additional_variants_3():
+    """Update definition with mapping with additional variants.
+
+    Definition to update has existing variants which are not conflicting with
+    additional variants.
+
+    """
+    definition = wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
+        "variants": [
+            {
+                "identifier": "2.8",
+                "environ": {"KEY28": "VALUE28"}
+            },
+        ]
+    })
+
+    mapping = {
+        "target": "Foo/Foo-0.2.3",
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9",
+            "library-path": "lib/python2.8/site-packages"
+        },
+    }
+
+    result = qip.definition.update(
+        definition, mapping, "/packages",
+        additional_variants=[
+            {
+                "identifier": "2.7",
+                "environ": {"KEY22": "VALUE22"}
+            }
+        ]
+    )
+
+    assert result.data() == {
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
+        "install-root": "/packages",
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
+        "variants": [
+            {
+                "identifier": "2.8",
+                "environ": {"KEY28": "VALUE28"},
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
+                ),
+                "requirements": [
+                    "python >= 2.8, <2.9"
+                ]
+            },
+            {
+                "identifier": "2.7",
+                "environ": {"KEY22": "VALUE22"}
+            }
+        ]
+    }
+
+
+def test_update_with_additional_variants_4():
+    """Update definition with mapping with additional variants.
+
+    Definition to update has existing variants which are conflicting with
+    additional variants.
+
+    """
+    definition = wiz.definition.Definition({
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
+        "variants": [
+            {
+                "identifier": "2.8",
+                "environ": {"KEY1": "VALUE1", "KEY2": "VALUE2"}
+            },
+        ]
+    })
+
+    mapping = {
+        "target": "Foo/Foo-0.2.3",
+        "python": {
+            "identifier": "2.8",
+            "request": "python >= 2.8, <2.9",
+            "library-path": "lib/python2.8/site-packages"
+        },
+    }
+
+    result = qip.definition.update(
+        definition, mapping, "/packages",
+        additional_variants=[
+            {
+                "identifier": "2.8",
+                "environ": {
+                    "KEY2": "VALUE22",
+                    "KEY3": "VALUE3",
+                }
+            }
+        ]
+    )
+
+    assert result.data() == {
+        "identifier": "foo",
+        "version": "0.2.3",
+        "namespace": "plugin",
+        "description": "This is a library",
+        "install-root": "/packages",
+        "environ": {
+            "PYTHONPATH": "${INSTALL_LOCATION}:${PYTHONPATH}"
+        },
+        "variants": [
+            {
+                "identifier": "2.8",
+                "environ": {
+                    "KEY1": "VALUE1",
+                    "KEY2": "VALUE2",
+                    "KEY3": "VALUE3",
+                },
+                "install-location": (
+                    "${INSTALL_ROOT}/Foo/Foo-0.2.3/lib/python2.8/site-packages"
+                ),
+                "requirements": [
+                    "python >= 2.8, <2.9"
+                ]
             }
         ]
     }

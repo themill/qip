@@ -83,6 +83,36 @@ The command will then return::
     info: Start command: python -m pystache.commands.render 'Hello {{world}}' '{"world": "everybody"}'
     test Hello everybody
 
+.. _development/optional_dependencies:
+
+Optional dependencies
+=====================
+
+Qip supports :term:`extra keywords <extras_require>` provided in the request.
+Many Python packages use this installation feature, like
+`Gunicorn <https://docs.gunicorn.org/en/stable/install.html#extra-packages>`_.
+
+    >>> qip install gunicorn[gevent]
+
+When using extra keywords, the nature of the package installed is fundamentally
+modified. Not only does it change the dependencies, but it could also change the
+:term:`Entry-Points` created.
+
+.. seealso::
+
+    `Setuptools - Optional Dependencies
+    <https://setuptools.readthedocs.io/en/latest/userguide/
+    dependency_management.html#optional-dependencies>`_
+
+To prevent name clashes, the :term:`Wiz` definition extracted will include the
+list of sorted :term:`extra keywords <extras_require>` used within its
+:ref:`identifier <wiz:definition/identifier>`::
+
+    {
+        "identifier": "gunicorn-event",
+        ...
+    }
+
 .. _development/custom_definition:
 
 Custom Wiz definition
@@ -105,11 +135,6 @@ It is possible to add a custom definition within the repository to extend this
 :term:`Wiz` definition. The custom definition should be included in the source
 code under :file:`package_data/wiz.json`.
 
-.. warning::
-
-    The custom definition must be a valid one. That means that it must contain
-    at least an :ref:`identifier <wiz:definition/identifier>`.
-
 Let's use again the `Pystache <https://github.com/defunkt/pystache>`_ repository
 to demonstrate this feature::
 
@@ -121,7 +146,6 @@ Add the following definition in :file:`pystache/package_data/wiz.json`
 .. code-block:: json
 
     {
-        "identifier": "pystache",
         "command": {
             "say_hello": "python -m pystache.commands.render 'Hello {{world}}' '{\"world\": \"everybody\"}'"
         }
@@ -140,6 +164,15 @@ It is then possible to execute the following command::
 Using a custom definition could be particularly helpful when a Python package
 depends on a non-Python library.
 
+.. note::
+
+    It is also possible to add optional custom definition matching
+    :term:`extra keywords <extras_require>` provided in the request.
+    For instance, if a non-Python library must be set as a dependency when the
+    "gevent" keyword is passed when installing the
+    `Gunicorn <https://docs.gunicorn.org/en/stable/install.html#extra-packages>`_
+    library, a targeted definition can be set in
+    :file:`gunicorn/package_data/wiz-gevent.json`.
 
 .. _development/custom_definition/dcc:
 

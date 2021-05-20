@@ -57,6 +57,7 @@ def install(request, path, context_mapping, cache_path, editable_mode=False):
             {
                 "identifier": "Foo-0.1.0",
                 "request": "foo >= 0.1.0, < 1",
+                "extra": [],
                 "name": "Foo",
                 "key": "foo",
                 "version": "0.1.0",
@@ -125,7 +126,9 @@ def install(request, path, context_mapping, cache_path, editable_mode=False):
         name, context_mapping,
         extra_keywords=extra_keywords
     )
+
     mapping["request"] = request
+    mapping["extra"] = extra_keywords
     return mapping
 
 
