@@ -4,6 +4,14 @@
 Release Notes
 *************
 
+.. release:: Upcoming
+
+    .. change:: fixed
+
+        Fixed :func:`qip.definition.fetch_custom` to prevent systematically
+        overwriting :ref:`identifier <wiz:definition/identifier>` from
+        :ref:`custom definitions <development/custom_definition>`.
+
 .. release:: 2.4.0
     :date: 2021-05-20
 
