@@ -101,10 +101,15 @@ def fetch_custom(package_mapping):
         )
 
         if os.path.exists(path):
-            definition = wiz.definition.load(path, mapping={
-                "identifier": package_mapping["key"],
-                "version": package_mapping["version"]
-            })
+            try:
+                definition = wiz.definition.load(path)
+
+            except wiz.exception.DefinitionError:
+                # Initiate identifier with package key if necessary.
+                definition = wiz.definition.load(path, mapping={
+                    "identifier": package_mapping["key"],
+                })
+
             definitions.append(definition)
 
     if len(definitions):

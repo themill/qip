@@ -141,7 +141,6 @@ def test_fetch_custom(mocked_wiz_load_definition, temporary_directory, logger):
 
     mocked_wiz_load_definition.return_value = wiz.definition.Definition({
         "identifier": "foo",
-        "version": "0.2.3",
         "namespace": "plugin",
         "description": "This is a library",
     })
@@ -150,7 +149,6 @@ def test_fetch_custom(mocked_wiz_load_definition, temporary_directory, logger):
 
     assert _definition.data() == {
         "identifier": "foo",
-        "version": "0.2.3",
         "namespace": "plugin",
         "description": "This is a library",
     }
@@ -159,9 +157,54 @@ def test_fetch_custom(mocked_wiz_load_definition, temporary_directory, logger):
         "\tWiz definition extracted from 'Foo-0.2.3'."
     )
 
-    mocked_wiz_load_definition.assert_called_once_with(
-        path, mapping={"identifier": "foo", "version": "0.2.3"}
+    mocked_wiz_load_definition.assert_called_once_with(path)
+
+
+def test_fetch_custom_without_custom_identifier(
+    mocked_wiz_load_definition, temporary_directory, logger
+):
+    """Fetch custom definition which does not have a custom identifier."""
+    mapping = {
+        "key": "foo",
+        "version": "0.2.3",
+        "identifier": "Foo-0.2.3",
+        "module_name": "foo",
+        "location": temporary_directory,
+        "extra": []
+    }
+
+    path = os.path.join(temporary_directory, "foo", "package_data", "wiz.json")
+
+    os.makedirs(os.path.dirname(path))
+    with open(path, "w") as stream:
+        stream.write("")
+
+    mocked_wiz_load_definition.side_effect = [
+        wiz.exception.DefinitionError("Identifier is required!"),
+        wiz.definition.Definition({
+            "identifier": "foo",
+            "namespace": "plugin",
+            "description": "This is a library",
+        })
+    ]
+
+    _definition = qip.definition.fetch_custom(mapping)
+
+    assert _definition.data() == {
+        "identifier": "foo",
+        "namespace": "plugin",
+        "description": "This is a library",
+    }
+
+    logger.info.assert_called_once_with(
+        "\tWiz definition extracted from 'Foo-0.2.3'."
     )
+
+    assert mocked_wiz_load_definition.call_count == 2
+    mocked_wiz_load_definition.assert_any_call(path)
+    mocked_wiz_load_definition.assert_any_call(path, mapping={
+        "identifier": "foo"
+    })
 
 
 def test_fetch_custom_with_extra(
@@ -190,14 +233,12 @@ def test_fetch_custom_with_extra(
     mocked_wiz_load_definition.side_effect = [
         wiz.definition.Definition({
             "identifier": "foo",
-            "version": "0.2.3",
             "namespace": "plugin",
             "description": "This is a library",
             "environ": {"KEY1": "VALUE1"}
         }),
         wiz.definition.Definition({
             "identifier": "foo",
-            "version": "0.2.3",
             "environ": {"KEY2": "VALUE2"},
             "requirements": [
                 "bar >= 1.2, < 2"
@@ -209,7 +250,6 @@ def test_fetch_custom_with_extra(
 
     assert _definition.data() == {
         "identifier": "foo",
-        "version": "0.2.3",
         "namespace": "plugin",
         "description": "This is a library",
         "environ": {
@@ -226,12 +266,8 @@ def test_fetch_custom_with_extra(
     )
 
     assert mocked_wiz_load_definition.call_count == 2
-    mocked_wiz_load_definition.assert_any_call(
-        paths[0], mapping={"identifier": "foo", "version": "0.2.3"}
-    )
-    mocked_wiz_load_definition.assert_any_call(
-        paths[1], mapping={"identifier": "foo", "version": "0.2.3"}
-    )
+    mocked_wiz_load_definition.assert_any_call(paths[0])
+    mocked_wiz_load_definition.assert_any_call(paths[1])
 
 
 def test_fetch_custom_with_extra_only(
@@ -258,7 +294,6 @@ def test_fetch_custom_with_extra_only(
     mocked_wiz_load_definition.side_effect = [
         wiz.definition.Definition({
             "identifier": "foo",
-            "version": "0.2.3",
             "environ": {"KEY2": "VALUE2"},
             "requirements": [
                 "bar >= 1.2, < 2"
@@ -270,7 +305,6 @@ def test_fetch_custom_with_extra_only(
 
     assert _definition.data() == {
         "identifier": "foo",
-        "version": "0.2.3",
         "environ": {
             "KEY2": "VALUE2",
         },
@@ -283,9 +317,7 @@ def test_fetch_custom_with_extra_only(
         "\tWiz definition extracted from 'Foo-0.2.3'."
     )
 
-    mocked_wiz_load_definition.assert_called_once_with(
-        path, mapping={"identifier": "foo", "version": "0.2.3"}
-    )
+    mocked_wiz_load_definition.assert_called_once_with(path)
 
 
 def test_fetch_custom_empty(mocked_wiz_load_definition, logger):
